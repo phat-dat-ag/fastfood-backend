@@ -49,6 +49,9 @@ public class User {
     @Column(name = "avatar_url", length = 255)
     private String avatarUrl;
 
+    @Column(name = "avatar_public_id", length = 255)
+    private String avatarPublicId;
+
     @Column(name = "is_activated", nullable = false)
     private boolean isActivated = false;
 

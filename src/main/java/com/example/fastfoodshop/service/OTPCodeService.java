@@ -26,7 +26,7 @@ public class OTPCodeService {
         OTPCode otp = new OTPCode();
         otp.setUser(user);
         otp.setCode(otp_code);
-        otp.setExpiredAt(LocalDateTime.now().plusMinutes(1));
+        otp.setExpiredAt(LocalDateTime.now().plusMinutes(5));
         otp.setUsed(false);
         otpCodeRepository.save(otp);
 
