@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.entity;
 
+import com.example.fastfoodshop.entity.base.BaseCreatedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,17 +16,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Entity
 @Table(name = "otp_codes")
-public class OTPCode {
+public class OTPCode extends BaseCreatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "code", length = 20, nullable = false)
     private String code;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Column(name = "expired_at", nullable = false, updatable = false)
     private LocalDateTime expiredAt;

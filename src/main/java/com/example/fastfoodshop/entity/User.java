@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.entity;
 
+import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
 import com.example.fastfoodshop.enums.UserRole;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
@@ -21,7 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "users")
-public class User {
+public class User extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -57,14 +58,6 @@ public class User {
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
-
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<OTPCode> otpCodes = new ArrayList<>();
