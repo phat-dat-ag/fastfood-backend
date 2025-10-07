@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.ChangePasswordRequest;
-import com.example.fastfoodshop.dto.UpdateUserRequest;
+import com.example.fastfoodshop.request.ChangePasswordRequest;
+import com.example.fastfoodshop.request.UpdateUserRequest;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.UserService;

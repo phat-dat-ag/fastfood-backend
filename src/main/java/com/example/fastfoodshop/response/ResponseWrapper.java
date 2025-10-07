@@ -1,12 +1,10 @@
 package com.example.fastfoodshop.response;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.Instant;
 
-@Getter
-@Setter
+@Data
 public class ResponseWrapper<T> {
     private boolean success;
     private T data;

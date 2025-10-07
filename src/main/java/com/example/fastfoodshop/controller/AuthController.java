@@ -1,7 +1,10 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.*;
+import com.example.fastfoodshop.request.*;
+import com.example.fastfoodshop.response.OTPResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.SignInResponse;
 import com.example.fastfoodshop.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

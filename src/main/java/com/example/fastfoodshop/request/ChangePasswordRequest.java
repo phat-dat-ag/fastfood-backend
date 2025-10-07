@@ -1,4 +1,4 @@
-package com.example.fastfoodshop.dto;
+package com.example.fastfoodshop.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

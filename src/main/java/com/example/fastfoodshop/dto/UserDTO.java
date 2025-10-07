@@ -1,15 +1,12 @@
 package com.example.fastfoodshop.dto;
 
-
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.UserRole;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
 import java.time.LocalDate;
 
-@Getter
-@Setter
+@Data
 public class UserDTO {
     private String name;
     private String phone;

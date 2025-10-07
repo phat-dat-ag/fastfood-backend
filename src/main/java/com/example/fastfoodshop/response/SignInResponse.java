@@ -1,5 +1,6 @@
-package com.example.fastfoodshop.dto;
+package com.example.fastfoodshop.response;
 
+import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.User;
 import lombok.Data;
 

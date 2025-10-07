@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.SignInResponse;
-import com.example.fastfoodshop.dto.OTPResponse;
+import com.example.fastfoodshop.response.SignInResponse;
+import com.example.fastfoodshop.response.OTPResponse;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
