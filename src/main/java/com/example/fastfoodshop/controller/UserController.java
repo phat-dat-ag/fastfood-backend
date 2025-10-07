@@ -5,7 +5,7 @@ import com.example.fastfoodshop.request.UpdateUserRequest;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.UserService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,7 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Controller
 @RequestMapping("/api/user")
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
 

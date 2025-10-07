@@ -3,7 +3,7 @@ package com.example.fastfoodshop.config;
 import com.example.fastfoodshop.security.JwtAccessDeniedHandler;
 import com.example.fastfoodshop.security.JwtAuthenticationEntryPoint;
 import com.example.fastfoodshop.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -20,16 +20,14 @@ import org.springframework.web.filter.CorsFilter;
 import java.util.Arrays;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Autowired
-    private JwtAuthenticationEntryPoint authenticationEntryPoint;
+    private final JwtAuthenticationEntryPoint authenticationEntryPoint;
 
-    @Autowired
-    private JwtAccessDeniedHandler accessDeniedHandler;
+    private final JwtAccessDeniedHandler accessDeniedHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {

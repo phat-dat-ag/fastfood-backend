@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.security;
 
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -17,12 +17,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private CustomUserDetailsService userDetailsService;
+    private final CustomUserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(
