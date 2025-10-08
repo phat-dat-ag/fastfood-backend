@@ -112,7 +112,7 @@ public class UserService {
             }
             User user = optionalUser.get();
 //            update new avatar
-            Map<?, ?> result = cloudinaryService.uploadImage(file);
+            Map<?, ?> result = cloudinaryService.uploadImage(file, "avatar");
             String avatarUrl = (String) result.get("secure_url");
             String avatarPublicId = (String) result.get("public_id");
 

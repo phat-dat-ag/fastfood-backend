@@ -14,10 +14,10 @@ import java.util.Map;
 public class CloudinaryService {
     private final Cloudinary cloudinary;
 
-    public Map<?, ?> uploadImage(MultipartFile file) {
+    public Map<?, ?> uploadImage(MultipartFile file, String folderName) {
         try {
             return cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
-                            "folder", "avatar",
+                            "folder", folderName,
                             "resource_type", "auto"
                     )
             );
