@@ -26,7 +26,10 @@ public class UserService {
         return userRepository.findByPhone(phone);
     }
 
-    //    create new user
+    public User findUserOrThrow(String phone) {
+        return userRepository.findByPhone(phone).orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
+    }
+
     public User createUser(String name, String phone, String email, String rawPassword, String birthdayString) {
         LocalDate birthday = LocalDate.parse(birthdayString);
 
@@ -43,7 +46,6 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    //    update a user
     public User updateUser(User user, String name, String phone, String email, String rawPassword, String birthdayString) {
         LocalDate birthday = LocalDate.parse(birthdayString);
 
@@ -65,13 +67,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> updateUser(String phone, String name, String birthdayString, String email) {
-        Optional<User> optionalUser = userRepository.findByPhone(phone);
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("USER_INVALID", "Không tìm thấy tài khoản"));
-        }
+    public User updateUser(User user) {
+        return userRepository.save(user);
+    }
 
-        User user = optionalUser.get();
+    public ResponseEntity<ResponseWrapper<UserDTO>> updateUser(String phone, String name, String birthdayString, String email) {
+        User user = findUserOrThrow(phone);
         LocalDate birthday = LocalDate.parse(birthdayString);
         user.setName(name);
         user.setEmail(email);
@@ -86,11 +87,7 @@ public class UserService {
     }
 
     public ResponseEntity<ResponseWrapper<UserDTO>> changePassword(String phone, String password, String newPassword) {
-        Optional<User> optionalUser = userRepository.findByPhone(phone);
-        if (optionalUser.isEmpty()) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("USER_INVALID", "Không tìm thấy tài khoản"));
-        }
-        User user = optionalUser.get();
+        User user = findUserOrThrow(phone);
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_PASSWORD", "Mật khẩu chưa chính xác"));
         }
@@ -100,41 +97,32 @@ public class UserService {
         return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(updatedUser)));
     }
 
-    public User updateUser(User user) {
-        return userRepository.save(user);
+    public void handleAvatarImage(User user, MultipartFile file) {
+        Map<?, ?> result = cloudinaryService.uploadImage(file, "avatar");
+        String avatarUrl = (String) result.get("secure_url");
+        String avatarPublicId = (String) result.get("public_id");
+
+        String oldAvatarPublicId = user.getAvatarPublicId();
+
+        user.setAvatarUrl(avatarUrl);
+        user.setAvatarPublicId(avatarPublicId);
+
+        if (oldAvatarPublicId != null && !oldAvatarPublicId.isEmpty()) {
+            try {
+                boolean isSuccess = cloudinaryService.deleteImage(oldAvatarPublicId);
+                if (isSuccess) {
+                    System.out.println("Dọn dẹp ảnh cũ thành công");
+                }
+            } catch (Exception e) {
+                System.out.println("Ngoại lệ khi dọn dẹp ảnh cũ: " + e.getMessage());
+            }
+        }
     }
 
     public ResponseEntity<ResponseWrapper<?>> updateAvatar(String phone, MultipartFile file) {
         try {
-            Optional<User> optionalUser = userRepository.findByPhone(phone);
-            if (optionalUser.isEmpty()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error("USER_INVALID", "Không tìm thấy tài khoản"));
-            }
-            User user = optionalUser.get();
-//            update new avatar
-            Map<?, ?> result = cloudinaryService.uploadImage(file, "avatar");
-            String avatarUrl = (String) result.get("secure_url");
-            String avatarPublicId = (String) result.get("public_id");
-
-            String oldAvatarPublicId = user.getAvatarPublicId();
-
-            user.setAvatarUrl(avatarUrl);
-            user.setAvatarPublicId(avatarPublicId);
-
-//            delete current avatar
-            if (oldAvatarPublicId != null && !oldAvatarPublicId.isEmpty()) {
-                try {
-                    boolean isSuccess = cloudinaryService.deleteImage(oldAvatarPublicId);
-                    if (isSuccess) {
-                        System.out.println("Dọn dẹp ảnh cũ thành công");
-                    } else {
-                        System.out.println("Dọn dẹp ảnh cũ thất bại, có thể không tìm thấy,...");
-                    }
-                } catch (Exception e) {
-                    System.out.println("Ngoại lệ khi dọn dẹp ảnh cũ: " + e.getMessage());
-                }
-            }
-
+            User user = findUserOrThrow(phone);
+            handleAvatarImage(user, file);
             User updatedUser = userRepository.save(user);
             return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(updatedUser)));
         } catch (Exception e) {
