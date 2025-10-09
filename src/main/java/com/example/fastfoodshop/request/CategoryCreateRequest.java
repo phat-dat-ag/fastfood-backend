@@ -12,7 +12,7 @@ public class CategoryCreateRequest {
     private String name;
 
     @NotBlank(message = "Mô tả danh mục không được để trống")
-    @Size(max = 100, message = "Mô tả danh mục tối đa 15 kí tự")
+    @Size(max = 100, message = "Mô tả danh mục tối đa 100 kí tự")
     private String description;
 
     private MultipartFile categoryImageUrl;

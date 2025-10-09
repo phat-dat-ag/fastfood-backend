@@ -7,16 +7,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-@Table(name = "categories")
-public class Category extends BaseAuditableEntity {
+@Table(name = "products")
+public class Product extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,18 +24,25 @@ public class Category extends BaseAuditableEntity {
     @Column(name = "slug", nullable = false, unique = true)
     private String slug;
 
+    @Column(name = "price", nullable = false)
+    private int price;
+
     @Column(name = "description", nullable = false, length = 100)
     private String description;
 
-    @Column(name = "category_image_url")
-    private String categoryImageUrl;
+    @Column(name = "product_image_url")
+    private String productImageUrl;
 
-    @Column(name = "category_image_public_id")
-    private String categoryImagePublicId;
+    @Column(name = "product_image_public_id")
+    private String productImagePublicId;
+
+    @Column(name = "is_activated", nullable = false)
+    private boolean isActivated;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;
 
-    @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Product> products = new ArrayList<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 }
