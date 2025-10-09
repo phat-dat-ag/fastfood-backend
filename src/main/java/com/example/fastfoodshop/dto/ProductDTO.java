@@ -8,6 +8,8 @@ import java.time.ZoneId;
 
 @Data
 public class ProductDTO {
+    private Long categoryId;
+    private String categoryName;
     private Long id;
     private String name;
     private String slug;
@@ -20,6 +22,8 @@ public class ProductDTO {
     private boolean isDeleted;
 
     public ProductDTO(Product product) {
+        this.categoryId = product.getCategory().getId();
+        this.categoryName = product.getCategory().getName();
         this.id = product.getId();
         this.name = product.getName();
         this.slug = product.getSlug();
