@@ -19,5 +19,5 @@ public class CategoryUpdateRequest {
     @Size(max = 100, message = "Mô tả danh mục tối đa 100 kí tự")
     private String description;
 
-    private MultipartFile categoryImageUrl;
+    private MultipartFile imageUrl;
 }

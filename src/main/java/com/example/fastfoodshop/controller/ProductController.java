@@ -20,7 +20,7 @@ public class ProductController {
 
     @PostMapping()
     public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(@ModelAttribute ProductCreateRequest req) {
-        return productService.createProduct(req.getCategory_id(), req.getName(), req.getDescription(), req.getPrice(), req.isActivated(), req.getProductImageUrl());
+        return productService.createProduct(req.getCategory_id(), req.getName(), req.getDescription(), req.getPrice(), req.isActivated(), req.getImageUrl());
     }
 
     @GetMapping()

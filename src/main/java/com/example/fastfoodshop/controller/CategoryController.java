@@ -20,7 +20,7 @@ public class CategoryController {
 
     @PostMapping()
     public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(@ModelAttribute CategoryCreateRequest req) {
-        return categoryService.createCategory(req.getName(), req.getDescription(), req.getCategoryImageUrl());
+        return categoryService.createCategory(req.getName(), req.getDescription(), req.getImageUrl());
     }
 
     @GetMapping()
@@ -30,7 +30,7 @@ public class CategoryController {
 
     @PutMapping()
     public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(@ModelAttribute CategoryUpdateRequest req) {
-        return categoryService.updateCategory(req.getId(), req.getName(), req.getDescription(), req.getCategoryImageUrl());
+        return categoryService.updateCategory(req.getId(), req.getName(), req.getDescription(), req.getImageUrl());
     }
 
     @DeleteMapping()

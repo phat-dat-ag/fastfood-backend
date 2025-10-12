@@ -14,7 +14,7 @@ public class CategoryDTO {
     private String name;
     private String slug;
     private String description;
-    private String categoryImageUrl;
+    private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isDeleted;
@@ -25,7 +25,7 @@ public class CategoryDTO {
         this.name = category.getName();
         this.slug = category.getSlug();
         this.description = category.getDescription();
-        this.categoryImageUrl = category.getCategoryImageUrl();
+        this.imageUrl = category.getImageUrl();
         this.createdAt = category.getCreatedAt().
                 atZone(ZoneId.systemDefault())
                 .toLocalDateTime();

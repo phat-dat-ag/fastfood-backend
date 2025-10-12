@@ -40,11 +40,11 @@ public class ProductService {
         if (imageFile == null || imageFile.isEmpty())
             return;
 
-        String oldPublicId = product.getProductImagePublicId();
+        String oldPublicId = product.getImagePublicId();
         Map<?, ?> result = cloudinaryService.uploadImage(imageFile, "product");
 
-        product.setProductImageUrl((String) result.get("secure_url"));
-        product.setProductImagePublicId((String) result.get("public_id"));
+        product.setImageUrl((String) result.get("secure_url"));
+        product.setImagePublicId((String) result.get("public_id"));
 
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {

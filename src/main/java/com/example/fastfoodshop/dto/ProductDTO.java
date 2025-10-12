@@ -15,7 +15,7 @@ public class ProductDTO {
     private String slug;
     private int price;
     private String description;
-    private String productImageUrl;
+    private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActivated;
@@ -29,7 +29,7 @@ public class ProductDTO {
         this.slug = product.getSlug();
         this.price = product.getPrice();
         this.description = product.getDescription();
-        this.productImageUrl = product.getProductImageUrl();
+        this.imageUrl = product.getImageUrl();
         this.createdAt = product.getCreatedAt().
                 atZone(ZoneId.systemDefault())
                 .toLocalDateTime();

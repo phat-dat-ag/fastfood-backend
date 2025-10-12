@@ -39,11 +39,11 @@ public class CategoryService {
         if (imageFile == null || imageFile.isEmpty())
             return;
 
-        String oldPublicId = category.getCategoryImagePublicId();
+        String oldPublicId = category.getImagePublicId();
         Map<?, ?> result = cloudinaryService.uploadImage(imageFile, "category");
 
-        category.setCategoryImageUrl((String) result.get("secure_url"));
-        category.setCategoryImagePublicId((String) result.get("public_id"));
+        category.setImageUrl((String) result.get("secure_url"));
+        category.setImagePublicId((String) result.get("public_id"));
 
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {

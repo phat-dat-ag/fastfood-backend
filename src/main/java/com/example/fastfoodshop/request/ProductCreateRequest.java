@@ -27,5 +27,5 @@ public class ProductCreateRequest {
     @NotNull(message = "Trang thái sản phẩm không được để trống")
     private boolean activated;
 
-    private MultipartFile productImageUrl;
+    private MultipartFile imageUrl;
 }
