@@ -32,6 +32,10 @@ public class ProductService {
         return uniqueSlug;
     }
 
+    public Product findProductOrThrow(Long id) {
+        return productRepository.findById(id).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+    }
+
     public void handleProductImage(Product product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
@@ -87,6 +91,21 @@ public class ProductService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_PRODUCT_FAILED",
                     "Lỗi lấy sản phẩm: " + e.getMessage())
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ProductDTO>> deleteCategory(Long id) {
+        try {
+            Product product = findProductOrThrow(id);
+            product.setDeleted(true);
+
+            Product deletedProduct = productRepository.save(product);
+            return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(deletedProduct)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DELETE_PRODUCT_FAILED",
+                    "Lỗi xóa sản phẩm " + e.getMessage())
             );
         }
     }

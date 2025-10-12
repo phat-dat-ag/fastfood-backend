@@ -7,10 +7,7 @@ import com.example.fastfoodshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 
@@ -28,5 +25,10 @@ public class ProductController {
     @GetMapping()
     public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts() {
         return productService.getProducts();
+    }
+
+    @DeleteMapping()
+    public ResponseEntity<ResponseWrapper<ProductDTO>> deleteProduct(@RequestParam("id") Long id) {
+        return productService.deleteCategory(id);
     }
 }
