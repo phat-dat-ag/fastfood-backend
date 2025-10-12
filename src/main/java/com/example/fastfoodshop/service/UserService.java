@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -69,6 +71,24 @@ public class UserService {
 
     public User updateUser(User user) {
         return userRepository.save(user);
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomer() {
+        try {
+            List<User> users = userRepository.findAll();
+
+            ArrayList<UserDTO> userDTOs = new ArrayList<>();
+            for (User user : users) {
+                userDTOs.add(new UserDTO(user));
+            }
+
+            return ResponseEntity.ok(ResponseWrapper.success(userDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_USER_FAILED",
+                    "Lỗi khi lấy các thông tin khách hàng"
+            ));
+        }
     }
 
     public ResponseEntity<ResponseWrapper<UserDTO>> updateUser(String phone, String name, String birthdayString, String email) {
