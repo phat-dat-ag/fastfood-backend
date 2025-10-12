@@ -79,6 +79,25 @@ public class ProductService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(Long id, String name, String description, boolean isActivated, MultipartFile imageFile) {
+        try {
+            Product product = findProductOrThrow(id);
+            product.setName(name);
+            product.setDescription(description);
+            product.setActivated(isActivated);
+
+            handleProductImage(product, imageFile);
+
+            Product savedProduct = productRepository.save(product);
+            return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(savedProduct)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "UPDATE_PRODUCT_FAILED",
+                    "Lỗi cập nhật thông tin sản phẩm"
+            ));
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts() {
         try {
             ArrayList<Product> products = productRepository.findByIsDeletedFalse();

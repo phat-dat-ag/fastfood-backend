@@ -2,6 +2,7 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.request.ProductCreateRequest;
+import com.example.fastfoodshop.request.ProductUpdateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,11 @@ public class ProductController {
     @GetMapping()
     public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts() {
         return productService.getProducts();
+    }
+
+    @PutMapping()
+    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(@ModelAttribute ProductUpdateRequest req) {
+        return productService.updateProduct(req.getId(), req.getName(), req.getDescription(), req.isActivated(), req.getImageUrl());
     }
 
     @DeleteMapping()
