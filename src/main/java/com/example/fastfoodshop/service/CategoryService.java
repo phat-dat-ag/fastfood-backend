@@ -54,7 +54,7 @@ public class CategoryService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(String name, String description, MultipartFile imageFile) {
+    public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(String name, String description, boolean activated, MultipartFile imageFile) {
         try {
             String slug = generateUniqueSlug(name);
 
@@ -62,6 +62,7 @@ public class CategoryService {
             category.setSlug(slug);
             category.setName(name);
             category.setDescription(description);
+            category.setActivated(activated);
 
             handleCategoryImage(category, imageFile);
 
@@ -75,11 +76,12 @@ public class CategoryService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(Long id, String name, String description, MultipartFile imageFile) {
+    public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(Long id, String name, String description, boolean activated, MultipartFile imageFile) {
         try {
             Category category = findCategoryOrThrow(id);
             category.setName(name);
             category.setDescription(description);
+            category.setActivated(activated);
 
             handleCategoryImage(category, imageFile);
 

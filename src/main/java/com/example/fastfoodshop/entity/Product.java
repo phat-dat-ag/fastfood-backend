@@ -18,7 +18,7 @@ public class Product extends BaseAuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 15)
+    @Column(name = "name", nullable = false, length = 80)
     private String name;
 
     @Column(name = "slug", nullable = false, unique = true)

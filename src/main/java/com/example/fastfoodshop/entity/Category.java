@@ -21,7 +21,7 @@ public class Category extends BaseAuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", nullable = false, length = 15)
+    @Column(name = "name", nullable = false, length = 80)
     private String name;
 
     @Column(name = "slug", nullable = false, unique = true)
@@ -35,6 +35,9 @@ public class Category extends BaseAuditableEntity {
 
     @Column(name = "image_public_id")
     private String imagePublicId;
+
+    @Column(name = "is_activated", nullable = false)
+    private boolean isActivated = false;
 
     @Column(name = "is_deleted", nullable = false)
     private boolean isDeleted = false;

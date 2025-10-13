@@ -17,6 +17,7 @@ public class CategoryDTO {
     private String imageUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean isActivated;
     private boolean isDeleted;
     private ArrayList<ProductDTO> products = new ArrayList<>();
 
@@ -32,6 +33,7 @@ public class CategoryDTO {
         this.updatedAt = category.getUpdatedAt()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
+        this.isActivated = category.isActivated();
         this.isDeleted = category.isDeleted();
         for (Product product : category.getProducts()) {
             this.products.add(new ProductDTO(product));

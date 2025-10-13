@@ -12,7 +12,7 @@ public class ProductUpdateRequest {
     private Long id;
 
     @NotBlank(message = "Tên sản phâ không được để trống")
-    @Size(min = 2, max = 15, message = "Tên sản phẩm từ 2 đến 15 kí tự")
+    @Size(min = 2, max = 80, message = "Tên sản phẩm từ 2 đến 80 kí tự")
     private String name;
 
     @NotBlank(message = "Mô tả sản phẩm không được để trống")
