@@ -1,0 +1,43 @@
+package com.example.fastfoodshop.controller;
+
+import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.request.CartCreateRequest;
+import com.example.fastfoodshop.response.CartResponse;
+import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.service.CartService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
+
+@Controller
+@RequestMapping("/api/cart")
+@RequiredArgsConstructor
+public class CartController {
+    private final CartService cartService;
+
+    @PostMapping()
+    public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody CartCreateRequest req
+    ) {
+        return cartService.addProductToCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
+    }
+
+    @GetMapping()
+    public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return cartService.getCartDetailByUser(userDetails.getUsername());
+    }
+
+    @DeleteMapping()
+    public ResponseEntity<ResponseWrapper<CartDTO>> deleteProductFromCart(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("productId") Long productId
+    ) {
+        return cartService.deleteProductFromCart(userDetails.getUsername(), productId);
+    }
+}

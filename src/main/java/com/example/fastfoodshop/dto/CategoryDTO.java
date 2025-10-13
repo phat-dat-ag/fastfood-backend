@@ -7,6 +7,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class CategoryDTO {
@@ -35,7 +36,8 @@ public class CategoryDTO {
                 .toLocalDateTime();
         this.isActivated = category.isActivated();
         this.isDeleted = category.isDeleted();
-        for (Product product : category.getProducts()) {
+        List<Product> categories = category.getProducts();
+        for (Product product : categories) {
             this.products.add(new ProductDTO(product));
         }
     }
