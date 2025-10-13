@@ -6,6 +6,7 @@ import com.example.fastfoodshop.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,6 +61,7 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers(HttpMethod.GET,"/api/admin/category/**").permitAll()
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "STAFF", "ADMIN")
                         .requestMatchers("/api/staff/**").hasRole("STAFF")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
