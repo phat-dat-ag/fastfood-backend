@@ -62,6 +62,23 @@ public class CartService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<CartDTO>> updateCart(String userPhone, Long productId, int quantity) {
+        try {
+            User user = userService.findUserOrThrow(userPhone);
+            Cart cart = cartRepository.findByUserAndProduct_Id(user, productId);
+            cart.setQuantity(quantity);
+
+            Cart updatedCart = cartRepository.save(cart);
+            return ResponseEntity.ok(ResponseWrapper.success(new CartDTO(updatedCart)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "UPDATE_cART_FAILED",
+                            "Lỗi cập nhật giỏ hàng"
+                    )
+            );
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<CartDTO>> deleteProductFromCart(String phone, Long productId) {
         try {
             User user = userService.findUserOrThrow(phone);
