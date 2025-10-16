@@ -22,15 +22,26 @@ public class PromotionController {
         return promotionService.createPromotionCategory(request);
     }
 
+    @PostMapping("/product")
+    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionProduct
+            (@RequestBody PromotionCreateRequest request) {
+        return promotionService.createPromotionProduct(request);
+    }
+
     @GetMapping("/category")
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory() {
         return promotionService.getPromotionCategory();
     }
 
-    @DeleteMapping("/category")
+    @GetMapping("/product")
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct() {
+        return promotionService.getPromotionProduct();
+    }
+
+    @DeleteMapping()
     public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotionCategory(
             @RequestParam("promotionId") Long promotionId
     ) {
-        return promotionService.deletePromotionCategory(promotionId);
+        return promotionService.deletePromotion(promotionId);
     }
 }

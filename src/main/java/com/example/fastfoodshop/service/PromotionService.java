@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
@@ -18,6 +19,7 @@ import java.util.List;
 public class PromotionService {
     private final PromotionRepository promotionRepository;
     private final CategoryService categoryService;
+    private final ProductService productService;
 
     public boolean checkUniqueCode(String code) {
         return promotionRepository.findByCode(code).isPresent();
@@ -68,6 +70,30 @@ public class PromotionService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionProduct(PromotionCreateRequest request) {
+        try {
+            if (checkUniqueCode(request.getCode())) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                                "CREATE_PROMOTION_FAILED",
+                                "Mã khuyến mãi đã tồn tại"
+                        )
+                );
+            }
+            Product product = productService.findProductOrThrow(request.getProductId());
+
+            Promotion promotion = buildPromotionCategoryFromRequest(request);
+            promotion.setProduct(product);
+            Promotion savedPromotion = promotionRepository.save(promotion);
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(savedPromotion)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "CREATE_PROMOTION_FAILED",
+                            "Lỗi khi tạo mã khuyến mãi " + e.getMessage()
+                    )
+            );
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory() {
         try {
             List<Promotion> categoryPromotions = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse();
@@ -81,7 +107,20 @@ public class PromotionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotionCategory(Long promotionId) {
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct() {
+        try {
+            List<Promotion> categoryPromotions = promotionRepository.findByProductIsNotNullAndIsDeletedFalse();
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotions)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "GET_PROMOTION_PRODUCT_FAILED",
+                            "Lỗi khi lấy mã khuyến mãi theo sản phẩm " + e.getMessage()
+                    )
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotion(Long promotionId) {
         try {
             Promotion promotion = findPromotionOrThrow(promotionId);
             promotion.setDeleted(true);
@@ -89,8 +128,8 @@ public class PromotionService {
             return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(deletedPromotion)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "DELETE_PROMOTION_CATEGORY_FAILED",
-                            "Lỗi khi xóa mã khuyến mãi theo danh mục " + e.getMessage()
+                            "DELETE_PROMOTION_FAILED",
+                            "Lỗi khi xóa mã khuyến mãi " + e.getMessage()
                     )
             );
         }
