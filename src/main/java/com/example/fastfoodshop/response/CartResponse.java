@@ -16,4 +16,8 @@ public class CartResponse {
             this.carts.add(new CartDTO(cart));
         }
     }
+
+    public CartResponse(ArrayList<CartDTO> cartDTOs) {
+        this.carts.addAll(cartDTOs);
+    }
 }

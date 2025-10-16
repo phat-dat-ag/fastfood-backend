@@ -1,7 +1,9 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.entity.Cart;
+import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.repository.CartRepository;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +21,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CartService {
     private final UserService userService;
+    private final CategoryService categoryService;
     private final ProductService productService;
     private final CartRepository cartRepository;
 
@@ -52,7 +56,17 @@ public class CartService {
         try {
             User user = userService.findUserOrThrow(phone);
             List<Cart> carts = cartRepository.findByUser(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new CartResponse(carts)));
+            ArrayList<CartDTO> cartDTOs = new ArrayList<>();
+            for (Cart cart : carts) {
+                Category category = cart.getProduct().getCategory();
+                ProductDTO productDTO = new ProductDTO(cart.getProduct());
+                categoryService.applyPromotion(productDTO, category);
+                CartDTO cartDTO = new CartDTO(cart);
+                cartDTO.setProduct(productDTO);
+                cartDTOs.add(cartDTO);
+            }
+            CartResponse cartResponses = new CartResponse(cartDTOs);
+            return ResponseEntity.ok(ResponseWrapper.success(cartResponses));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_CART_DETAIL_FAILED",

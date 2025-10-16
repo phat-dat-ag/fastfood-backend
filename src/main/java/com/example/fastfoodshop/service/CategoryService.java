@@ -1,15 +1,20 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.CategoryDTO;
+import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.util.PromotionUtils;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +57,47 @@ public class CategoryService {
                 System.out.println("Ngoai lệ khi dọn ảnh danh mục cũ: " + e.getMessage());
             }
         }
+    }
+
+    private boolean isValidPromotion(PromotionDTO promotionDTO) {
+        LocalDateTime now = LocalDateTime.now();
+        return promotionDTO.isActivated()
+                && !promotionDTO.isDeleted()
+                && !promotionDTO.isGlobal()
+                && promotionDTO.getStartAt().isBefore(now)
+                && promotionDTO.getEndAt().isAfter(now)
+                && promotionDTO.getQuantity() > promotionDTO.getUsedQuantity();
+    }
+
+    public void applyPromotion(ProductDTO productDTO, Category category) {
+        PromotionDTO chosenPromotion = null;
+
+        for (PromotionDTO promotionDTO : productDTO.getPromotions()) {
+            if (isValidPromotion(promotionDTO)) {
+                chosenPromotion = promotionDTO;
+                break;
+            }
+        }
+
+        if (chosenPromotion == null) {
+            for (Promotion promotion : category.getPromotions()) {
+                PromotionDTO promotionDTO = new PromotionDTO(promotion);
+                if (isValidPromotion(promotionDTO)) {
+                    chosenPromotion = promotionDTO;
+                    break;
+                }
+            }
+        }
+
+        int originalPrice = productDTO.getPrice();
+        int discountedPrice = originalPrice;
+
+        if (chosenPromotion != null) {
+            discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, chosenPromotion);
+            productDTO.setPromotionId(chosenPromotion.getId());
+        }
+
+        productDTO.setDiscountedPrice(discountedPrice);
     }
 
     public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(String name, String description, boolean activated, MultipartFile imageFile) {
@@ -100,7 +146,11 @@ public class CategoryService {
             List<Category> categories = categoryRepository.findByIsDeletedFalse();
             ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
             for (Category category : categories) {
-                categoryDTOs.add(new CategoryDTO(category));
+                CategoryDTO categoryDTO = new CategoryDTO(category);
+                for (ProductDTO productDTO : categoryDTO.getProducts()) {
+                    applyPromotion(productDTO, category);
+                }
+                categoryDTOs.add(categoryDTO);
             }
             return ResponseEntity.ok(ResponseWrapper.success(categoryDTOs));
         } catch (Exception e) {

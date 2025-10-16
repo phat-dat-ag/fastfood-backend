@@ -1,10 +1,12 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.entity.Promotion;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
 
 @Data
 public class ProductDTO {
@@ -20,6 +22,9 @@ public class ProductDTO {
     private LocalDateTime updatedAt;
     private boolean isActivated;
     private boolean isDeleted;
+    private ArrayList<PromotionDTO> promotions = new ArrayList<>();
+    private int discountedPrice;
+    private Long promotionId;
 
     public ProductDTO(Product product) {
         this.categoryId = product.getCategory().getId();
@@ -40,5 +45,11 @@ public class ProductDTO {
         ;
         this.isActivated = product.isActivated();
         this.isDeleted = product.isDeleted();
+        this.discountedPrice = product.getPrice();
+        this.promotionId = null;
+
+        for (Promotion promotion : product.getPromotions()) {
+            this.promotions.add(new PromotionDTO(promotion));
+        }
     }
 }
