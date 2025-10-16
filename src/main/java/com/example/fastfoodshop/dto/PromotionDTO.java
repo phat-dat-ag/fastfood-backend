@@ -24,9 +24,7 @@ public class PromotionDTO {
     private boolean isDeleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private CategoryDTO category;
-    private ProductDTO product;
-    private UserDTO user;
+    private String name;
 
     public PromotionDTO(Promotion promotion) {
         this.id = promotion.getId();
@@ -49,8 +47,12 @@ public class PromotionDTO {
         this.updatedAt = promotion.getUpdatedAt()
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
-        this.category = promotion.getCategory() != null ? new CategoryDTO(promotion.getCategory()) : null;
-        this.product = promotion.getProduct() != null ? new ProductDTO(promotion.getProduct()) : null;
-        this.user = promotion.getUser() != null ? new UserDTO(promotion.getUser()) : null;
+        if (promotion.getCategory() != null)
+            this.name = promotion.getCategory().getName();
+        else if (promotion.getProduct() != null)
+            this.name = promotion.getProduct().getName();
+        else if (promotion.getUser() != null)
+            this.name = promotion.getUser().getName();
+        else this.name = "";
     }
 }

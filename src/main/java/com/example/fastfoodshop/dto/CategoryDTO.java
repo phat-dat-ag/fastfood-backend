@@ -36,8 +36,8 @@ public class CategoryDTO {
                 .toLocalDateTime();
         this.isActivated = category.isActivated();
         this.isDeleted = category.isDeleted();
-        List<Product> categories = category.getProducts();
-        for (Product product : categories) {
+        List<Product> productList = category.getProducts();
+        for (Product product : productList) {
             this.products.add(new ProductDTO(product));
         }
     }
