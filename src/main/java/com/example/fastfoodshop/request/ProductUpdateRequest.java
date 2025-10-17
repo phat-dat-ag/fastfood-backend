@@ -23,4 +23,5 @@ public class ProductUpdateRequest {
     private boolean isActivated;
 
     private MultipartFile imageUrl;
+    private MultipartFile modelUrl;
 }

@@ -20,7 +20,10 @@ public class ProductController {
 
     @PostMapping()
     public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(@ModelAttribute ProductCreateRequest req) {
-        return productService.createProduct(req.getCategory_id(), req.getName(), req.getDescription(), req.getPrice(), req.isActivated(), req.getImageUrl());
+        return productService.createProduct(
+                req.getCategory_id(), req.getName(), req.getDescription(), req.getPrice(), req.isActivated(),
+                req.getImageUrl(), req.getModelUrl()
+        );
     }
 
     @GetMapping()
@@ -28,9 +31,19 @@ public class ProductController {
         return productService.getProducts();
     }
 
+    @GetMapping("/detail")
+    public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(
+            @RequestParam("slug") String slug
+    ) {
+        return productService.getProductBySlug(slug);
+    }
+
     @PutMapping()
     public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(@ModelAttribute ProductUpdateRequest req) {
-        return productService.updateProduct(req.getId(), req.getName(), req.getDescription(), req.isActivated(), req.getImageUrl());
+        return productService.updateProduct(
+                req.getId(), req.getName(), req.getDescription(), req.isActivated(),
+                req.getImageUrl(), req.getModelUrl()
+        );
     }
 
     @DeleteMapping()

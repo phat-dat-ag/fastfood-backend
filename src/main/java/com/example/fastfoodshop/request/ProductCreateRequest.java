@@ -9,7 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class ProductCreateRequest {
-    @NotNull(message = "ID danh mujc không được để trống")
+    @NotNull(message = "ID danh mục không được để trống")
     private Long category_id;
 
     @NotBlank(message = "Tên sản phẩm không được để trống")
@@ -28,4 +28,5 @@ public class ProductCreateRequest {
     private boolean activated;
 
     private MultipartFile imageUrl;
+    private MultipartFile modelUrl;
 }

@@ -21,7 +21,7 @@ public class ProductService {
     private final CategoryService categoryService;
     private final ProductRepository productRepository;
 
-    public String generateUniqueSlug(String name) {
+    private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
         String uniqueSlug = baseSlug;
         int counter = 1;
@@ -36,7 +36,11 @@ public class ProductService {
         return productRepository.findById(id).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
     }
 
-    public void handleProductImage(Product product, MultipartFile imageFile) {
+    public Product findProductOrThrow(String slug) {
+        return productRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+    }
+
+    private void handleProductImage(Product product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
 
@@ -55,8 +59,28 @@ public class ProductService {
         }
     }
 
+    private void handleProductModel3D(Product product, MultipartFile modelFile) {
+        if (modelFile == null || modelFile.isEmpty()) return;
+
+        String oldPublicId = product.getModelPublicId();
+        Map<?, ?> result = cloudinaryService.uploadImage(modelFile, "product_model");
+
+        product.setModelUrl((String) result.get("secure_url"));
+        product.setModelPublicId((String) result.get("public_id"));
+
+        if (oldPublicId != null && !oldPublicId.isEmpty()) {
+            try {
+                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+            } catch (Exception e) {
+                System.out.println("Ngoai lệ khi dọn mô hình 3D sản phẩm cũ: " + e.getMessage());
+            }
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(
-            Long category_id, String name, String description, int price, boolean activated, MultipartFile imageFile) {
+            Long category_id, String name, String description, int price, boolean activated,
+            MultipartFile imageFile, MultipartFile modelFile
+    ) {
         try {
             Category category = categoryService.findCategoryOrThrow(category_id);
 
@@ -72,14 +96,22 @@ public class ProductService {
             product.setDeleted(false);
 
             handleProductImage(product, imageFile);
+            handleProductModel3D(product, modelFile);
             Product savedProduct = productRepository.save(product);
             return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(savedProduct)));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("CREATE_PRODUCT_FAILED", "Lỗi tạo sản phẩm " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "CREATE_PRODUCT_FAILED",
+                            "Lỗi tạo sản phẩm " + e.getMessage()
+                    )
+            );
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(Long id, String name, String description, boolean isActivated, MultipartFile imageFile) {
+    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(
+            Long id, String name, String description, boolean isActivated,
+            MultipartFile imageFile, MultipartFile modelFile
+    ) {
         try {
             Product product = findProductOrThrow(id);
             product.setName(name);
@@ -87,14 +119,17 @@ public class ProductService {
             product.setActivated(isActivated);
 
             handleProductImage(product, imageFile);
+            handleProductModel3D(product, modelFile);
 
             Product savedProduct = productRepository.save(product);
             return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(savedProduct)));
         } catch (Exception e) {
+            System.out.println("Lỗi cập nhật SP: " + e.getMessage());
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "UPDATE_PRODUCT_FAILED",
-                    "Lỗi cập nhật thông tin sản phẩm"
-            ));
+                            "UPDATE_PRODUCT_FAILED",
+                            "Lỗi cập nhật thông tin sản phẩm"
+                    )
+            );
         }
     }
 
@@ -107,6 +142,21 @@ public class ProductService {
             }
             return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
         } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_PRODUCT_FAILED",
+                    "Lỗi lấy sản phẩm: " + e.getMessage())
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(String slug) {
+        try {
+            Product product = findProductOrThrow(slug);
+            Category category = product.getCategory();
+            ProductDTO productDTO = new ProductDTO(product);
+            categoryService.applyPromotion(productDTO, category);
+            return ResponseEntity.ok(ResponseWrapper.success(productDTO));
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_PRODUCT_FAILED",
                     "Lỗi lấy sản phẩm: " + e.getMessage())

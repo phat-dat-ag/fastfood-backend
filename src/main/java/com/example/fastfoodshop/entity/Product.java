@@ -39,6 +39,12 @@ public class Product extends BaseAuditableEntity {
     @Column(name = "image_public_id")
     private String imagePublicId;
 
+    @Column(name = "model_url")
+    private String modelUrl;
+
+    @Column(name = "model_public_id")
+    private String modelPublicId;
+
     @Column(name = "is_activated", nullable = false)
     private boolean isActivated;
 

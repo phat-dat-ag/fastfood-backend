@@ -18,6 +18,7 @@ public class ProductDTO {
     private int price;
     private String description;
     private String imageUrl;
+    private String modelUrl;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActivated;
@@ -35,6 +36,7 @@ public class ProductDTO {
         this.price = product.getPrice();
         this.description = product.getDescription();
         this.imageUrl = product.getImageUrl();
+        this.modelUrl = product.getModelUrl();
         this.createdAt = product.getCreatedAt().
                 atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
