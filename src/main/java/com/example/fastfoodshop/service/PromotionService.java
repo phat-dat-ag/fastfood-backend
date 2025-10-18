@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -131,8 +133,8 @@ public class PromotionService {
 
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct() {
         try {
-            List<Promotion> categoryPromotions = promotionRepository.findByProductIsNotNullAndIsDeletedFalse();
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotions)));
+            List<Promotion> productPromotions = promotionRepository.findByProductIsNotNullAndIsDeletedFalse();
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(productPromotions)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",
@@ -144,8 +146,29 @@ public class PromotionService {
 
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder() {
         try {
-            List<Promotion> categoryPromotions = promotionRepository.findGlobalOrderPromotions();
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotions)));
+            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotions();
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(orderPromotions)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "GET_PROMOTION_PRODUCT_FAILED",
+                            "Lỗi khi lấy mã khuyến mãi cho đơn hàng " + e.getMessage()
+                    )
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getValidPromotionOrder() {
+        try {
+            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotions();
+            List<Promotion> validOrderPromotions = new ArrayList<>();
+            LocalDateTime now = LocalDateTime.now();
+
+            for (Promotion promotion : orderPromotions) {
+                if (!promotion.isDeleted() && promotion.isActivated() && now.isAfter(promotion.getStartAt()) && now.isBefore(promotion.getEndAt())) {
+                    validOrderPromotions.add(promotion);
+                }
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(validOrderPromotions)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",

@@ -49,6 +49,11 @@ public class PromotionController {
         return promotionService.getPromotionOrder();
     }
 
+    @GetMapping("/order/valid")
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getValidPromotionOrder() {
+        return promotionService.getValidPromotionOrder();
+    }
+
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotionCategory(
             @RequestParam("promotionId") Long promotionId
