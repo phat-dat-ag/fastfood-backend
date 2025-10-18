@@ -28,6 +28,12 @@ public class PromotionController {
         return promotionService.createPromotionProduct(request);
     }
 
+    @PostMapping("/order")
+    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionOrder
+            (@RequestBody PromotionCreateRequest request) {
+        return promotionService.createPromotionOrder(request);
+    }
+
     @GetMapping("/category")
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory() {
         return promotionService.getPromotionCategory();
@@ -36,6 +42,11 @@ public class PromotionController {
     @GetMapping("/product")
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct() {
         return promotionService.getPromotionProduct();
+    }
+
+    @GetMapping("/order")
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder() {
+        return promotionService.getPromotionOrder();
     }
 
     @DeleteMapping()

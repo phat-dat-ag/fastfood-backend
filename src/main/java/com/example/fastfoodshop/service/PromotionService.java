@@ -94,6 +94,28 @@ public class PromotionService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionOrder(PromotionCreateRequest request) {
+        try {
+            if (checkUniqueCode(request.getCode())) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                                "CREATE_PROMOTION_FAILED",
+                                "Mã khuyến mãi đã tồn tại"
+                        )
+                );
+            }
+
+            Promotion promotion = buildPromotionCategoryFromRequest(request);
+            Promotion savedPromotion = promotionRepository.save(promotion);
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(savedPromotion)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "CREATE_PROMOTION_FAILED",
+                            "Lỗi khi tạo mã khuyến mãi " + e.getMessage()
+                    )
+            );
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory() {
         try {
             List<Promotion> categoryPromotions = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse();
@@ -115,6 +137,19 @@ public class PromotionService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",
                             "Lỗi khi lấy mã khuyến mãi theo sản phẩm " + e.getMessage()
+                    )
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder() {
+        try {
+            List<Promotion> categoryPromotions = promotionRepository.findGlobalOrderPromotions();
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotions)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "GET_PROMOTION_PRODUCT_FAILED",
+                            "Lỗi khi lấy mã khuyến mãi cho đơn hàng " + e.getMessage()
                     )
             );
         }
