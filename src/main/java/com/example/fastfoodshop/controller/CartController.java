@@ -29,9 +29,10 @@ public class CartController {
 
     @GetMapping()
     public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(
-            @AuthenticationPrincipal UserDetails userDetails
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("code") String code
     ) {
-        return cartService.getCartDetailByUser(userDetails.getUsername());
+        return cartService.getCartDetailByUser(userDetails.getUsername(), code);
     }
 
     @PutMapping()

@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
@@ -46,6 +47,35 @@ public class PromotionService {
 
     public Promotion findPromotionOrThrow(Long id) {
         return promotionRepository.findById(id).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
+    }
+
+    public Promotion findPromotionOrThrow(String code) {
+        return promotionRepository.findByCode(code).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
+    }
+
+    public PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice) {
+        try {
+            Promotion promotion = findPromotionOrThrow(promotionCode);
+            if (!promotion.isGlobal())
+                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này không áp dụng cho đơn hàng được");
+            if (!promotion.isActivated())
+                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này đã bị vô hiệu hóa");
+
+            LocalDateTime now = LocalDateTime.now();
+            if (now.isBefore(promotion.getStartAt()))
+                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi chưa có hiệu lực!");
+            if (now.isAfter(promotion.getEndAt()))
+                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi đã hết hiệu lực");
+            if (promotion.getUsedQuantity() >= promotion.getQuantity())
+                return PromotionCodeCheckResultDTO.error("Đã hết lượt khuyến mãi!");
+            if (promotion.getMinSpendAmount() > orderPrice)
+                return PromotionCodeCheckResultDTO.error("Tổng đơn hàng chưa đủ điều kiện khuyến mãi!");
+
+            return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", new PromotionDTO(promotion));
+
+        } catch (Exception e) {
+            return PromotionCodeCheckResultDTO.error("Áp dụng khuyến mãi thất bại: " + e.getMessage());
+        }
     }
 
     public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionCategory(PromotionCreateRequest request) {
