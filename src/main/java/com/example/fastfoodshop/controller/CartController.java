@@ -3,6 +3,7 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.dto.CartDTO;
 import com.example.fastfoodshop.request.CartCreateRequest;
 import com.example.fastfoodshop.request.CartUpdateRequest;
+import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.CartResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CartService;
@@ -27,12 +28,13 @@ public class CartController {
         return cartService.addProductToCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
     }
 
-    @GetMapping()
+    @PostMapping("/my-cart")
     public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("code") String code
+            @RequestParam("code") String code,
+            @RequestBody(required = false) DeliveryRequest deliveryRequest
     ) {
-        return cartService.getCartDetailByUser(userDetails.getUsername(), code);
+        return cartService.getCartDetailByUser(userDetails.getUsername(), code, deliveryRequest);
     }
 
     @PutMapping()

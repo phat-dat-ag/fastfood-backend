@@ -1,13 +1,12 @@
 package com.example.fastfoodshop.response;
 
 import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
-import com.example.fastfoodshop.entity.Cart;
 import lombok.Data;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @Data
 public class CartResponse {
@@ -16,16 +15,8 @@ public class CartResponse {
     private int subtotalPrice;
     private int totalPrice;
     private PromotionCodeCheckResultDTO applyPromotionResult;
-
-    public CartResponse(List<Cart> cartList) {
-        for (Cart cart : cartList) {
-            ProductDTO productDTO = new ProductDTO(cart.getProduct());
-            this.carts.add(new CartDTO(cart));
-            this.originalPrice += (cart.getQuantity() * productDTO.getPrice());
-            this.subtotalPrice += (cart.getQuantity() * productDTO.getDiscountedPrice());
-        }
-        this.totalPrice = this.subtotalPrice;
-    }
+    private DeliveryDTO deliveryInformation;
+    private int deliveryFee;
 
     public CartResponse(ArrayList<CartDTO> cartDTOs) {
         for (CartDTO cartDTO : cartDTOs) {

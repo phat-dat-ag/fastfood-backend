@@ -5,7 +5,7 @@ import com.example.fastfoodshop.enums.PromotionType;
 
 public class PromotionUtils {
     public static int calculateDiscountedPrice(int originalPrice, PromotionDTO promotion) {
-        if (promotion == null) return roundToThousand(originalPrice);
+        if (promotion == null) return NumberUtils.roundToThousand(originalPrice);
 
         double discounted = originalPrice;
 
@@ -22,10 +22,6 @@ public class PromotionUtils {
 
         discounted = Math.max(discounted, 0);
 
-        return roundToThousand((int) discounted);
-    }
-
-    private static int roundToThousand(int value) {
-        return (value / 1000) * 1000;
+        return NumberUtils.roundToThousand((int) discounted);
     }
 }

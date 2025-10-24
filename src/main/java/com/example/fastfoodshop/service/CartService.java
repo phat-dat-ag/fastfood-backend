@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.entity.Cart;
@@ -8,6 +9,7 @@ import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.repository.CartRepository;
+import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.CartResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.PromotionUtils;
@@ -27,6 +29,7 @@ public class CartService {
     private final ProductService productService;
     private final CartRepository cartRepository;
     private final PromotionService promotionService;
+    private final DeliveryService deliveryService;
 
     public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(String userPhone, Long productId, int quantity) {
         try {
@@ -55,7 +58,7 @@ public class CartService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(String phone, String promotionCode) {
+    public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
         try {
             User user = userService.findUserOrThrow(phone);
             List<Cart> carts = cartRepository.findByUser(user);
@@ -76,6 +79,12 @@ public class CartService {
                 int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponses.getSubtotalPrice(), result.getPromotion());
                 cartResponses.setTotalPrice(totalPrice);
             }
+
+            DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
+            cartResponses.setDeliveryInformation(deliveryInformation);
+            cartResponses.setDeliveryFee(deliveryInformation.getFee());
+            int totalPrice = cartResponses.getTotalPrice() + deliveryInformation.getFee();
+            cartResponses.setTotalPrice(totalPrice);
 
             return ResponseEntity.ok(ResponseWrapper.success(cartResponses));
         } catch (Exception e) {
