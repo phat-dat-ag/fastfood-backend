@@ -73,9 +73,9 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomer() {
+    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomers() {
         try {
-            List<User> users = userRepository.findAll();
+            List<User> users = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER);
 
             ArrayList<UserDTO> userDTOs = new ArrayList<>();
             for (User user : users) {
@@ -87,6 +87,24 @@ public class UserService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_USER_FAILED",
                     "Lỗi khi lấy các thông tin khách hàng"
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllStaff() {
+        try {
+            List<User> users = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF);
+
+            ArrayList<UserDTO> userDTOs = new ArrayList<>();
+            for (User user : users) {
+                userDTOs.add(new UserDTO(user));
+            }
+
+            return ResponseEntity.ok(ResponseWrapper.success(userDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_USER_FAILED",
+                    "Lỗi khi lấy các thông tin nhân viên"
             ));
         }
     }
@@ -139,7 +157,7 @@ public class UserService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<?>> updateAvatar(String phone, MultipartFile file) {
+    public ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(String phone, MultipartFile file) {
         try {
             User user = findUserOrThrow(phone);
             handleAvatarImage(user, file);
@@ -148,6 +166,21 @@ public class UserService {
         } catch (Exception e) {
             System.out.println("Lỗi: " + e.getMessage());
             return ResponseEntity.badRequest().body(ResponseWrapper.error("EXCEPTION", "Có ngoại lệ khi cập nhật ảnh đại diện"));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(String phone) {
+        try {
+            User user = findUserOrThrow(phone);
+            user.setDeleted(true);
+            User deleteUser = userRepository.save(user);
+            return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(deleteUser)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                            "DELETE_ACCOUNT_FAILED",
+                            "Lỗi khi xóa tài khoản " + e.getMessage()
+                    )
+            );
         }
     }
 }

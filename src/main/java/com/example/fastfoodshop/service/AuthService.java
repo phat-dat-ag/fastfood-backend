@@ -85,6 +85,11 @@ public class AuthService {
     public ResponseEntity<ResponseWrapper<SignInResponse>> signIn(String phone, String password) {
         try {
             User dbUser = userService.findUserOrThrow(phone);
+
+            if (dbUser.isDeleted()) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_ACCOUNT", "Tài khoản đã bị xóa"));
+            }
+
             if (!dbUser.isActivated()) {
                 return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_ACCOUNT", "Tài khoản chưa được kích hoạt"));
             }

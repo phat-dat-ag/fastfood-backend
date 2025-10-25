@@ -21,13 +21,18 @@ import java.util.ArrayList;
 public class UserController {
     private final UserService userService;
 
-    @GetMapping()
+    @GetMapping("/customers")
     public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomer() {
-        return userService.getAllCustomer();
+        return userService.getAllCustomers();
+    }
+
+    @GetMapping("/staff")
+    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllStaff() {
+        return userService.getAllStaff();
     }
 
     @PostMapping("/update-avatar")
-    public ResponseEntity<ResponseWrapper<?>> updateAvatar(
+    public ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
@@ -48,5 +53,10 @@ public class UserController {
             @RequestBody ChangePasswordRequest req
     ) {
         return userService.changePassword(userDetails.getUsername(), req.getPassword(), req.getNewPassword());
+    }
+
+    @DeleteMapping()
+    public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(@RequestParam("phone") String phone) {
+        return userService.deleteUser(phone);
     }
 }
