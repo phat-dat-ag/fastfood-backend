@@ -103,6 +103,11 @@
             <artifactId>json</artifactId>
             <version>20231013</version>
         </dependency>
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>24.10.0</version> <!-- bản mới nhất -->
+        </dependency>
     </dependencies>
 
     <build>

@@ -58,35 +58,40 @@ public class CartService {
         }
     }
 
+    public CartResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
+        User user = userService.findUserOrThrow(phone);
+        List<Cart> carts = cartRepository.findByUser(user);
+        ArrayList<CartDTO> cartDTOs = new ArrayList<>();
+        for (Cart cart : carts) {
+            Category category = cart.getProduct().getCategory();
+            ProductDTO productDTO = new ProductDTO(cart.getProduct());
+            categoryService.applyPromotion(productDTO, category);
+            CartDTO cartDTO = new CartDTO(cart);
+            cartDTO.setProduct(productDTO);
+            cartDTOs.add(cartDTO);
+        }
+        CartResponse cartResponse = new CartResponse(cartDTOs);
+
+        if (promotionCode != null && !promotionCode.isEmpty()) {
+            PromotionCodeCheckResultDTO result = promotionService.checkPromotionCode(promotionCode, cartResponse.getSubtotalPrice());
+            cartResponse.setApplyPromotionResult(result);
+            int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponse.getSubtotalPrice(), result.getPromotion());
+            cartResponse.setTotalPrice(totalPrice);
+        }
+
+        DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
+        cartResponse.setDeliveryInformation(deliveryInformation);
+        cartResponse.setDeliveryFee(deliveryInformation.getFee());
+        int totalPrice = cartResponse.getTotalPrice() + deliveryInformation.getFee();
+        cartResponse.setTotalPrice(totalPrice);
+
+        return cartResponse;
+    }
+
     public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
         try {
-            User user = userService.findUserOrThrow(phone);
-            List<Cart> carts = cartRepository.findByUser(user);
-            ArrayList<CartDTO> cartDTOs = new ArrayList<>();
-            for (Cart cart : carts) {
-                Category category = cart.getProduct().getCategory();
-                ProductDTO productDTO = new ProductDTO(cart.getProduct());
-                categoryService.applyPromotion(productDTO, category);
-                CartDTO cartDTO = new CartDTO(cart);
-                cartDTO.setProduct(productDTO);
-                cartDTOs.add(cartDTO);
-            }
-            CartResponse cartResponses = new CartResponse(cartDTOs);
-
-            if (promotionCode != null && !promotionCode.isEmpty()) {
-                PromotionCodeCheckResultDTO result = promotionService.checkPromotionCode(promotionCode, cartResponses.getSubtotalPrice());
-                cartResponses.setApplyPromotionResult(result);
-                int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponses.getSubtotalPrice(), result.getPromotion());
-                cartResponses.setTotalPrice(totalPrice);
-            }
-
-            DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
-            cartResponses.setDeliveryInformation(deliveryInformation);
-            cartResponses.setDeliveryFee(deliveryInformation.getFee());
-            int totalPrice = cartResponses.getTotalPrice() + deliveryInformation.getFee();
-            cartResponses.setTotalPrice(totalPrice);
-
-            return ResponseEntity.ok(ResponseWrapper.success(cartResponses));
+            CartResponse cartResponse = getCartResponse(phone, promotionCode, deliveryRequest);
+            return ResponseEntity.ok(ResponseWrapper.success(cartResponse));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_CART_DETAIL_FAILED",
