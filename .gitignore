@@ -39,3 +39,7 @@ build/
 Thumbs.db
 .env
 *.local
+
+# Ignore Spring Boot config files
+src/main/resources/application.properties
+src/main/resources/application-*.properties
