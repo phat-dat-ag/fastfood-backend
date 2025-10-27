@@ -67,7 +67,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/admin/promotion/**").permitAll()
                         .requestMatchers("/api/cart/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/order/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/payment/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/address/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "STAFF", "ADMIN")
                         .requestMatchers("/api/staff/**").hasRole("STAFF")

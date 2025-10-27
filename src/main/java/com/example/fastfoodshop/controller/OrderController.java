@@ -26,4 +26,12 @@ public class OrderController {
     ) {
         return orderService.createCashOnDeliveryOrder(userDetails.getUsername(), request.getPromotionCode(), request.getUserNote(), request.getAddressId());
     }
+
+    @PostMapping("/stripe-payment")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> createStripePaymentOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestBody OrderCreateRequest request
+    ) {
+        return orderService.createStripePaymentOrder(userDetails.getUsername(), request.getPromotionCode(), request.getUserNote(), request.getAddressId());
+    }
 }

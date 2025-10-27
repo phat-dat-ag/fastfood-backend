@@ -14,6 +14,7 @@ import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.CartResponse;
 import com.example.fastfoodshop.response.OrderResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class OrderService {
     private final PromotionService promotionService;
     private final UserService userService;
     private final AddressService addressService;
+    private final PaymentService paymentService;
     private final OrderRepository orderRepository;
 
     private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
@@ -109,6 +111,47 @@ public class OrderService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "CREATE_COD_ORDER_FAILED",
                     "Lỗi tạo đơn hàng với phương thức vận chuyển COD: " + e.getMessage()
+            ));
+        }
+    }
+
+    @Transactional
+    public ResponseEntity<ResponseWrapper<OrderResponse>> createStripePaymentOrder(String phone, String promotionCode, String userNote, Long addressId) {
+        try {
+            DeliveryRequest deliveryRequest = new DeliveryRequest();
+            deliveryRequest.setAddressId(addressId);
+            CartResponse cartResponse = cartService.getCartResponse(phone, promotionCode, deliveryRequest);
+
+            Order order = new Order();
+            buildOrder(order, cartResponse, phone, addressId);
+            order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+
+            applyOrderPromotion(order, cartResponse);
+
+            Order savedOrder = orderRepository.save(order);
+
+            addUserNoteIfPresent(savedOrder, userNote);
+
+            createOrderDetails(savedOrder, cartResponse);
+
+            clearCartForUser(phone);
+
+            OrderResponse orderResponse = new OrderResponse(savedOrder);
+            orderResponse.setClientSecret(paymentService.createPaymentIntent(savedOrder.getTotalPrice()));
+
+            return ResponseEntity.ok(ResponseWrapper.success(orderResponse));
+        } catch (StripeException stripeException) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CREATE_STRIPE_PAYMENT_FAILED",
+                    "Lỗi khi tạo thanh toán Stripe: " + stripeException.getMessage()
+            ));
+        } catch (Exception e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CREATE_STRIPE_PAYMENT_FAILED",
+                    "Lỗi tạo đơn hàng với phương thức thanh toán Stripe: " + e.getMessage()
             ));
         }
     }
