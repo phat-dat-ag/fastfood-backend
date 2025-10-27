@@ -7,6 +7,8 @@ import lombok.Data;
 public class OrderCreateRequest {
     private String userNote;
 
+    private String promotionCode;
+
     @NotNull(message = "Không được để trống địa chỉ giao hàng")
     private Long addressId;
 }
