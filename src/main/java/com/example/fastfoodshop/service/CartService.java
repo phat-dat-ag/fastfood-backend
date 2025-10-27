@@ -133,4 +133,9 @@ public class CartService {
             );
         }
     }
+
+    public void deleteAllProductFromCart(String phone) {
+        User user = userService.findUserOrThrow(phone);
+        cartRepository.deleteAllByUser(user);
+    }
 }
