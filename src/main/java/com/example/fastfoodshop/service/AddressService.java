@@ -20,6 +20,10 @@ public class AddressService {
     private final AddressRepository addressRepository;
     private final UserService userService;
 
+    public Address findAddressOrThrow(Long id) {
+        return addressRepository.findById(id).orElseThrow(() -> new RuntimeException("Địa chỉ không tồn tại"));
+    }
+
     private void buildAddress(Address address, AddressCreateRequest request) {
         address.setName(request.getName());
         address.setLatitude(request.getLatitude());
