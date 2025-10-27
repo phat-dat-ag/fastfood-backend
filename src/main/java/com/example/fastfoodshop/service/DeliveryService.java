@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.constant.StoreConstants;
+import com.example.fastfoodshop.entity.Address;
 import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.util.NumberUtils;
@@ -14,6 +15,7 @@ import org.json.JSONObject;
 @Service
 @RequiredArgsConstructor
 public class DeliveryService {
+    private final AddressService addressService;
 
     @Value("${goong.api.key}")
     private String goongApiKey;
@@ -36,10 +38,12 @@ public class DeliveryService {
                 return DeliveryDTO.reject("Hãy chọn địa chỉ hợp lệ để giao hàng nhé");
             }
 
+            Address address = addressService.findAddressOrThrow(request.getAddressId());
+
             String url = UriComponentsBuilder
                     .fromUriString("https://rsapi.goong.io/DistanceMatrix")
                     .queryParam("origins", StoreConstants.STORE_LATITUDE + "," + StoreConstants.STORE_LONGITUDE)
-                    .queryParam("destinations", request.getCustomerLatitude() + "," + request.getCustomerLongitude())
+                    .queryParam("destinations", address.getLatitude() + "," + address.getLongitude())
                     .queryParam("vehicle", "car")
                     .queryParam("api_key", goongApiKey)
                     .toUriString();
