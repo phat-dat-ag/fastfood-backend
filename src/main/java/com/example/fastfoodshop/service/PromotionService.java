@@ -53,7 +53,8 @@ public class PromotionService {
         return promotionRepository.findByCode(code).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
     }
 
-    public void increasePromotionUsageCount(Promotion promotion) {
+    public void increasePromotionUsageCount(Long promotionId) {
+        Promotion promotion = findPromotionOrThrow(promotionId);
         if (promotion.getUsedQuantity() >= promotion.getQuantity()) {
             throw new RuntimeException("Mã khuyến mãi đã hết lượt sử dụng");
         }
