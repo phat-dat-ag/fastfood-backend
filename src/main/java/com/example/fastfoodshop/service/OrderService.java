@@ -53,6 +53,34 @@ public class OrderService {
         order.setTotalPrice(cartResponse.getTotalPrice());
     }
 
+    private void applyOrderPromotion(Order order, CartResponse cartResponse) {
+        if (cartResponse.getApplyPromotionResult() != null && cartResponse.getApplyPromotionResult().getPromotion() != null) {
+            promotionService.increasePromotionUsageCount(cartResponse.getApplyPromotionResult().getPromotion().getId());
+            Promotion promotion = promotionService.findPromotionOrThrow(cartResponse.getApplyPromotionResult().getPromotion().getId());
+            order.setPromotion(promotion);
+        }
+    }
+
+    private void addUserNoteIfPresent(Order order, String userNote) {
+        if (userNote != null && !userNote.isEmpty()) {
+            orderNoteService.createOrderNoteByUser(order, NoteType.USER_NOTE, userNote);
+        }
+    }
+
+    private void createOrderDetails(Order order, CartResponse cartResponse) {
+        ArrayList<CartDTO> cartDTOs = cartResponse.getCarts();
+        for (CartDTO cartDTO : cartDTOs) {
+            orderDetailService.createOrderDetail(cartDTO, order);
+            if (cartDTO.getProduct().getPromotionId() != null) {
+                promotionService.increasePromotionUsageCount(cartDTO.getProduct().getPromotionId());
+            }
+        }
+    }
+
+    private void clearCartForUser(String phone) {
+        cartService.deleteAllProductFromCart(phone);
+    }
+
     @Transactional
     public ResponseEntity<ResponseWrapper<OrderResponse>> createCashOnDeliveryOrder(String phone, String promotionCode, String userNote, Long addressId) {
         try {
@@ -64,27 +92,16 @@ public class OrderService {
             buildOrder(order, cartResponse, phone, addressId);
             order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
 
-            if (cartResponse.getApplyPromotionResult() != null && cartResponse.getApplyPromotionResult().getPromotion() != null) {
-                promotionService.increasePromotionUsageCount(cartResponse.getApplyPromotionResult().getPromotion().getId());
-                Promotion promotion = promotionService.findPromotionOrThrow(cartResponse.getApplyPromotionResult().getPromotion().getId());
-                order.setPromotion(promotion);
-            }
+            applyOrderPromotion(order, cartResponse);
 
             Order savedOrder = orderRepository.save(order);
 
-            if (userNote != null && !userNote.isEmpty()) {
-                orderNoteService.createOrderNoteByUser(savedOrder, NoteType.USER_NOTE, userNote);
-            }
+            addUserNoteIfPresent(savedOrder, userNote);
 
-            ArrayList<CartDTO> cartDTOs = cartResponse.getCarts();
-            for (CartDTO cartDTO : cartDTOs) {
-                orderDetailService.createOrderDetail(cartDTO, savedOrder);
-                if (cartDTO.getProduct().getPromotionId() != null) {
-                    promotionService.increasePromotionUsageCount(cartDTO.getProduct().getPromotionId());
-                }
-            }
+            createOrderDetails(savedOrder, cartResponse);
 
-            cartService.deleteAllProductFromCart(phone);
+            clearCartForUser(phone);
+
             return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(savedOrder)));
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();

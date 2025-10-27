@@ -24,6 +24,7 @@ public class OrderResponse {
     private int subtotalPrice;
     private int deliveryFee;
     private int totalPrice;
+    private String clientSecret;
 
     public OrderResponse(Order order) {
         this.id = order.getId();
