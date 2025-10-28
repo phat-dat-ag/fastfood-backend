@@ -12,6 +12,7 @@ import com.example.fastfoodshop.enums.PaymentStatus;
 import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.CartResponse;
+import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.response.OrderResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.stripe.exception.StripeException;
@@ -23,6 +24,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -84,7 +86,7 @@ public class OrderService {
     }
 
     @Transactional
-    public ResponseEntity<ResponseWrapper<OrderResponse>> createCashOnDeliveryOrder(String phone, String promotionCode, String userNote, Long addressId) {
+    public ResponseEntity<ResponseWrapper<OrderDTO>> createCashOnDeliveryOrder(String phone, String promotionCode, String userNote, Long addressId) {
         try {
             DeliveryRequest deliveryRequest = new DeliveryRequest();
             deliveryRequest.setAddressId(addressId);
@@ -104,7 +106,7 @@ public class OrderService {
 
             clearCartForUser(phone);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(savedOrder)));
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(savedOrder)));
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 
@@ -116,7 +118,7 @@ public class OrderService {
     }
 
     @Transactional
-    public ResponseEntity<ResponseWrapper<OrderResponse>> createStripePaymentOrder(String phone, String promotionCode, String userNote, Long addressId) {
+    public ResponseEntity<ResponseWrapper<OrderDTO>> createStripePaymentOrder(String phone, String promotionCode, String userNote, Long addressId) {
         try {
             DeliveryRequest deliveryRequest = new DeliveryRequest();
             deliveryRequest.setAddressId(addressId);
@@ -136,7 +138,7 @@ public class OrderService {
 
             clearCartForUser(phone);
 
-            OrderResponse orderResponse = new OrderResponse(savedOrder);
+            OrderDTO orderResponse = new OrderDTO(savedOrder);
             orderResponse.setClientSecret(paymentService.createPaymentIntent(savedOrder.getTotalPrice()));
 
             return ResponseEntity.ok(ResponseWrapper.success(orderResponse));
@@ -152,6 +154,18 @@ public class OrderService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "CREATE_STRIPE_PAYMENT_FAILED",
                     "Lỗi tạo đơn hàng với phương thức thanh toán Stripe: " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
+        try {
+            List<Order> orders = orderRepository.findByDeliveredAtIsNull();
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_UNFINISHED_ORDER_FAILED",
+                    "Lỗi khi lấy các đơn hàng chưa hoàn tất" + e.getMessage()
             ));
         }
     }

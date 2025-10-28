@@ -29,7 +29,7 @@ public class Order extends BaseCreatedEntity {
     @Column(name = "order_status", length = 20, nullable = false)
     private OrderStatus orderStatus;
 
-    @Column(name = "placed_at")
+    @Column(name = "placed_at", nullable = false)
     private LocalDateTime placedAt;
 
     @Column(name = "confirmed_at")
