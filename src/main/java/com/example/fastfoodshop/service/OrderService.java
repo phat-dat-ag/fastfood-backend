@@ -234,4 +234,31 @@ public class OrderService {
             ));
         }
     }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivered(Long orderId) {
+        try {
+            Order order = findOrderOrThrow(orderId);
+            if (order.getDeliveringAt() == null) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "MARK_DELIVERED_ORDER_FAILED",
+                        "Không thể xác nhận giao thành công cho đơn hàng chưa được giao"
+                ));
+            }
+            order.setOrderStatus(OrderStatus.DELIVERED);
+            LocalDateTime now = LocalDateTime.now();
+            order.setDeliveredAt(now);
+
+            if (order.getPaymentMethod() == PaymentMethod.CASH_ON_DELIVERY) {
+                order.setPaymentStatus(PaymentStatus.PAID);
+            }
+
+            Order updatedOrder = orderRepository.save(order);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(updatedOrder)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "MARK_DELIVERED_ORDER_FAILED",
+                    "Lỗi đánh dấu đã giao cho đơn hàng: " + e.getMessage()
+            ));
+        }
+    }
 }
