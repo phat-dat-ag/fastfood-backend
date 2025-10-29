@@ -43,4 +43,9 @@ public class OrderController {
     public ResponseEntity<ResponseWrapper<OrderDTO>> confirmOrder(@RequestParam("orderId") Long orderId) {
         return orderService.confirmOrder(orderId);
     }
+
+    @PutMapping("/mark-delivering")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivering(@RequestParam("orderId") Long orderId) {
+        return orderService.markAsDelivering(orderId);
+    }
 }

@@ -212,4 +212,26 @@ public class OrderService {
             ));
         }
     }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivering(Long orderId) {
+        try {
+            Order order = findOrderOrThrow(orderId);
+            if (order.getConfirmedAt() == null) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "MARK_DELIVERING_ORDER_FAILED",
+                        "Không thể giao cho đơn hàng chưa duyệt"
+                ));
+            }
+            order.setOrderStatus(OrderStatus.DELIVERING);
+            LocalDateTime now = LocalDateTime.now();
+            order.setDeliveringAt(now);
+            Order updatedOrder = orderRepository.save(order);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(updatedOrder)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "MARK_DELIVERING_ORDER_FAILED",
+                    "Lỗi đánh dấu giao đang hàng đơn hàng: " + e.getMessage()
+            ));
+        }
+    }
 }
