@@ -283,6 +283,19 @@ public class OrderService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrdersByUser(String phone) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            List<Order> orders = orderRepository.findCompletedOrCancelledOrdersByUser(user);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ORDER_FAILED",
+                    "Lỗi khi lấy các đơn hàng cho khách hàng " + e.getMessage()
+            ));
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByUser(Long orderId, String reason) {
         try {
             Order order = findOrderForUpdate(orderId);

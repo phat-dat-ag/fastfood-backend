@@ -35,7 +35,7 @@ public class OrderController {
         return orderService.createStripePaymentOrder(userDetails.getUsername(), request.getPromotionCode(), request.getUserNote(), request.getAddressId());
     }
 
-    @GetMapping("/unfinished-orders/all")
+    @GetMapping("/unfinished-orders/by-staff")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
         return orderService.getUnfinishedOrders();
     }
@@ -74,5 +74,10 @@ public class OrderController {
     @GetMapping("/unfinished-orders/by-user")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
         return orderService.getUnfinishedOrdersByUser(userDetails.getUsername());
+    }
+
+    @GetMapping("/all/by-user")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
+        return orderService.getOrdersByUser(userDetails.getUsername());
     }
 }
