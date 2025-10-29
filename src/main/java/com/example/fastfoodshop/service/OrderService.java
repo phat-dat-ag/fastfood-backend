@@ -172,7 +172,7 @@ public class OrderService {
 
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
         try {
-            List<Order> orders = orderRepository.findByDeliveredAtIsNull();
+            List<Order> orders = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull();
             return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
@@ -266,6 +266,50 @@ public class OrderService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "MARK_DELIVERED_ORDER_FAILED",
                     "Lỗi đánh dấu đã giao cho đơn hàng: " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(String phone) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            List<Order> orders = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_UNFINISHED_ORDER_FAILED",
+                    "Lỗi khi lấy các đơn hàng để khách hàng theo dõi " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByUser(Long orderId, String reason) {
+        try {
+            Order order = findOrderForUpdate(orderId);
+            if (order.getOrderStatus() == OrderStatus.DELIVERING) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "CANCEL_ORDER_FAILED",
+                        "Không được hủy đơn hàng đang giao"
+                ));
+            }
+            if (order.getPaymentStatus() == PaymentStatus.PAID && order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "CANCEL_ORDER_FAILED",
+                        "Không được hủy đơn hàng đã thanh toán qua stripe"
+                ));
+            }
+            LocalDateTime now = LocalDateTime.now();
+            order.setCancelledAt(now);
+            order.setOrderStatus(OrderStatus.CANCELLED);
+
+            orderNoteService.createOrderNoteByUser(order, NoteType.CANCEL_REASON, reason);
+
+            Order updatedOrder = orderRepository.save(order);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(updatedOrder)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CANCEL_ORDER_FAILED",
+                    "Lỗi khi hủy đơn hàng " + e.getMessage()
             ));
         }
     }

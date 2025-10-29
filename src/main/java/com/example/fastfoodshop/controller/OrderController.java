@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.response.OrderResponse;
@@ -52,5 +53,18 @@ public class OrderController {
     @PutMapping("/mark-delivered")
     public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivered(@RequestParam("orderId") Long orderId) {
         return orderService.markAsDelivered(orderId);
+    }
+
+    @PutMapping("/user/cancel-order")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByUser(
+            @RequestParam("orderId") Long orderId,
+            @RequestBody OrderCancelRequest orderCancelRequest
+    ) {
+        return orderService.cancelOrderByUser(orderId, orderCancelRequest.getReason());
+    }
+
+    @GetMapping("/unfinished-orders/by-user")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
+        return orderService.getUnfinishedOrdersByUser(userDetails.getUsername());
     }
 }

@@ -23,11 +23,11 @@ public class OrderNoteService {
         orderNoteRepository.save(orderNote);
     }
 
-    public void createOrderNoteByUser(Order order) {
+    public void createOrderNoteByStaff(Order order, NoteType noteType, String message) {
         OrderNote orderNote = new OrderNote();
         orderNote.setAuthorType(AuthorType.STAFF);
-        orderNote.setNoteType(NoteType.CANCEL_REASON);
-        orderNote.setMessage("Đơn hàng bị hủy do không được thanh toán trong thời gian quy định");
+        orderNote.setNoteType(noteType);
+        orderNote.setMessage(message);
         orderNote.setOrder(order);
 
         orderNoteRepository.save(orderNote);
