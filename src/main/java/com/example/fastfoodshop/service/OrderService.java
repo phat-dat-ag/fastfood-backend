@@ -184,4 +184,32 @@ public class OrderService {
             throw new RuntimeException("Lỗi khi cập nhật trạng thái thanh toán " + e.getMessage());
         }
     }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> confirmOrder(Long orderId) {
+        try {
+            Order order = findOrderOrThrow(orderId);
+            if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && order.getPaymentStatus() != PaymentStatus.PAID) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "CONFIRM_ORDER_FAILED",
+                        "Không thể duyệt đơn chưa thanh toán Stripe hoặc thanh toán thất bại"
+                ));
+            }
+            if (order.getPlacedAt() == null) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "CONFIRM_ORDER_FAILED",
+                        "Không thể duyệt đơn hàng chưa được đặt"
+                ));
+            }
+            order.setOrderStatus(OrderStatus.CONFIRMED);
+            LocalDateTime now = LocalDateTime.now();
+            order.setConfirmedAt(now);
+            Order confirmedOrder = orderRepository.save(order);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(confirmedOrder)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CONFIRM_ORDER_FAILED",
+                    "Lỗi duyệt đơn hàng: " + e.getMessage()
+            ));
+        }
+    }
 }
