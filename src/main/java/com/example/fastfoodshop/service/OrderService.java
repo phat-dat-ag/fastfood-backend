@@ -313,4 +313,24 @@ public class OrderService {
             ));
         }
     }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByStaff(Long orderId, String reason) {
+        try {
+            Order order = findOrderForUpdate(orderId);
+
+            LocalDateTime now = LocalDateTime.now();
+            order.setCancelledAt(now);
+            order.setOrderStatus(OrderStatus.CANCELLED);
+
+            orderNoteService.createOrderNoteByStaff(order, NoteType.CANCEL_REASON, reason);
+
+            Order updatedOrder = orderRepository.save(order);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(updatedOrder)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CANCEL_ORDER_FAILED",
+                    "Lỗi khi hủy đơn hàng " + e.getMessage()
+            ));
+        }
+    }
 }

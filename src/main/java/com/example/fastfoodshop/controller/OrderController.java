@@ -63,6 +63,14 @@ public class OrderController {
         return orderService.cancelOrderByUser(orderId, orderCancelRequest.getReason());
     }
 
+    @PutMapping("/staff/cancel-order")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByStaff(
+            @RequestParam("orderId") Long orderId,
+            @RequestBody OrderCancelRequest orderCancelRequest
+    ) {
+        return orderService.cancelOrderByStaff(orderId, orderCancelRequest.getReason());
+    }
+
     @GetMapping("/unfinished-orders/by-user")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
         return orderService.getUnfinishedOrdersByUser(userDetails.getUsername());
