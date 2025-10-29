@@ -42,6 +42,14 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
     }
 
+    private Order findOrderForUpdate(Long orderId) {
+        Order order = findOrderOrThrow(orderId);
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new RuntimeException("Đơn hàng đã bị hủy, không thể cập nhật trạng thái");
+        }
+        return order;
+    }
+
     private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
         User user = userService.findUserOrThrow(phone);
         order.setUser(user);
@@ -176,7 +184,7 @@ public class OrderService {
 
     public Order updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
         try {
-            Order order = findOrderOrThrow(orderId);
+            Order order = findOrderForUpdate(orderId);
             order.setPaymentStatus(paymentStatus);
 
             return orderRepository.save(order);
@@ -187,7 +195,7 @@ public class OrderService {
 
     public ResponseEntity<ResponseWrapper<OrderDTO>> confirmOrder(Long orderId) {
         try {
-            Order order = findOrderOrThrow(orderId);
+            Order order = findOrderForUpdate(orderId);
             if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && order.getPaymentStatus() != PaymentStatus.PAID) {
                 return ResponseEntity.badRequest().body(ResponseWrapper.error(
                         "CONFIRM_ORDER_FAILED",
@@ -215,7 +223,7 @@ public class OrderService {
 
     public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivering(Long orderId) {
         try {
-            Order order = findOrderOrThrow(orderId);
+            Order order = findOrderForUpdate(orderId);
             if (order.getConfirmedAt() == null) {
                 return ResponseEntity.badRequest().body(ResponseWrapper.error(
                         "MARK_DELIVERING_ORDER_FAILED",
@@ -237,7 +245,7 @@ public class OrderService {
 
     public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivered(Long orderId) {
         try {
-            Order order = findOrderOrThrow(orderId);
+            Order order = findOrderForUpdate(orderId);
             if (order.getDeliveringAt() == null) {
                 return ResponseEntity.badRequest().body(ResponseWrapper.error(
                         "MARK_DELIVERED_ORDER_FAILED",
