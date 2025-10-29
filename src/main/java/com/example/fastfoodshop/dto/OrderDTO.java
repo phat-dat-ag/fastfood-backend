@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Order;
+import com.example.fastfoodshop.entity.OrderNote;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.PaymentMethod;
 import com.example.fastfoodshop.enums.PaymentStatus;
@@ -8,6 +9,7 @@ import com.example.fastfoodshop.enums.PaymentStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 
 @Data
 public class OrderDTO {
@@ -26,6 +28,7 @@ public class OrderDTO {
     private int totalPrice;
     private AddressDTO address;
     private UserDTO user;
+    private ArrayList<OrderNoteDTO> orderNotes = new ArrayList<>();
     private String clientSecret;
 
     public OrderDTO(Order order) {
@@ -44,5 +47,8 @@ public class OrderDTO {
         this.totalPrice = order.getTotalPrice();
         this.address = order.getAddress() != null ? new AddressDTO(order.getAddress()) : null;
         this.user = order.getUser() != null ? new UserDTO(order.getUser()) : null;
+        for (OrderNote orderNote : order.getOrderNotes()) {
+            this.orderNotes.add(new OrderNoteDTO(orderNote));
+        }
     }
 }
