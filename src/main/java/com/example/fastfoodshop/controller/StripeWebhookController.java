@@ -1,19 +1,25 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.enums.PaymentStatus;
+import com.example.fastfoodshop.service.OrderService;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.stripe.model.Event;
-import com.stripe.model.EventDataObjectDeserializer;
-import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/stripe")
+@RequiredArgsConstructor
 public class StripeWebhookController {
 
     @Value("${stripe.webhook.secret}")
     private String ENDPOINT_SECRET;
+
+    private final OrderService orderService;
 
     @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeWebhook(
@@ -24,43 +30,46 @@ public class StripeWebhookController {
         try {
             event = Webhook.constructEvent(payload, sigHeader, ENDPOINT_SECRET);
         } catch (Exception e) {
-            System.out.println("Webhook verification failed: " + e.getMessage());
+            System.out.println("❌ Webhook verification failed: " + e.getMessage());
             return ResponseEntity.badRequest().body("Invalid signature");
         }
 
-        System.out.println("Received event: " + event.getType());
+        System.out.println("📩 Received event: " + event.getType());
 
-        EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+        JsonObject eventJson = JsonParser.parseString(payload).getAsJsonObject();
+        JsonObject dataObject = eventJson.getAsJsonObject("data").getAsJsonObject("object");
 
-        switch (event.getType()) {
-            case "payment_intent.succeeded" -> {
-                if (dataObjectDeserializer.getObject().isPresent()) {
-                    PaymentIntent intent = (PaymentIntent) dataObjectDeserializer.getObject().get();
-                    System.out.println("✅ Payment succeeded: " + intent.getId());
-                } else {
-                    System.out.println("⚠ Could not deserialize payment_intent.succeeded event data. Raw: "
-                            + event.getData().getObject().toJson());
-                }
+        Long orderId = null;
+        try {
+            JsonObject metadata = dataObject.getAsJsonObject("metadata");
+            if (metadata != null && metadata.has("orderId")) {
+                orderId = Long.valueOf(metadata.get("orderId").getAsString());
             }
-
-            case "payment_intent.payment_failed" -> {
-                if (dataObjectDeserializer.getObject().isPresent()) {
-                    PaymentIntent failedIntent = (PaymentIntent) dataObjectDeserializer.getObject().get();
-                    System.out.println("❌ Payment failed: " + failedIntent.getId());
-                    System.out.println("Failure message: " + failedIntent.getLastPaymentError().getMessage());
-                } else {
-                    System.out.println("⚠ Could not deserialize payment_intent.payment_failed event data. Raw: "
-                            + event.getData().getObject().toJson());
-                }
-            }
-
-            case "charge.failed" -> {
-                System.out.println("❌ Charge failed event received. Raw data: "
-                        + event.getData().getObject().toJson());
-            }
-
-            default -> System.out.println("Event not handled: " + event.getType());
+        } catch (Exception e) {
+            System.out.println("⚠️ Cannot extract orderId from metadata: " + e.getMessage());
         }
+
+        if (orderId == null) {
+            System.out.println("⚠️ Missing orderId in metadata.");
+            return ResponseEntity.ok("Ignored");
+        }
+
+        try {
+            switch (event.getType()) {
+                case "payment_intent.succeeded" -> {
+                    System.out.println("✅ Payment succeeded for order " + orderId);
+                    orderService.updatePaymentStatus(orderId, PaymentStatus.PAID);
+                }
+                case "payment_intent.payment_failed", "charge.failed" -> {
+                    System.out.println("❌ Payment failed for order " + orderId);
+                    orderService.updatePaymentStatus(orderId, PaymentStatus.FAILED);
+                }
+                default -> System.out.println("ℹ️ Unhandled event: " + event.getType());
+            }
+        } catch (Exception e) {
+            System.out.println("⚠️ Failed to update payment status for order " + orderId + ": " + e.getMessage());
+        }
+
         return ResponseEntity.ok("Received");
     }
 }

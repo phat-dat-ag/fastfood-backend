@@ -38,6 +38,10 @@ public class OrderService {
     private final PaymentService paymentService;
     private final OrderRepository orderRepository;
 
+    private Order findOrderOrThrow(Long orderId) {
+        return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
+    }
+
     private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
         User user = userService.findUserOrThrow(phone);
         order.setUser(user);
@@ -139,7 +143,7 @@ public class OrderService {
             clearCartForUser(phone);
 
             OrderDTO orderResponse = new OrderDTO(savedOrder);
-            orderResponse.setClientSecret(paymentService.createPaymentIntent(savedOrder.getTotalPrice()));
+            orderResponse.setClientSecret(paymentService.createPaymentIntent(savedOrder.getTotalPrice(), savedOrder));
 
             return ResponseEntity.ok(ResponseWrapper.success(orderResponse));
         } catch (StripeException stripeException) {
@@ -167,6 +171,17 @@ public class OrderService {
                     "GET_UNFINISHED_ORDER_FAILED",
                     "Lỗi khi lấy các đơn hàng chưa hoàn tất" + e.getMessage()
             ));
+        }
+    }
+
+    public Order updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
+        try {
+            Order order = findOrderOrThrow(orderId);
+            order.setPaymentStatus(paymentStatus);
+
+            return orderRepository.save(order);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Lỗi khi cập nhật trạng thái thanh toán " + e.getMessage());
         }
     }
 }
