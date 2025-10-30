@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Order;
+import com.example.fastfoodshop.entity.OrderDetail;
 import com.example.fastfoodshop.entity.OrderNote;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.PaymentMethod;
@@ -29,6 +30,8 @@ public class OrderDTO {
     private AddressDTO address;
     private UserDTO user;
     private ArrayList<OrderNoteDTO> orderNotes = new ArrayList<>();
+    private ArrayList<OrderDetailDTO> orderDetails = new ArrayList<>();
+    private PromotionDTO promotion;
     private String clientSecret;
 
     public OrderDTO(Order order) {
@@ -50,5 +53,9 @@ public class OrderDTO {
         for (OrderNote orderNote : order.getOrderNotes()) {
             this.orderNotes.add(new OrderNoteDTO(orderNote));
         }
+        for (OrderDetail orderDetail : order.getOrderDetails()) {
+            this.orderDetails.add(new OrderDetailDTO(orderDetail));
+        }
+        this.promotion = order.getPromotion() != null ? new PromotionDTO(order.getPromotion()) : null;
     }
 }
