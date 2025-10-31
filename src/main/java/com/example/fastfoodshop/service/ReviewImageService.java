@@ -27,6 +27,8 @@ public class ReviewImageService {
     public ArrayList<ReviewImage> createReviewImages(List<MultipartFile> images, Review review) {
         ArrayList<ReviewImage> reviewImages = new ArrayList<>();
 
+        if (images == null || images.isEmpty()) return reviewImages;
+
         for (MultipartFile imageFile : images) {
             ReviewImage reviewImage = new ReviewImage();
             reviewImage.setReview(review);

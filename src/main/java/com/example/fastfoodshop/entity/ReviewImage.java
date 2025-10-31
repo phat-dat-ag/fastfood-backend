@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.entity;
 
+import com.example.fastfoodshop.entity.base.BaseCreatedEntity;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -12,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "review_images")
-public class ReviewImage {
+public class ReviewImage extends BaseCreatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
