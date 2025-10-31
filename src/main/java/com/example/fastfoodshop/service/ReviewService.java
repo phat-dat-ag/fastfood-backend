@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.*;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
@@ -92,6 +93,25 @@ public class ReviewService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "CREATE_REVIEW_FAILED",
                     "Lỗi tạo các đánh giá cho đơn hàng " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<ReviewDTO>>> getAllReviewsByProduct(Long productId) {
+        try {
+            Product product = productService.findProductOrThrow(productId);
+            List<Review> reviews = reviewRepository.findByProduct(product);
+
+            ArrayList<ReviewDTO> reviewDTOs = new ArrayList<>();
+            for (Review review : reviews) {
+                reviewDTOs.add(new ReviewDTO(review));
+            }
+
+            return ResponseEntity.ok(ResponseWrapper.success(reviewDTOs));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_REVIEW_FAILED",
+                    "Lỗi lấy các đánh giá của đơn hàng " + e.getMessage()
             ));
         }
     }
