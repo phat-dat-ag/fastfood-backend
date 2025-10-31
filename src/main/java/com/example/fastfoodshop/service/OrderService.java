@@ -170,6 +170,18 @@ public class OrderService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(Long orderId) {
+        try {
+            Order order = findOrderOrThrow(orderId);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ORDER_FAILED",
+                    "Lỗi lấy đơn hàng " + e.getMessage()
+            ));
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
         try {
             List<Order> orders = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull();

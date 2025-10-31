@@ -35,6 +35,11 @@ public class OrderController {
         return orderService.createStripePaymentOrder(userDetails.getUsername(), request.getPromotionCode(), request.getUserNote(), request.getAddressId());
     }
 
+    @GetMapping("/by-order-id")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(@RequestParam("orderId") Long orderId) {
+        return orderService.getOrder(orderId);
+    }
+
     @GetMapping("/unfinished-orders/by-staff")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
         return orderService.getUnfinishedOrders();
