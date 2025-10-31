@@ -38,7 +38,7 @@ public class OrderService {
     private final PaymentService paymentService;
     private final OrderRepository orderRepository;
 
-    private Order findOrderOrThrow(Long orderId) {
+    public Order findOrderOrThrow(Long orderId) {
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
     }
 
