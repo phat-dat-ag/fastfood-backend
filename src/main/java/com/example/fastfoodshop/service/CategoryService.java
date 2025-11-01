@@ -40,6 +40,10 @@ public class CategoryService {
         return categoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
     }
 
+    public Category findCategoryOrThrow(String slug) {
+        return categoryRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
+    }
+
     public void handleCategoryImage(Category category, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
@@ -146,11 +150,7 @@ public class CategoryService {
             List<Category> categories = categoryRepository.findByIsDeletedFalse();
             ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
             for (Category category : categories) {
-                CategoryDTO categoryDTO = new CategoryDTO(category);
-                for (ProductDTO productDTO : categoryDTO.getProducts()) {
-                    applyPromotion(productDTO, category);
-                }
-                categoryDTOs.add(categoryDTO);
+                categoryDTOs.add(new CategoryDTO(category));
             }
             return ResponseEntity.ok(ResponseWrapper.success(categoryDTOs));
         } catch (Exception e) {

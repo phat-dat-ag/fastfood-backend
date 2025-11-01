@@ -149,6 +149,26 @@ public class ProductService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts(String categorySlug) {
+        try {
+            Category category = categoryService.findCategoryOrThrow(categorySlug);
+            ArrayList<Product> products = productRepository.findByCategoryAndIsDeletedFalse(category);
+
+            ArrayList<ProductDTO> productDTOs = new ArrayList<>();
+            for (Product product : products) {
+                ProductDTO productDTO = new ProductDTO(product);
+                categoryService.applyPromotion(productDTO, category);
+                productDTOs.add(productDTO);
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_PRODUCT_FAILED",
+                    "Lỗi lấy sản phẩm của danh mục: " + e.getMessage())
+            );
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(String slug) {
         try {
             Product product = findProductOrThrow(slug);

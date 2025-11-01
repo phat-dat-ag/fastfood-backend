@@ -1,13 +1,10 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Category;
-import com.example.fastfoodshop.entity.Product;
 import lombok.Data;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.ZoneId;;
 
 @Data
 public class CategoryDTO {
@@ -19,8 +16,6 @@ public class CategoryDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean isActivated;
-    private boolean isDeleted;
-    private ArrayList<ProductDTO> products = new ArrayList<>();
 
     public CategoryDTO(Category category) {
         this.id = category.getId();
@@ -35,10 +30,5 @@ public class CategoryDTO {
                 .atZone(ZoneId.systemDefault())
                 .toLocalDateTime();
         this.isActivated = category.isActivated();
-        this.isDeleted = category.isDeleted();
-        List<Product> productList = category.getProducts();
-        for (Product product : productList) {
-            this.products.add(new ProductDTO(product));
-        }
     }
 }

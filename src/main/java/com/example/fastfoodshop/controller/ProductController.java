@@ -31,6 +31,13 @@ public class ProductController {
         return productService.getProducts();
     }
 
+    @GetMapping("/by-category")
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProductsByCategory(
+            @RequestParam("categorySlug") String categorySlug
+    ) {
+        return productService.getProducts(categorySlug);
+    }
+
     @GetMapping("/detail")
     public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(
             @RequestParam("slug") String slug

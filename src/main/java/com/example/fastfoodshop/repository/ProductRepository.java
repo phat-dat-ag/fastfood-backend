@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.repository;
 
+import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,4 +13,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findBySlug(String slug);
 
     ArrayList<Product> findByIsDeletedFalse();
+
+    ArrayList<Product> findByCategoryAndIsDeletedFalse(Category category);
 }
