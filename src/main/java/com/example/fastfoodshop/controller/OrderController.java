@@ -81,8 +81,16 @@ public class OrderController {
         return orderService.getUnfinishedOrdersByUser(userDetails.getUsername());
     }
 
-    @GetMapping("/all/by-user")
+    @GetMapping("/order-history/all")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
         return orderService.getOrdersByUser(userDetails.getUsername());
+    }
+
+    @GetMapping("/order-history")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrderHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("orderId") Long orderId
+    ) {
+        return orderService.getOrderHistory(orderId, userDetails.getUsername());
     }
 }

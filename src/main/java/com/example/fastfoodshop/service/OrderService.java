@@ -42,6 +42,11 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
     }
 
+    private Order findOrderHistoryOrThrow(Long orderId, User user) {
+        return orderRepository.findCompletedOrCancelledOrderByIdAndUser(orderId, user)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng hợp lệ của người dùng này"));
+    }
+
     private Order findOrderForUpdate(Long orderId) {
         Order order = findOrderOrThrow(orderId);
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
@@ -304,6 +309,19 @@ public class OrderService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ORDER_FAILED",
                     "Lỗi khi lấy các đơn hàng cho khách hàng " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrderHistory(Long orderId, String phone) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            Order order = findOrderHistoryOrThrow(orderId, user);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ORDER_HISTORY_FAILED",
+                    "Lỗi khi lấy chi tiết lịch sử đơn hàng " + e.getMessage()
             ));
         }
     }
