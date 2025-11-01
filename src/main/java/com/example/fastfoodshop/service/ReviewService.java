@@ -100,7 +100,7 @@ public class ReviewService {
     public ResponseEntity<ResponseWrapper<ArrayList<ReviewDTO>>> getAllReviewsByProduct(Long productId) {
         try {
             Product product = productService.findProductOrThrow(productId);
-            List<Review> reviews = reviewRepository.findByProduct(product);
+            List<Review> reviews = reviewRepository.findByProductAndIsDeletedFalse(product);
 
             ArrayList<ReviewDTO> reviewDTOs = new ArrayList<>();
             for (Review review : reviews) {

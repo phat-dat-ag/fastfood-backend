@@ -37,4 +37,7 @@ public class Review extends BaseCreatedEntity {
 
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ReviewImage> reviewImages = new ArrayList<>();
+
+    @Column(name = "is_deleted", nullable = false)
+    private boolean isDeleted = false;
 }
