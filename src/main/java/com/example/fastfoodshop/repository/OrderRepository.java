@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByDeliveredAtIsNullAndCancelledAtIsNull();
 
+    Optional<Order> findByIdAndDeliveredAtIsNullAndCancelledAtIsNull(Long orderId);
+
     List<Order> findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(User user);
 
     Optional<Order> findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(Long orderId, User user);

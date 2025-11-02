@@ -42,6 +42,11 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
     }
 
+    private Order findUnfinishedOrderOrThrow(Long orderId) {
+        return orderRepository.findByIdAndDeliveredAtIsNullAndCancelledAtIsNull(orderId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đang xử lý nào hợp lệ"));
+    }
+
     private Order findActiveOrderOrThrow(Long orderId, User user) {
         return orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(orderId, user)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đang xử lý hợp lệ của người dùng này"));
@@ -192,7 +197,7 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders() {
         try {
             List<Order> orders = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull();
             return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
@@ -200,6 +205,18 @@ public class OrderService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_UNFINISHED_ORDER_FAILED",
                     "Lỗi khi lấy các đơn hàng chưa hoàn tất" + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getUnfinishedOrder(Long orderId) {
+        try {
+            Order order = findUnfinishedOrderOrThrow(orderId);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_UNFINISHED_ORDER_FAILED",
+                    "Lỗi khi lấy chi tiết đơn hàng chưa hoàn tất" + e.getMessage()
             ));
         }
     }
@@ -299,7 +316,7 @@ public class OrderService {
             return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_UNFINISHED_ORDER_FAILED",
+                    "GET_ACTIVE_ORDER_FAILED",
                     "Lỗi khi lấy các đơn hàng đang xử lý cho khách hàng " + e.getMessage()
             ));
         }
@@ -312,7 +329,7 @@ public class OrderService {
             return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ORDER_HISTORY_FAILED",
+                    "GET_ACTIVE_ORDER_FAILED",
                     "Lỗi khi lấy đơn hàng đang xử lý cho khách hàng " + e.getMessage()
             ));
         }

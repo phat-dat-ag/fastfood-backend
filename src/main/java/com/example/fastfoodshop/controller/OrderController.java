@@ -40,9 +40,17 @@ public class OrderController {
         return orderService.getOrder(orderId);
     }
 
-    @GetMapping("/unfinished-orders/by-staff")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrders() {
-        return orderService.getUnfinishedOrders();
+    @GetMapping("/staff/unfinished-orders/all")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders() {
+        return orderService.getAllUnfinishedOrders();
+    }
+
+    @GetMapping("/staff/unfinished-order")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getUnfinishedOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("orderId") Long orderId
+    ) {
+        return orderService.getUnfinishedOrder(orderId);
     }
 
     @PutMapping("/confirm")
