@@ -42,6 +42,11 @@ public class OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Đơn hàng không tồn tại"));
     }
 
+    private Order findActiveOrderOrThrow(Long orderId, User user) {
+        return orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(orderId, user)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn đang xử lý hợp lệ của người dùng này"));
+    }
+
     private Order findOrderHistoryOrThrow(Long orderId, User user) {
         return orderRepository.findCompletedOrCancelledOrderByIdAndUser(orderId, user)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng hợp lệ của người dùng này"));
@@ -287,7 +292,7 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(String phone) {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(String phone) {
         try {
             User user = userService.findUserOrThrow(phone);
             List<Order> orders = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user);
@@ -295,12 +300,25 @@ public class OrderService {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_UNFINISHED_ORDER_FAILED",
-                    "Lỗi khi lấy các đơn hàng để khách hàng theo dõi " + e.getMessage()
+                    "Lỗi khi lấy các đơn hàng đang xử lý cho khách hàng " + e.getMessage()
             ));
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrdersByUser(String phone) {
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getActiveOrder(Long orderId, String phone) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            Order order = findActiveOrderOrThrow(orderId, user);
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ORDER_HISTORY_FAILED",
+                    "Lỗi khi lấy đơn hàng đang xử lý cho khách hàng " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(String phone) {
         try {
             User user = userService.findUserOrThrow(phone);
             List<Order> orders = orderRepository.findCompletedOrCancelledOrdersByUser(user);

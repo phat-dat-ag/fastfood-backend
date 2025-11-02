@@ -76,14 +76,22 @@ public class OrderController {
         return orderService.cancelOrderByStaff(orderId, orderCancelRequest.getReason());
     }
 
-    @GetMapping("/unfinished-orders/by-user")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
-        return orderService.getUnfinishedOrdersByUser(userDetails.getUsername());
+    @GetMapping("/active-order/all")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(@AuthenticationPrincipal UserDetails userDetails) {
+        return orderService.getAllActiveOrders(userDetails.getUsername());
+    }
+
+    @GetMapping("/active-order")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getActiveOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("orderId") Long orderId
+    ) {
+        return orderService.getActiveOrder(orderId, userDetails.getUsername());
     }
 
     @GetMapping("/order-history/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrdersByUser(@AuthenticationPrincipal UserDetails userDetails) {
-        return orderService.getOrdersByUser(userDetails.getUsername());
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(@AuthenticationPrincipal UserDetails userDetails) {
+        return orderService.getAllOrderHistory(userDetails.getUsername());
     }
 
     @GetMapping("/order-history")

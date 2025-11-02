@@ -14,6 +14,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     List<Order> findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(User user);
 
+    Optional<Order> findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(Long orderId, User user);
+
     @Query("SELECT o FROM Order o WHERE o.user = :user AND (o.deliveredAt IS NOT NULL OR o.cancelledAt IS NOT NULL)")
     List<Order> findCompletedOrCancelledOrdersByUser(@Param("user") User user);
 
