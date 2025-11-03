@@ -185,6 +185,39 @@ public class OrderService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getPaymentIntent(String phone, Long orderId) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            Order order = findActiveOrderOrThrow(orderId, user);
+            if (order.getOrderStatus() != OrderStatus.PENDING) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "GET_PAYMENT_INTENT_FAILED",
+                        "Lỗi thanh toán: trạng thái đơn hàng không hợp lệ"
+                ));
+            }
+            if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER || order.getPaymentStatus() == PaymentStatus.PAID) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "GET_PAYMENT_INTENT_FAILED",
+                        "Lỗi thanh toán: phương thức thanh toán không hợp lệ hoặc đơn đã được thanh toán"
+                ));
+            }
+            OrderDTO orderDTO = new OrderDTO(order);
+            orderDTO.setClientSecret(paymentService.createPaymentIntent(order.getTotalPrice(), order));
+            return ResponseEntity.ok(ResponseWrapper.success(orderDTO));
+        } catch (StripeException stripeException) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_PAYMENT_INTENT_FAILED",
+                    "Lỗi thanh toán : " + stripeException.getMessage()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_PAYMENT_INTENT_FAILED",
+                    "Lỗi thanh toán: " + e.getMessage()
+            ));
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(Long orderId) {
         try {
             Order order = findOrderOrThrow(orderId);

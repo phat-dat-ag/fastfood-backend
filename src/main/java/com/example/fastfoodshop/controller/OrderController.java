@@ -35,6 +35,14 @@ public class OrderController {
         return orderService.createStripePaymentOrder(userDetails.getUsername(), request.getPromotionCode(), request.getUserNote(), request.getAddressId());
     }
 
+    @GetMapping("/payment-intent")
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getPaymentIntent(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("orderId") Long orderId
+    ) {
+        return orderService.getPaymentIntent(userDetails.getUsername(), orderId);
+    }
+
     @GetMapping("/by-order-id")
     public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(@RequestParam("orderId") Long orderId) {
         return orderService.getOrder(orderId);
