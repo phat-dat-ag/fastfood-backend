@@ -1,0 +1,87 @@
+package com.example.fastfoodshop.service;
+
+import com.example.fastfoodshop.dto.AwardDTO;
+import com.example.fastfoodshop.entity.Award;
+import com.example.fastfoodshop.entity.TopicDifficulty;
+import com.example.fastfoodshop.repository.AwardRepository;
+import com.example.fastfoodshop.request.AwardCreateRequest;
+import com.example.fastfoodshop.response.ResponseWrapper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class AwardService {
+    private final TopicDifficultyService topicDifficultyService;
+    private final AwardRepository awardRepository;
+
+    private Award findAwardOrThrow(Long id) {
+        return awardRepository.findById(id).orElseThrow(() -> new RuntimeException("Phần thưởng không tồn tại hoặc đã bị xóa"));
+    }
+
+    private void buildAward(Award award, AwardCreateRequest request) {
+        award.setType(request.getType());
+        award.setMinValue(request.getMinValue());
+        award.setMaxValue(request.getMaxValue());
+        award.setUsedQuantity(0);
+        award.setQuantity(request.getQuantity());
+        award.setMaxDiscountAmount(request.getMaxDiscountAmount());
+        award.setMinSpendAmount(request.getMinSpendAmount());
+        award.setActivated(request.isActivated());
+        award.setDeleted(false);
+    }
+
+    public ResponseEntity<ResponseWrapper<AwardDTO>> createAward(String topicDifficultySlug, AwardCreateRequest request) {
+        try {
+            TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+            Award award = new Award();
+            award.setTopicDifficulty(topicDifficulty);
+            buildAward(award, request);
+
+            Award savedAward = awardRepository.save(award);
+            return ResponseEntity.ok(ResponseWrapper.success(new AwardDTO(savedAward)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CREATE_AWARD_FAILED",
+                    "Lỗi tạo phần thưởng cho độ khó " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<AwardDTO>>> getAllAwardsByTopicDifficulty(String topicDifficultySlug) {
+        try {
+            TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+            List<Award> awards = awardRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty);
+
+            ArrayList<AwardDTO> awardDTOs = new ArrayList<>();
+            for (Award award : awards) {
+                awardDTOs.add(new AwardDTO(award));
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(awardDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_AWARDS_FAILED",
+                    "Lỗi lấy các phần thưởng của độ khó " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<AwardDTO>> deleteAward(Long awardId) {
+        try {
+            Award award = findAwardOrThrow(awardId);
+            award.setDeleted(true);
+
+            Award deletedAward = awardRepository.save(award);
+            return ResponseEntity.ok(ResponseWrapper.success(new AwardDTO(deletedAward)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DELETE_AWARD_FAILED",
+                    "Lỗi xóa phần thưởng của độ khó " + e.getMessage()
+            ));
+        }
+    }
+}

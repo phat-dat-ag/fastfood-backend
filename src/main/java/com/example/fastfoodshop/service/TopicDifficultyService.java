@@ -36,6 +36,10 @@ public class TopicDifficultyService {
         return topicDifficultyRepository.findById(topicDifficultyId).orElseThrow(() -> new RuntimeException("Không tìm thấy độ khó của chủ đề"));
     }
 
+    public TopicDifficulty findValidTopicDifficultyOrThrow(String topicDifficultySlug) {
+        return topicDifficultyRepository.findBySlugAndIsDeletedFalse(topicDifficultySlug).orElseThrow(() -> new RuntimeException("Không tìm thấy độ khó của chủ đề"));
+    }
+
     public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> createTopicDifficulty(String topicSlug, TopicDifficultyCreateRequest request) {
         try {
             Topic topic = topicService.findValidTopicOrThrow(topicSlug);
@@ -77,6 +81,18 @@ public class TopicDifficultyService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "UPDATE_TOPIC_DIFFICULTY_FAILED",
                     "Lỗi khi cập nhật độ khó cho chủ đề " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> getTopicDifficultyBySlug(String slug) {
+        try {
+            TopicDifficulty topicDifficulty = findValidTopicDifficultyOrThrow(slug);
+            return ResponseEntity.ok(ResponseWrapper.success(new TopicDifficultyDTO(topicDifficulty)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_TOPIC_DIFFICULTY_FAILED",
+                    "Lỗi lấy độ khó của chủ đề qua slug"
             ));
         }
     }

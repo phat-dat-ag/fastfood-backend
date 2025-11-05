@@ -34,6 +34,11 @@ public class TopicDifficultyController {
         return topicDifficultyService.updateTopicDifficulty(topicDifficultyId, request);
     }
 
+    @GetMapping("/by-slug")
+    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> getTopicDifficultyBySlug(@RequestParam("topicDifficultySlug") String topicDifficultySlug) {
+        return topicDifficultyService.getTopicDifficultyBySlug(topicDifficultySlug);
+    }
+
     @GetMapping("/by-topic-slug")
     public ResponseEntity<ResponseWrapper<ArrayList<TopicDifficultyDTO>>> getAllTopicDifficultiesByTopic(@RequestParam("topicSlug") String topicSlug) {
         return topicDifficultyService.getAllTopicDifficultiesByTopic(topicSlug);
