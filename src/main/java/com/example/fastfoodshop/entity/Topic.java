@@ -24,6 +24,9 @@ public class Topic extends BaseAuditableEntity {
     @Column(name = "name", length = 60, nullable = false)
     private String name;
 
+    @Column(name = "slug", nullable = false, unique = true)
+    private String slug;
+
     @Column(name = "description", columnDefinition = "TEXT", nullable = false)
     private String description;
 

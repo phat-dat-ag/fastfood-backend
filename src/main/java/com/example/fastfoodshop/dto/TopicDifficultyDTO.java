@@ -12,6 +12,7 @@ import java.util.ArrayList;
 public class TopicDifficultyDTO {
     private Long id;
     private String name;
+    private String slug;
     private String description;
     private int duration;
     private int questionCount;
@@ -24,6 +25,7 @@ public class TopicDifficultyDTO {
     public TopicDifficultyDTO(TopicDifficulty topicDifficulty) {
         this.id = topicDifficulty.getId();
         this.name = topicDifficulty.getName();
+        this.slug = topicDifficulty.getSlug();
         this.description = topicDifficulty.getDescription();
         this.duration = topicDifficulty.getDuration();
         this.questionCount = topicDifficulty.getQuestionCount();

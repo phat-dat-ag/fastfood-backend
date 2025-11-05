@@ -4,6 +4,7 @@ import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.repository.TopicRepository;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,17 @@ import java.util.List;
 public class TopicService {
     private final TopicRepository topicRepository;
 
+    private String generateUniqueSlug(String name) {
+        String baseSlug = SlugUtils.toSlug(name);
+        String uniqueSlug = baseSlug;
+        int counter = 1;
+
+        while (topicRepository.existsBySlug((uniqueSlug))) {
+            uniqueSlug = baseSlug + "-" + counter++;
+        }
+        return uniqueSlug;
+    }
+
     private Topic findTopicOrThrow(Long topicId) {
         return topicRepository.findById(topicId).orElseThrow(() -> new RuntimeException("Chủ đề không tồn tại"));
     }
@@ -27,6 +39,9 @@ public class TopicService {
             topic.setDescription(description);
             topic.setActivated(isActivated);
             topic.setDeleted(false);
+
+            String slug = generateUniqueSlug(name);
+            topic.setSlug(slug);
 
             Topic savedTopic = topicRepository.save(topic);
             return ResponseEntity.ok(ResponseWrapper.success(new TopicDTO(savedTopic)));

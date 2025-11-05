@@ -14,6 +14,7 @@ import java.util.List;
 public class TopicDTO {
     private Long id;
     private String name;
+    private String slug;
     private String description;
     private boolean isActivated;
     private List<TopicDifficultyDTO> topicDifficulties = new ArrayList<>();
@@ -23,6 +24,7 @@ public class TopicDTO {
     public TopicDTO(Topic topic) {
         this.id = topic.getId();
         this.name = topic.getName();
+        this.slug = topic.getSlug();
         this.description = topic.getDescription();
         this.isActivated = topic.isActivated();
         for (TopicDifficulty topicDifficulty : topic.getTopicDifficulties()) {
