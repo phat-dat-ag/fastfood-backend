@@ -30,6 +30,11 @@ public class TopicController {
         return topicService.updateTopic(topicId, request.getName(), request.getDescription(), request.getIsActivated());
     }
 
+    @GetMapping("/by-slug")
+    public ResponseEntity<ResponseWrapper<TopicDTO>> getTopicBySlug(@RequestParam("slug") String slug) {
+        return topicService.getTopicBySlug(slug);
+    }
+
     @GetMapping()
     public ResponseEntity<ResponseWrapper<ArrayList<TopicDTO>>> getAllTopics() {
         return topicService.getAllTopics();

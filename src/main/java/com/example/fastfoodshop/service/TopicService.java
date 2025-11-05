@@ -32,6 +32,10 @@ public class TopicService {
         return topicRepository.findById(topicId).orElseThrow(() -> new RuntimeException("Chủ đề không tồn tại"));
     }
 
+    public Topic findValidTopicOrThrow(String topicSlug) {
+        return topicRepository.findBySlugAndIsDeletedFalse(topicSlug).orElseThrow(() -> new RuntimeException("Chủ đề không tồn tại hoặc đã bị xóa"));
+    }
+
     public ResponseEntity<ResponseWrapper<TopicDTO>> createTopic(String name, String description, boolean isActivated) {
         try {
             Topic topic = new Topic();
@@ -66,6 +70,18 @@ public class TopicService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "UPDATE_TOPIC_FAILED",
                     "Lỗi cập nhật chủ đề  " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<TopicDTO>> getTopicBySlug(String slug) {
+        try {
+            Topic topic = findValidTopicOrThrow(slug);
+            return ResponseEntity.ok(ResponseWrapper.success(new TopicDTO(topic)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_TOPIC_FAILED",
+                    "Lỗi lấy chủ đề theo slug " + e.getMessage()
             ));
         }
     }
