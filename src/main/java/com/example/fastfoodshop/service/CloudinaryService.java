@@ -26,12 +26,31 @@ public class CloudinaryService {
         }
     }
 
+    public Map<?, ?> uploadAudio(MultipartFile file, String folder) {
+        try {
+            return cloudinary.uploader().upload(file.getBytes(),
+                    Map.of("folder", folder, "resource_type", "video"));
+        } catch (IOException e) {
+            throw new RuntimeException("Lỗi khi tải âm thanh lên Cloudinary: " + e.getMessage(), e);
+        }
+    }
+
     public boolean deleteImage(String publicId) {
         try {
             Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
             return ("ok").equals(result.get("result"));
         } catch (IOException e) {
             throw new RuntimeException("Delete image failed", e);
+        }
+    }
+
+    public boolean deleteAudio(String publicId) {
+        try {
+            Map<?, ?> result = cloudinary.uploader().destroy(publicId,
+                    Map.of("resource_type", "video"));
+            return "ok".equals(result.get("result"));
+        } catch (IOException e) {
+            return false;
         }
     }
 }
