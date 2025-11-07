@@ -32,7 +32,7 @@ public class AwardCreateRequest {
     private Integer minSpendAmount;
 
     @NotNull(message = "Không được để trống trạng thái của phần thưởng")
-    private boolean isActivated;
+    private Boolean isActivated;
 
     @AssertTrue(message = "Giá trị khuyến mãi không hợp lệ với loại khuyến mãi đã chọn")
     public Boolean isValueValidByType() {

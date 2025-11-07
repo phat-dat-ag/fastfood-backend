@@ -31,7 +31,7 @@ public class AwardService {
         award.setQuantity(request.getQuantity());
         award.setMaxDiscountAmount(request.getMaxDiscountAmount());
         award.setMinSpendAmount(request.getMinSpendAmount());
-        award.setActivated(request.isActivated());
+        award.setActivated(request.getIsActivated());
         award.setDeleted(false);
     }
 
