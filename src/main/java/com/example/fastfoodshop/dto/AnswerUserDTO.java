@@ -12,6 +12,6 @@ public class AnswerUserDTO {
     public AnswerUserDTO(Answer answer) {
         this.id = answer.getId();
         this.content = answer.getContent() != null ? answer.getContent() : "";
-        this.imageUrl = answer.getImageUrl();
+        this.imageUrl = answer.getImageUrl() != null ? answer.getImageUrl() : "";
     }
 }

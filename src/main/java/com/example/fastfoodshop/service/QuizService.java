@@ -27,13 +27,29 @@ public class QuizService {
     private final QuizQuestionService quizQuestionService;
     private final QuizRepository quizRepository;
 
-    private boolean canPlayToday(User user) {
+    private Quiz checkPlayableQuiz(User user) {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
         List<Quiz> quizzes = quizRepository.findByUserAndStartedAtBetween(user, startOfDay, endOfDay);
-        return quizzes.size() < 3;
+
+        int completedCount = 0;
+
+        for (Quiz quiz : quizzes) {
+            LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(quiz.getTopicDifficulty().getDuration());
+            boolean isExpired = LocalDateTime.now().isAfter(expiredAt);
+
+            if (!isExpired && quiz.getCompletedAt() == null) {
+                return quiz;
+            }
+
+            if (quiz.getCompletedAt() != null || isExpired) completedCount++;
+        }
+
+        if (completedCount >= 3) return null;
+
+        return new Quiz();
     }
 
     private Quiz saveQuiz(TopicDifficulty topicDifficulty, User user) {
@@ -60,12 +76,19 @@ public class QuizService {
     public ResponseEntity<ResponseWrapper<QuizResponse>> getQuiz(String phone, String topicDifficultySlug) {
         try {
             User user = userService.findUserOrThrow(phone);
-            if (!canPlayToday(user)) {
+            Quiz existingOrPlayableQuiz = checkPlayableQuiz(user);
+
+            if (existingOrPlayableQuiz == null) {
                 return ResponseEntity.badRequest().body(ResponseWrapper.error(
                         "GET_QUIZ_FAILED",
                         "Đã hết lượt tham gia hôm nay"
                 ));
             }
+
+            if (existingOrPlayableQuiz.getId() != null) {
+                return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(existingOrPlayableQuiz)));
+            }
+
             TopicDifficulty topicDifficulty = topicDifficultyService.findPlayableTopicDifficultyBySlug(topicDifficultySlug);
 
             Quiz savedQuiz = saveQuiz(topicDifficulty, user);

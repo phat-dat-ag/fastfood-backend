@@ -5,6 +5,7 @@ import com.example.fastfoodshop.dto.QuestionUserDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyDTO;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.Quiz;
+import com.example.fastfoodshop.entity.QuizQuestion;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -29,6 +30,18 @@ public class QuizResponse {
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         for (Question question : questions) {
             this.questions.add(new QuestionUserDTO(question));
+        }
+    }
+
+    public QuizResponse(Quiz quiz) {
+        this.id = quiz.getId();
+        this.startedAt = quiz.getStartedAt();
+        this.completedAt = quiz.getCompletedAt();
+        this.expiredAt = quiz.getStartedAt().plusSeconds(quiz.getTopicDifficulty().getDuration());
+        this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
+        this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
+        for (QuizQuestion quizQuestion : quiz.getQuizQuestions()) {
+            this.questions.add(new QuestionUserDTO(quizQuestion.getQuestion()));
         }
     }
 }
