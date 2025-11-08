@@ -1,16 +1,21 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.TopicDTO;
+import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.repository.TopicRepository;
+import com.example.fastfoodshop.response.DifficultyDisplayResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.TopicDisplayResponse;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -100,6 +105,38 @@ public class TopicService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_TOPICS_FAILED",
                     "Lỗi lấy tất cả các chủ đề " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<List<TopicDisplayResponse>>> getDisplayableTopics() {
+        try {
+            List<TopicDifficultyFullDTO> flatList = topicRepository.findDisplayableTopicsFull();
+            Map<Long, TopicDisplayResponse> grouped = new LinkedHashMap<>();
+
+            for (TopicDifficultyFullDTO dto : flatList) {
+                grouped.computeIfAbsent(dto.topicId(), id ->
+                        new TopicDisplayResponse(
+                                dto.topicId(),
+                                dto.topicName(),
+                                dto.topicSlug(),
+                                dto.topicDescription()
+                        )
+                ).getDifficulties().add(new DifficultyDisplayResponse(
+                        dto.difficultyId(),
+                        dto.difficultyName(),
+                        dto.difficultySlug(),
+                        dto.difficultyDescription(),
+                        dto.duration(),
+                        dto.questionCount(),
+                        dto.minCorrectToReward()
+                ));
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(new ArrayList<>(grouped.values())));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_DISPLAYABLE_TOPICS_FAILED",
+                    "Lỗi lấy các chủ đề hiển thị cho người dùng"
             ));
         }
     }

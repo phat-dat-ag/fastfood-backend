@@ -3,6 +3,7 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.request.TopicCreateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.TopicDisplayResponse;
 import com.example.fastfoodshop.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Controller
 @RequestMapping("/api/topic")
@@ -38,6 +40,11 @@ public class TopicController {
     @GetMapping()
     public ResponseEntity<ResponseWrapper<ArrayList<TopicDTO>>> getAllTopics() {
         return topicService.getAllTopics();
+    }
+
+    @GetMapping("/display")
+    public ResponseEntity<ResponseWrapper<List<TopicDisplayResponse>>> getDisplayableTopics() {
+        return topicService.getDisplayableTopics();
     }
 
     @DeleteMapping()
