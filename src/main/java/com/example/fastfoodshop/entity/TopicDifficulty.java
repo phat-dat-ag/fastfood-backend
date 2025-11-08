@@ -50,6 +50,9 @@ public class TopicDifficulty extends BaseAuditableEntity {
     private Topic topic;
 
     @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Quiz> quizzes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Award> awards = new ArrayList<>();
 
     @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
