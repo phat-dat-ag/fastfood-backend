@@ -40,6 +40,12 @@ public class TopicDifficultyService {
         return topicDifficultyRepository.findBySlugAndIsDeletedFalse(topicDifficultySlug).orElseThrow(() -> new RuntimeException("Không tìm thấy độ khó của chủ đề"));
     }
 
+    public TopicDifficulty findPlayableTopicDifficultyBySlug(String topicDifficultySlug) {
+        return topicDifficultyRepository.findPlayableBySlug(topicDifficultySlug).orElseThrow(
+                () -> new RuntimeException("Chủ đề không đủ câu hỏi hoặc phần thưởng")
+        );
+    }
+
     public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> createTopicDifficulty(String topicSlug, TopicDifficultyCreateRequest request) {
         try {
             Topic topic = topicService.findValidTopicOrThrow(topicSlug);
