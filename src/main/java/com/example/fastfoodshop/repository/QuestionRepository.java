@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByTopicDifficultyAndIsDeletedFalse(TopicDifficulty topicDifficulty);
+
+    List<Question> findByTopicDifficultyAndIsActivatedTrueAndIsDeletedFalse(TopicDifficulty topicDifficulty);
 }

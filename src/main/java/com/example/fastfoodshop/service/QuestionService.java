@@ -65,6 +65,10 @@ public class QuestionService {
         }
     }
 
+    public List<Question> getAllValidQuestionsByTopicDifficulty(TopicDifficulty topicDifficulty) {
+        return questionRepository.findByTopicDifficultyAndIsActivatedTrueAndIsDeletedFalse(topicDifficulty);
+    }
+
     @Transactional
     public ResponseEntity<ResponseWrapper<String>> createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
         try {
