@@ -1,16 +1,16 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.request.QuizSubmitRequest;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.QuizService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/api/quiz")
@@ -24,5 +24,18 @@ public class QuizController {
             @RequestParam("topicDifficultySlug") String topicDifficultySlug
     ) {
         return quizService.getQuiz(userDetails.getUsername(), topicDifficultySlug);
+    }
+
+    @PostMapping()
+    public ResponseEntity<ResponseWrapper<QuizResponse>> submitQuiz(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody QuizSubmitRequest quizSubmitRequest
+    ) {
+        return quizService.checkQuizSubmission(
+                userDetails.getUsername(),
+                quizSubmitRequest.getQuizId(),
+                quizSubmitRequest.getTopicDifficultySlug(),
+                quizSubmitRequest.getQuizQuestions()
+        );
     }
 }

@@ -1,10 +1,9 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.entity.Question;
-import com.example.fastfoodshop.entity.Quiz;
-import com.example.fastfoodshop.entity.TopicDifficulty;
-import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.entity.*;
+import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.repository.QuizRepository;
+import com.example.fastfoodshop.request.QuizQuestionSubmitRequest;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +16,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +27,7 @@ public class QuizService {
     private final QuestionService questionService;
     private final QuizQuestionService quizQuestionService;
     private final QuizRepository quizRepository;
+    private final AnswerRepository answerRepository;
 
     private Quiz checkPlayableQuiz(User user) {
         LocalDate today = LocalDate.now();
@@ -72,6 +74,11 @@ public class QuizService {
         return new ArrayList<>(questions.subList(0, requiredCount));
     }
 
+    private Quiz findUncompletedQuizOrThrow(Long quizId, User user, TopicDifficulty topicDifficulty) {
+        return quizRepository.findByIdAndUserAndTopicDifficultyAndCompletedAtIsNull(quizId, user, topicDifficulty)
+                .orElseThrow(() -> new RuntimeException("Bài kiểm tra này không hợp lệ"));
+    }
+
     @Transactional
     public ResponseEntity<ResponseWrapper<QuizResponse>> getQuiz(String phone, String topicDifficultySlug) {
         try {
@@ -105,6 +112,96 @@ public class QuizService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_QUIZ_FAILED",
                     "Lỗi lấy các câu hỏi của thử thách " + e.getMessage()
+            ));
+        }
+    }
+
+    private Map<Long, Long> generateSubmittedMap(List<QuizQuestionSubmitRequest> quizQuestionSubmits) {
+        Map<Long, Long> submittedMap = new HashMap<>();
+        for (QuizQuestionSubmitRequest questionSubmitRequest : quizQuestionSubmits) {
+            submittedMap.put(questionSubmitRequest.getQuestionId(), questionSubmitRequest.getAnswerId());
+        }
+        return submittedMap;
+    }
+
+    private Map<Long, Answer> generateAnswerMap(Map<Long, Long> submittedMap) {
+        List<Long> answerIds = submittedMap.values().stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+        return answerRepository.findAllById(answerIds).stream()
+                .collect(Collectors.toMap(Answer::getId, Function.identity()));
+    }
+
+    private int updateQuizAnswerAndCalculateScore(
+            List<QuizQuestion> quizQuestions,
+            Map<Long, Long> submittedMap,
+            Map<Long, Answer> answerMap
+    ) {
+        int score = 0;
+
+        for (QuizQuestion quizQuestion : quizQuestions) {
+            Long questionId = quizQuestion.getQuestion().getId();
+            Long answerId = submittedMap.get(questionId);
+
+            if (answerId == null) {
+                quizQuestion.setAnswer(null);
+                continue;
+            }
+
+            Answer answer = answerMap.get(answerId);
+            if (answer == null || !answer.getQuestion().getId().equals(questionId)) {
+                quizQuestion.setAnswer(null);
+                continue;
+            }
+
+            quizQuestion.setAnswer(answer);
+            if (answer.isCorrect()) score++;
+        }
+
+        return score;
+    }
+
+    @Transactional
+    public ResponseEntity<ResponseWrapper<QuizResponse>> checkQuizSubmission(
+            String phone, Long quizId, String topicDifficultySlug, List<QuizQuestionSubmitRequest> quizQuestionSubmits
+    ) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+            Quiz quiz = findUncompletedQuizOrThrow(quizId, user, topicDifficulty);
+
+            final int SUBMIT_TIME_BUFFER_SECONDS = 30;
+            LocalDateTime now = LocalDateTime.now();
+            long totalDuration = quiz.getTopicDifficulty().getDuration() + SUBMIT_TIME_BUFFER_SECONDS;
+            LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(totalDuration);
+
+            if (now.isAfter(expiredAt)) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "CHECK_QUIZ_FAILED",
+                        "Đã hết thời gian làm bài!"
+                ));
+            }
+
+            Map<Long, Long> submittedMap = generateSubmittedMap(quizQuestionSubmits);
+
+            Map<Long, Answer> answerMap = generateAnswerMap(submittedMap);
+
+            List<QuizQuestion> quizQuestions = quiz.getQuizQuestions();
+
+            int score = updateQuizAnswerAndCalculateScore(quizQuestions, submittedMap, answerMap);
+            System.out.println("Điểm: " + score + "/ " + quizQuestions.size());
+
+            quiz.setCompletedAt(LocalDateTime.now());
+            Quiz checkedQuiz = quizRepository.save(quiz);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(checkedQuiz)));
+        } catch (RuntimeException e) {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "CHECK_QUIZ_FAILED",
+                    "Lỗi khi chấm bài kiểm tra " + e.getMessage()
             ));
         }
     }
