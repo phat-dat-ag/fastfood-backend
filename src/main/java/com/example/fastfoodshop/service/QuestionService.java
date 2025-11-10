@@ -2,7 +2,6 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.QuestionDTO;
 import com.example.fastfoodshop.entity.Answer;
-import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.repository.QuestionRepository;
@@ -107,7 +106,7 @@ public class QuestionService {
 
             ArrayList<QuestionDTO> questionDTOs = new ArrayList<>();
             for (Question question : questions) {
-                questionDTOs.add(new QuestionDTO(question));
+                questionDTOs.add(QuestionDTO.createAdminQuestion(question));
             }
 
             return ResponseEntity.ok(ResponseWrapper.success(questionDTOs));

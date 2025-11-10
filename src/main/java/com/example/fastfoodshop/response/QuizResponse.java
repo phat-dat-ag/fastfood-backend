@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.response;
 
 import com.example.fastfoodshop.dto.PromotionDTO;
-import com.example.fastfoodshop.dto.QuestionUserDTO;
+import com.example.fastfoodshop.dto.QuestionDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyDTO;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.Quiz;
@@ -19,7 +19,7 @@ public class QuizResponse {
     private LocalDateTime expiredAt;
     private TopicDifficultyDTO topicDifficulty;
     private PromotionDTO promotion;
-    private ArrayList<QuestionUserDTO> questions = new ArrayList<>();
+    private ArrayList<QuestionDTO> questions = new ArrayList<>();
 
     public QuizResponse(Quiz quiz, ArrayList<Question> questions) {
         this.id = quiz.getId();
@@ -29,7 +29,7 @@ public class QuizResponse {
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         for (Question question : questions) {
-            this.questions.add(new QuestionUserDTO(question));
+            this.questions.add(QuestionDTO.createUserQuestion(question));
         }
     }
 
@@ -41,7 +41,7 @@ public class QuizResponse {
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         for (QuizQuestion quizQuestion : quiz.getQuizQuestions()) {
-            this.questions.add(new QuestionUserDTO(quizQuestion.getQuestion()));
+            this.questions.add(QuestionDTO.createUserQuestion(quizQuestion.getQuestion()));
         }
     }
 }

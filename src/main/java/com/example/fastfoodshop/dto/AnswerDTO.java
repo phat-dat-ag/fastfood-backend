@@ -10,10 +10,18 @@ public class AnswerDTO {
     private String imageUrl;
     private boolean isCorrect;
 
-    public AnswerDTO(Answer answer) {
-        this.id = answer.getId();
-        this.content = answer.getContent() != null ? answer.getContent() : "";
-        this.imageUrl = answer.getImageUrl();
-        this.isCorrect = answer.isCorrect();
+    private AnswerDTO(Long id, String content, String imageUrl, boolean isCorrect) {
+        this.id = id;
+        this.content = content != null ? content : "";
+        this.imageUrl = imageUrl;
+        this.isCorrect = isCorrect;
+    }
+
+    public static AnswerDTO createAdminAnswer(Answer answer) {
+        return new AnswerDTO(answer.getId(), answer.getContent(), answer.getImageUrl(), answer.isCorrect());
+    }
+
+    public static AnswerDTO createUserAnswer(Answer answer) {
+        return new AnswerDTO(answer.getId(), answer.getContent(), answer.getImageUrl(), false);
     }
 }

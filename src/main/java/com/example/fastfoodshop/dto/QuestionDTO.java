@@ -5,6 +5,7 @@ import com.example.fastfoodshop.entity.Question;
 import lombok.Data;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Data
 public class QuestionDTO {
@@ -13,16 +14,30 @@ public class QuestionDTO {
     private String imageUrl;
     private String audioUrl;
     private boolean isActivated;
-    private ArrayList<AnswerDTO> answers = new ArrayList<>();
+    private List<AnswerDTO> answers;
 
-    public QuestionDTO(Question question) {
+    private QuestionDTO(Question question, List<AnswerDTO> answerDTOs) {
         this.id = question.getId();
         this.content = question.getContent();
         this.imageUrl = question.getImageUrl() != null ? question.getImageUrl() : "";
         this.audioUrl = question.getAudioUrl() != null ? question.getAudioUrl() : "";
         this.isActivated = question.isActivated();
+        this.answers = answerDTOs;
+    }
+
+    public static QuestionDTO createAdminQuestion(Question question) {
+        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
         for (Answer answer : question.getAnswers()) {
-            this.answers.add(new AnswerDTO(answer));
+            answerDTOs.add(AnswerDTO.createAdminAnswer(answer));
         }
+        return new QuestionDTO(question, answerDTOs);
+    }
+
+    public static QuestionDTO createUserQuestion(Question question) {
+        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
+        for (Answer answer : question.getAnswers()) {
+            answerDTOs.add(AnswerDTO.createUserAnswer(answer));
+        }
+        return new QuestionDTO(question, answerDTOs);
     }
 }
