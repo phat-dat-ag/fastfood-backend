@@ -1,19 +1,22 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.QuizConstants;
 import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
-import com.example.fastfoodshop.entity.Category;
-import com.example.fastfoodshop.entity.Product;
-import com.example.fastfoodshop.entity.Promotion;
+import com.example.fastfoodshop.entity.*;
+import com.example.fastfoodshop.enums.PromotionType;
+import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.PromotionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.util.NumberUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +26,8 @@ public class PromotionService {
     private final PromotionRepository promotionRepository;
     private final CategoryService categoryService;
     private final ProductService productService;
+    private final AwardRepository awardRepository;
+    private final AwardService awardService;
 
     public boolean checkUniqueCode(String code) {
         return promotionRepository.findByCode(code).isPresent();
@@ -230,5 +235,47 @@ public class PromotionService {
                     )
             );
         }
+    }
+
+    private String generatePromotionCode(Long userId, Long quizId, LocalDateTime completedAt) {
+        long uniqueNumber = completedAt
+                .atZone(ZoneId.systemDefault())
+                .toInstant()
+                .toEpochMilli();
+
+        String timePart = Long.toString(uniqueNumber, 36).toUpperCase();
+
+        return "PM-" + userId + "Q" + quizId + "-" + timePart;
+    }
+
+    public Promotion grantPromotion(User user, Quiz quiz) {
+        if (quiz.getCompletedAt() == null)
+            throw new RuntimeException("Lỗi tạo phần thưởng: Bài kiểm tra chưa hoàn thành");
+        String promotionCode = generatePromotionCode(user.getId(), quiz.getId(), quiz.getCompletedAt());
+
+        Award award = awardService.getRandomAwardByTopicDifficulty(quiz.getTopicDifficulty());
+        int value = NumberUtils.randomNumber(award.getMinValue(), award.getMaxValue());
+        value = award.getType() == PromotionType.PERCENTAGE ? value : NumberUtils.roundToThousand(value);
+
+        LocalDateTime startAt = LocalDateTime.now();
+        LocalDateTime endAt = startAt.plusDays(QuizConstants.PROMOTION_VALIDITY_DAYS);
+
+        Promotion promotion = new Promotion();
+        promotion.setUser(user);
+        promotion.setType(award.getType());
+        promotion.setValue(value);
+        promotion.setStartAt(startAt);
+        promotion.setEndAt(endAt);
+        promotion.setUsedQuantity(0);
+        promotion.setQuantity(1);
+        promotion.setMaxDiscountAmount(award.getMaxDiscountAmount());
+        promotion.setMinSpendAmount(award.getMinSpendAmount());
+        promotion.setCode(promotionCode);
+        promotion.setGlobal(true);
+        promotion.setActivated(true);
+
+        award.setUsedQuantity(award.getUsedQuantity() + 1);
+        awardRepository.save(award);
+        return promotionRepository.save(promotion);
     }
 }

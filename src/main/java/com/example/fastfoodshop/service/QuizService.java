@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.QuizConstants;
 import com.example.fastfoodshop.entity.*;
 import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.repository.QuizRepository;
@@ -26,6 +27,7 @@ public class QuizService {
     private final TopicDifficultyService topicDifficultyService;
     private final QuestionService questionService;
     private final QuizQuestionService quizQuestionService;
+    private final PromotionService promotionService;
     private final QuizRepository quizRepository;
     private final AnswerRepository answerRepository;
 
@@ -171,9 +173,8 @@ public class QuizService {
             TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
             Quiz quiz = findUncompletedQuizOrThrow(quizId, user, topicDifficulty);
 
-            final int SUBMIT_TIME_BUFFER_SECONDS = 30;
             LocalDateTime now = LocalDateTime.now();
-            long totalDuration = quiz.getTopicDifficulty().getDuration() + SUBMIT_TIME_BUFFER_SECONDS;
+            long totalDuration = quiz.getTopicDifficulty().getDuration() + QuizConstants.SUBMIT_TIME_BUFFER_SECONDS;
             LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(totalDuration);
 
             if (now.isAfter(expiredAt)) {
@@ -189,10 +190,14 @@ public class QuizService {
 
             List<QuizQuestion> quizQuestions = quiz.getQuizQuestions();
 
-            int score = updateQuizAnswerAndCalculateScore(quizQuestions, submittedMap, answerMap);
-            System.out.println("Điểm: " + score + "/ " + quizQuestions.size());
-
             quiz.setCompletedAt(LocalDateTime.now());
+
+            int score = updateQuizAnswerAndCalculateScore(quizQuestions, submittedMap, answerMap);
+            if (score >= topicDifficulty.getMinCorrectToReward()) {
+                Promotion promotion = promotionService.grantPromotion(user, quiz);
+                quiz.setPromotion(promotion);
+            }
+
             Quiz checkedQuiz = quizRepository.save(quiz);
 
             return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(checkedQuiz)));

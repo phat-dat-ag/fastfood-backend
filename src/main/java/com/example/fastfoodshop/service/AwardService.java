@@ -6,12 +6,14 @@ import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.util.NumberUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +35,18 @@ public class AwardService {
         award.setMinSpendAmount(request.getMinSpendAmount());
         award.setActivated(request.getIsActivated());
         award.setDeleted(false);
+    }
+
+    public Award getRandomAwardByTopicDifficulty(TopicDifficulty topicDifficulty) {
+        List<Award> availableAwards = awardRepository.findAvailableByTopicDifficulty(topicDifficulty.getId());
+
+        if (!availableAwards.isEmpty()) {
+            int index = NumberUtils.randomNumber(0, availableAwards.size() - 1);
+            return availableAwards.get(index);
+        } else {
+            Optional<Award> optionalAward = awardRepository.findAnyAvailableAwardAsFallback(topicDifficulty.getId());
+            return optionalAward.orElseThrow(() -> new RuntimeException("Lỗi: không có phần thưởng nào tồn tại"));
+        }
     }
 
     public ResponseEntity<ResponseWrapper<AwardDTO>> createAward(String topicDifficultySlug, AwardCreateRequest request) {
