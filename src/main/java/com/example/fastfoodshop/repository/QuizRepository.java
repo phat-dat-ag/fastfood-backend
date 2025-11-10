@@ -12,5 +12,7 @@ import java.util.Optional;
 public interface QuizRepository extends JpaRepository<Quiz, Long> {
     List<Quiz> findByUserAndStartedAtBetween(User user, LocalDateTime start, LocalDateTime end);
 
+    List<Quiz> findByUserAndCompletedAtIsNotNull(User user);
+
     Optional<Quiz> findByIdAndUserAndTopicDifficultyAndCompletedAtIsNull(Long quizId, User user, TopicDifficulty topicDifficulty);
 }

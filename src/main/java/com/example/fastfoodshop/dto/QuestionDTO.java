@@ -40,4 +40,14 @@ public class QuestionDTO {
         }
         return new QuestionDTO(question, answerDTOs);
     }
+
+    public static QuestionDTO createReviewQuestion(Question question, Answer selectedAnswer) {
+        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
+        Long selectedId = selectedAnswer != null ? selectedAnswer.getId() : null;
+        for (Answer answer : question.getAnswers()) {
+            boolean isSelected = selectedId != null && selectedId.equals(answer.getId());
+            answerDTOs.add(AnswerDTO.createReviewAnswer(answer, isSelected));
+        }
+        return new QuestionDTO(question, answerDTOs);
+    }
 }

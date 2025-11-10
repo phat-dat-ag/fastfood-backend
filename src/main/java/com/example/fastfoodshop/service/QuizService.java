@@ -95,7 +95,7 @@ public class QuizService {
             }
 
             if (existingOrPlayableQuiz.getId() != null) {
-                return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(existingOrPlayableQuiz)));
+                return ResponseEntity.ok(ResponseWrapper.success(QuizResponse.createUserQuizResponse(existingOrPlayableQuiz)));
             }
 
             TopicDifficulty topicDifficulty = topicDifficultyService.findPlayableTopicDifficultyBySlug(topicDifficultySlug);
@@ -107,7 +107,7 @@ public class QuizService {
 
             quizQuestionService.createQuizQuestions(savedQuiz, selectedQuestions);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(savedQuiz, selectedQuestions)));
+            return ResponseEntity.ok(ResponseWrapper.success(QuizResponse.createUserQuizResponse(savedQuiz, selectedQuestions)));
         } catch (Exception e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 
@@ -200,13 +200,31 @@ public class QuizService {
 
             Quiz checkedQuiz = quizRepository.save(quiz);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new QuizResponse(checkedQuiz)));
+            return ResponseEntity.ok(ResponseWrapper.success(QuizResponse.createUserQuizResponse(checkedQuiz)));
         } catch (RuntimeException e) {
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "CHECK_QUIZ_FAILED",
                     "Lỗi khi chấm bài kiểm tra " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(String phone) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            List<Quiz> quizzes = quizRepository.findByUserAndCompletedAtIsNotNull(user);
+
+            ArrayList<QuizResponse> quizResponses = new ArrayList<>();
+            for (Quiz quiz : quizzes) {
+                quizResponses.add(QuizResponse.createReviewQuizResponse(quiz));
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(quizResponses));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_REVIEW_QUIZZES_BY_USER_FAILED",
+                    "Lỗi lấy lịch sử thách thức " + e.getMessage()
             ));
         }
     }

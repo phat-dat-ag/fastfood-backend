@@ -12,6 +12,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+
 @Controller
 @RequestMapping("/api/quiz")
 @RequiredArgsConstructor
@@ -37,5 +39,12 @@ public class QuizController {
                 quizSubmitRequest.getTopicDifficultySlug(),
                 quizSubmitRequest.getQuizQuestions()
         );
+    }
+
+    @GetMapping("/by-user")
+    public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return quizService.getAllHistoryQuizzesByUser(userDetails.getUsername());
     }
 }
