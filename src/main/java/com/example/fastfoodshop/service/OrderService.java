@@ -444,4 +444,16 @@ public class OrderService {
             ));
         }
     }
+
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin() {
+        try {
+            List<Order> orders = orderRepository.findAll();
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_ORDERS_BY_ADMIN_FAILED",
+                    "Lỗi lấy tất cả các đơn hàng cho quản trị viên " + e.getMessage()
+            ));
+        }
+    }
 }

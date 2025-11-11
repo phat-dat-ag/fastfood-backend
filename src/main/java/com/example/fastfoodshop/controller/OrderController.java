@@ -13,6 +13,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+
 @Controller
 @RequestMapping("/api/order")
 @RequiredArgsConstructor
@@ -116,5 +118,10 @@ public class OrderController {
             @RequestParam("orderId") Long orderId
     ) {
         return orderService.getOrderHistory(orderId, userDetails.getUsername());
+    }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin() {
+        return orderService.getAllOrdersByAdmin();
     }
 }
