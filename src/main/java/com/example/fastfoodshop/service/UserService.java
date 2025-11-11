@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
@@ -30,6 +31,12 @@ public class UserService {
 
     public User findUserOrThrow(String phone) {
         return userRepository.findByPhone(phone).orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
+    }
+
+    private User findUndeletedUserByIdOrThrow(Long userId) {
+        return userRepository.findByIdAndIsDeletedFalse(userId).orElseThrow(
+                () -> new RuntimeException("Tài khoản không tồn tại hoặc bị xóa")
+        );
     }
 
     public User createUser(String name, String phone, String email, String rawPassword, String birthdayString) {
@@ -166,6 +173,46 @@ public class UserService {
         } catch (Exception e) {
             System.out.println("Lỗi: " + e.getMessage());
             return ResponseEntity.badRequest().body(ResponseWrapper.error("EXCEPTION", "Có ngoại lệ khi cập nhật ảnh đại diện"));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateAccount(Long userId) {
+        try {
+            User user = findUndeletedUserByIdOrThrow(userId);
+            if (user.isActivated()) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "ACTIVATE_ACCOUNT_FAILED",
+                        "Tài khoản hiện đang được kích hoạt"
+                ));
+            }
+            user.setActivated(true);
+            userRepository.save(user);
+            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt tài khoản thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_ACCOUNT_FAILED",
+                    "Lỗi kích hoạt tài khoản " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateAccount(Long userId) {
+        try {
+            User user = findUndeletedUserByIdOrThrow(userId);
+            if (!user.isActivated()) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "DEACTIVATE_ACCOUNT_FAILED",
+                        "Tài khoản hiện đang bị hủy kích hoạt"
+                ));
+            }
+            user.setActivated(false);
+            userRepository.save(user);
+            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt tài khoản thành công"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_ACCOUNT_FAILED",
+                    "Lỗi hủy kích hoạt tài khoản " + e.getMessage()
+            ));
         }
     }
 

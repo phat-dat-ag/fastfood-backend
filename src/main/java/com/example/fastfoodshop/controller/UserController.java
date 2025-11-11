@@ -55,6 +55,16 @@ public class UserController {
         return userService.changePassword(userDetails.getUsername(), req.getPassword(), req.getNewPassword());
     }
 
+    @PutMapping("/manage/activate-account")
+    public ResponseEntity<ResponseWrapper<String>> activateAccount(@RequestParam("userId") Long userId) {
+        return userService.activateAccount(userId);
+    }
+
+    @PutMapping("/manage/deactivate-account")
+    public ResponseEntity<ResponseWrapper<String>> deactivateAccount(@RequestParam("userId") Long userId) {
+        return userService.deactivateAccount(userId);
+    }
+
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(@RequestParam("phone") String phone) {
         return userService.deleteUser(phone);
