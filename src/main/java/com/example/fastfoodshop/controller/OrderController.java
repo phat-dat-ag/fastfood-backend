@@ -3,17 +3,17 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.dto.OrderDTO;
+import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.response.OrderResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.OrderService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 
 @Controller
 @RequestMapping("/api/order")
@@ -51,8 +51,10 @@ public class OrderController {
     }
 
     @GetMapping("/staff/unfinished-orders/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders() {
-        return orderService.getAllUnfinishedOrders();
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return orderService.getAllUnfinishedOrders(request.getPage(), request.getSize());
     }
 
     @GetMapping("/staff/unfinished-order")
@@ -95,8 +97,11 @@ public class OrderController {
     }
 
     @GetMapping("/active-order/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(@AuthenticationPrincipal UserDetails userDetails) {
-        return orderService.getAllActiveOrders(userDetails.getUsername());
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return orderService.getAllActiveOrders(userDetails.getUsername(), request.getPage(), request.getSize());
     }
 
     @GetMapping("/active-order")
@@ -108,8 +113,11 @@ public class OrderController {
     }
 
     @GetMapping("/order-history/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(@AuthenticationPrincipal UserDetails userDetails) {
-        return orderService.getAllOrderHistory(userDetails.getUsername());
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return orderService.getAllOrderHistory(userDetails.getUsername(), request.getPage(), request.getSize());
     }
 
     @GetMapping("/order-history")
@@ -121,7 +129,9 @@ public class OrderController {
     }
 
     @GetMapping("/admin/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin() {
-        return orderService.getAllOrdersByAdmin();
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return orderService.getAllOrdersByAdmin(request.getPage(), request.getSize());
     }
 }

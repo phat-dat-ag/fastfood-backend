@@ -17,6 +17,10 @@ import com.example.fastfoodshop.response.OrderResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +28,6 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -230,10 +233,12 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders() {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders(int page, int size) {
         try {
-            List<Order> orders = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull();
-            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+            Pageable pageable = PageRequest.of(page, size, Sort.by("placedAt").descending());
+            Page<Order> orderPage = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull(pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orderPage)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_UNFINISHED_ORDER_FAILED",
@@ -342,11 +347,13 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(String phone) {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(String phone, int page, int size) {
         try {
             User user = userService.findUserOrThrow(phone);
-            List<Order> orders = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+            Pageable pageable = PageRequest.of(page, size, Sort.by("placedAt").descending());
+            Page<Order> orderPage = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orderPage)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ACTIVE_ORDER_FAILED",
@@ -368,11 +375,13 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(String phone) {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(String phone, int page, int size) {
         try {
             User user = userService.findUserOrThrow(phone);
-            List<Order> orders = orderRepository.findCompletedOrCancelledOrdersByUser(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+            Pageable pageable = PageRequest.of(page, size, Sort.by("placedAt").descending());
+            Page<Order> orderPage = orderRepository.findCompletedOrCancelledOrdersByUser(user, pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orderPage)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ORDER_FAILED",
@@ -445,10 +454,12 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin() {
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin(int page, int size) {
         try {
-            List<Order> orders = orderRepository.findAll();
-            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orders)));
+            Pageable pageable = PageRequest.of(page, size, Sort.by("placedAt").descending());
+            Page<Order> orderPage = orderRepository.findAll(pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new OrderResponse(orderPage)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_ORDERS_BY_ADMIN_FAILED",
