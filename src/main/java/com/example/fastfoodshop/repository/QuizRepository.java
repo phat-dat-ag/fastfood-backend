@@ -14,5 +14,7 @@ public interface QuizRepository extends JpaRepository<Quiz, Long> {
 
     List<Quiz> findByUserAndCompletedAtIsNotNull(User user);
 
+    Optional<Quiz> findByIdAndUser(Long quizId, User user);
+
     Optional<Quiz> findByIdAndUserAndTopicDifficultyAndCompletedAtIsNull(Long quizId, User user, TopicDifficulty topicDifficulty);
 }

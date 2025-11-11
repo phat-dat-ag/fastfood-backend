@@ -47,4 +47,12 @@ public class QuizController {
     ) {
         return quizService.getAllHistoryQuizzesByUser(userDetails.getUsername());
     }
+
+    @GetMapping("/by-user/detail")
+    public ResponseEntity<ResponseWrapper<QuizResponse>> getQuizHistoryDetailByUser(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("quizId") Long quizId
+    ) {
+        return quizService.getQuizHistoryDetailByUser(userDetails.getUsername(), quizId);
+    }
 }

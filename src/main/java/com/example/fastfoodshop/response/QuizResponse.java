@@ -3,6 +3,7 @@ package com.example.fastfoodshop.response;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.dto.QuestionDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyDTO;
+import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.QuizQuestion;
@@ -18,6 +19,7 @@ public class QuizResponse {
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private LocalDateTime expiredAt;
+    private UserDTO user;
     private TopicDifficultyDTO topicDifficulty;
     private PromotionDTO promotion;
     private List<QuestionDTO> questions;
@@ -27,6 +29,7 @@ public class QuizResponse {
         this.startedAt = quiz.getStartedAt();
         this.completedAt = quiz.getCompletedAt();
         this.expiredAt = quiz.getStartedAt().plusSeconds(quiz.getTopicDifficulty().getDuration());
+        this.user = new UserDTO(quiz.getUser());
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         this.questions = questionDTOs;

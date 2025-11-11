@@ -81,6 +81,10 @@ public class QuizService {
                 .orElseThrow(() -> new RuntimeException("Bài kiểm tra này không hợp lệ"));
     }
 
+    private Quiz findQuizHistoryOrThrow(Long quizId, User user) {
+        return quizRepository.findByIdAndUser(quizId, user).orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử tham gia của người dunng"));
+    }
+
     @Transactional
     public ResponseEntity<ResponseWrapper<QuizResponse>> getQuiz(String phone, String topicDifficultySlug) {
         try {
@@ -225,6 +229,19 @@ public class QuizService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_REVIEW_QUIZZES_BY_USER_FAILED",
                     "Lỗi lấy lịch sử thách thức " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<QuizResponse>> getQuizHistoryDetailByUser(String phone, Long quizId) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            Quiz quiz = findQuizHistoryOrThrow(quizId, user);
+            return ResponseEntity.ok(ResponseWrapper.success(QuizResponse.createReviewQuizResponse(quiz)));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_QUIZ_HISTORY_DETAIL_FAILED",
+                    "Lỗi lấy chi tiết lịch sử thử thách " + e.getMessage()
             ));
         }
     }

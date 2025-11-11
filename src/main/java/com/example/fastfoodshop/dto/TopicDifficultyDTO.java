@@ -8,6 +8,7 @@ import java.time.ZoneId;
 
 @Data
 public class TopicDifficultyDTO {
+    private String topicName;
     private Long id;
     private String name;
     private String slug;
@@ -20,6 +21,7 @@ public class TopicDifficultyDTO {
     private LocalDateTime updatedAt;
 
     public TopicDifficultyDTO(TopicDifficulty topicDifficulty) {
+        this.topicName = topicDifficulty.getTopic().getName();
         this.id = topicDifficulty.getId();
         this.name = topicDifficulty.getName();
         this.slug = topicDifficulty.getSlug();
