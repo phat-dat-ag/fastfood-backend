@@ -42,7 +42,7 @@ public class CartController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody CartUpdateRequest req
     ) {
-        return cartService.updateCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
+        return cartService.increaseProductQuantityInCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
     }
 
     @DeleteMapping()
