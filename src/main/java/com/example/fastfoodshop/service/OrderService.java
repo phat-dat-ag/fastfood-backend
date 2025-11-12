@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.OrderConstant;
 import com.example.fastfoodshop.dto.CartDTO;
 import com.example.fastfoodshop.entity.Address;
 import com.example.fastfoodshop.entity.Order;
@@ -68,6 +69,16 @@ public class OrderService {
         return order;
     }
 
+    private void checkCashOnDeliveryLimitOrThrow(int orderTotalAmount) {
+        if (orderTotalAmount > OrderConstant.CASH_ON_DELIVERY_MAX_AMOUNT)
+            throw new RuntimeException("Đơn hàng từ 500 000 VNĐ phải thanh toán trước");
+    }
+
+    private void checkOrderTotalAmountLimitOrThrow(int orderTotalAmount) {
+        if (orderTotalAmount > OrderConstant.MAX_ORDER_TOTAL_AMOUNT)
+            throw new RuntimeException("Tổng đơn hàng không vượt quá 2 000 000 VNĐ");
+    }
+
     private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
         User user = userService.findUserOrThrow(phone);
         order.setUser(user);
@@ -123,6 +134,8 @@ public class OrderService {
             CartResponse cartResponse = cartService.getCartResponse(phone, promotionCode, deliveryRequest);
 
             Order order = new Order();
+            checkCashOnDeliveryLimitOrThrow(cartResponse.getTotalPrice());
+            checkOrderTotalAmountLimitOrThrow(cartResponse.getTotalPrice());
             buildOrder(order, cartResponse, phone, addressId);
             order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
 
@@ -155,6 +168,7 @@ public class OrderService {
             CartResponse cartResponse = cartService.getCartResponse(phone, promotionCode, deliveryRequest);
 
             Order order = new Order();
+            checkOrderTotalAmountLimitOrThrow(cartResponse.getTotalPrice());
             buildOrder(order, cartResponse, phone, addressId);
             order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
 
