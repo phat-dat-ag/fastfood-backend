@@ -1,10 +1,13 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.request.ChangePasswordRequest;
+import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.UpdateUserRequest;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.UserResponse;
 import com.example.fastfoodshop.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -20,16 +23,6 @@ import java.util.ArrayList;
 @RequiredArgsConstructor
 public class UserController {
     private final UserService userService;
-
-    @GetMapping("/customers")
-    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomer() {
-        return userService.getAllCustomers();
-    }
-
-    @GetMapping("/staff")
-    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllStaff() {
-        return userService.getAllStaff();
-    }
 
     @PostMapping("/update-avatar")
     public ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(
@@ -55,6 +48,20 @@ public class UserController {
         return userService.changePassword(userDetails.getUsername(), req.getPassword(), req.getNewPassword());
     }
 
+    @GetMapping("/manage/get/customers")
+    public ResponseEntity<ResponseWrapper<UserResponse>> getAllCustomer(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return userService.getAllCustomers(request.getPage(), request.getSize());
+    }
+
+    @GetMapping("/manage/get/staff")
+    public ResponseEntity<ResponseWrapper<UserResponse>> getAllStaff(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return userService.getAllStaff(request.getPage(), request.getSize());
+    }
+
     @PutMapping("/manage/activate-account")
     public ResponseEntity<ResponseWrapper<String>> activateAccount(@RequestParam("userId") Long userId) {
         return userService.activateAccount(userId);
@@ -65,7 +72,7 @@ public class UserController {
         return userService.deactivateAccount(userId);
     }
 
-    @DeleteMapping()
+    @DeleteMapping("/manage")
     public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(@RequestParam("phone") String phone) {
         return userService.deleteUser(phone);
     }

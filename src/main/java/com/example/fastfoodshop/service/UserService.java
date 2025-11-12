@@ -5,16 +5,18 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.repository.UserRepository;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.UserResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -80,38 +82,30 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllCustomers() {
+    public ResponseEntity<ResponseWrapper<UserResponse>> getAllCustomers(int page, int size) {
         try {
-            List<User> users = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER);
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+            Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER, pageable);
 
-            ArrayList<UserDTO> userDTOs = new ArrayList<>();
-            for (User user : users) {
-                userDTOs.add(new UserDTO(user));
-            }
-
-            return ResponseEntity.ok(ResponseWrapper.success(userDTOs));
+            return ResponseEntity.ok(ResponseWrapper.success(new UserResponse(userPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_USER_FAILED",
-                    "Lỗi khi lấy các thông tin khách hàng"
+                    "Lỗi khi lấy các thông tin khách hàng " + e.getMessage()
             ));
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<UserDTO>>> getAllStaff() {
+    public ResponseEntity<ResponseWrapper<UserResponse>> getAllStaff(int page, int size) {
         try {
-            List<User> users = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF);
+            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+            Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF, pageable);
 
-            ArrayList<UserDTO> userDTOs = new ArrayList<>();
-            for (User user : users) {
-                userDTOs.add(new UserDTO(user));
-            }
-
-            return ResponseEntity.ok(ResponseWrapper.success(userDTOs));
+            return ResponseEntity.ok(ResponseWrapper.success(new UserResponse(userPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_USER_FAILED",
-                    "Lỗi khi lấy các thông tin nhân viên"
+                    "Lỗi khi lấy các thông tin nhân viên " + e.getMessage()
             ));
         }
     }
