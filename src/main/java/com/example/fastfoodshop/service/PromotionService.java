@@ -12,6 +12,9 @@ import com.example.fastfoodshop.response.PromotionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.NumberUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +31,7 @@ public class PromotionService {
     private final ProductService productService;
     private final AwardRepository awardRepository;
     private final AwardService awardService;
+    private final UserService userService;
 
     public boolean checkUniqueCode(String code) {
         return promotionRepository.findByCode(code).isPresent();
@@ -162,10 +166,11 @@ public class PromotionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory() {
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory(int page, int size) {
         try {
-            List<Promotion> categoryPromotions = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse();
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotions)));
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Promotion> categoryPromotionPage = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse(pageable);
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotionPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_CATEGORY_FAILED",
@@ -175,10 +180,11 @@ public class PromotionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct() {
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct(int page, int size) {
         try {
-            List<Promotion> productPromotions = promotionRepository.findByProductIsNotNullAndIsDeletedFalse();
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(productPromotions)));
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Promotion> productPromotionPage = promotionRepository.findByProductIsNotNullAndIsDeletedFalse(pageable);
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(productPromotionPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",
@@ -188,10 +194,11 @@ public class PromotionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder() {
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder(int page, int size) {
         try {
-            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotions();
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(orderPromotions)));
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Promotion> orderPromotionPage = promotionRepository.findGlobalOrderPromotions(pageable);
+            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(orderPromotionPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",
@@ -201,18 +208,19 @@ public class PromotionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getValidPromotionOrder() {
+    public ResponseEntity<ResponseWrapper<ArrayList<PromotionDTO>>> getValidPromotionOrder(String phone) {
         try {
-            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotions();
-            List<Promotion> validOrderPromotions = new ArrayList<>();
+            User user = userService.findUserOrThrow(phone);
+            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId());
+            ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
             LocalDateTime now = LocalDateTime.now();
 
             for (Promotion promotion : orderPromotions) {
                 if (!promotion.isDeleted() && promotion.isActivated() && now.isAfter(promotion.getStartAt()) && now.isBefore(promotion.getEndAt())) {
-                    validOrderPromotions.add(promotion);
+                    validOrderPromotions.add(new PromotionDTO(promotion));
                 }
             }
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(validOrderPromotions)));
+            return ResponseEntity.ok(ResponseWrapper.success(validOrderPromotions));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                             "GET_PROMOTION_PRODUCT_FAILED",
