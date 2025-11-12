@@ -13,6 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+
 @Controller
 @RequestMapping("/api/admin/category")
 @RequiredArgsConstructor
@@ -29,6 +31,11 @@ public class CategoryController {
             @Valid @ModelAttribute PageRequest request
     ) {
         return categoryService.getCategories(request.getPage(), request.getSize());
+    }
+
+    @GetMapping("/display")
+    public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getDisplayableCategories() {
+        return categoryService.getDisplayableCategories();
     }
 
     @PutMapping()

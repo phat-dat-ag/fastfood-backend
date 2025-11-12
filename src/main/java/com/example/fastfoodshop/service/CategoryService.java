@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -172,6 +174,24 @@ public class CategoryService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "DELETE_CATEGORY_FAILED",
                     "Không thể xóa danh mục: " + e.getMessage())
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getDisplayableCategories() {
+        try {
+            List<Category> categories = categoryRepository.findByIsDeletedFalseAndIsActivatedTrue();
+            ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
+
+            for (Category category : categories) {
+                categoryDTOs.add(new CategoryDTO(category));
+            }
+
+            return ResponseEntity.ok(ResponseWrapper.success(categoryDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_DISPLAYABLE_CATEGORY_FAILED",
+                    "Lỗi lấy danh mục sản phẩm để trưng bày: " + e.getMessage())
             );
         }
     }

@@ -62,7 +62,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/admin/category/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/admin/category/display").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/admin/product/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
                         .requestMatchers("/api/order/staff/**").hasRole("STAFF")
