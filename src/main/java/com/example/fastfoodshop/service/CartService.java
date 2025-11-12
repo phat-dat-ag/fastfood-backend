@@ -46,6 +46,13 @@ public class CartService {
         cart.setQuantity(newQuantity);
     }
 
+    private void updateNewProductQuantityOrThrow(Cart cart, int newQuantity) {
+        if (newQuantity > CartConstant.MAX_QUANTITY_PER_PRODUCT) {
+            throw new RuntimeException("Số lượng tối đa mỗi sản phẩm là " + CartConstant.MAX_QUANTITY_PER_PRODUCT);
+        }
+        cart.setQuantity(newQuantity);
+    }
+
     public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(String userPhone, Long productId, int quantity) {
         try {
             User user = userService.findUserOrThrow(userPhone);
@@ -126,13 +133,13 @@ public class CartService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<CartDTO>> increaseProductQuantityInCart(String userPhone, Long productId, int quantity) {
+    public ResponseEntity<ResponseWrapper<CartDTO>> updateCart(String userPhone, Long productId, int quantity) {
         try {
             User user = userService.findUserOrThrow(userPhone);
             Product product = productService.findProductOrThrow(productId);
             Cart cart = findCartOrThrow(user, product);
 
-            setNewProductQuantityOrThrow(cart, quantity);
+            updateNewProductQuantityOrThrow(cart, quantity);
 
             Cart updatedCart = cartRepository.save(cart);
             return ResponseEntity.ok(ResponseWrapper.success(new CartDTO(updatedCart)));
