@@ -68,6 +68,16 @@ public class PromotionController {
         return promotionService.getValidPromotionOrder(userDetails.getUsername());
     }
 
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activatePromotion(@RequestParam("promotionId") Long promotionId) {
+        return promotionService.activatePromotion(promotionId);
+    }
+
+    @PutMapping("/deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivatePromotion(@RequestParam("promotionId") Long promotionId) {
+        return promotionService.deactivatePromotion(promotionId);
+    }
+
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotionCategory(
             @RequestParam("promotionId") Long promotionId

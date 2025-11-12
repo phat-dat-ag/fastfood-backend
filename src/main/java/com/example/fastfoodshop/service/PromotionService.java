@@ -58,6 +58,10 @@ public class PromotionService {
         return promotionRepository.findById(id).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
     }
 
+    private Promotion findUndeletedPromotionOrThrow(Long id) {
+        return promotionRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại hoặc đã bị xóa"));
+    }
+
     public Promotion findPromotionOrThrow(String code) {
         return promotionRepository.findByCode(code).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
     }
@@ -227,6 +231,46 @@ public class PromotionService {
                             "Lỗi khi lấy mã khuyến mãi cho đơn hàng " + e.getMessage()
                     )
             );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activatePromotion(Long promotionId) {
+        try {
+            Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
+            if (promotion.isActivated()) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "ACTIVATE_PROMOTION_FAILED",
+                        "Mã khuyến mãi này đã được kích hoạt"
+                ));
+            }
+            promotion.setActivated(true);
+            promotionRepository.save(promotion);
+            return ResponseEntity.ok(ResponseWrapper.success("Đã kích hoạt mã khuyến mãi"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_PROMOTION_FAILED",
+                    "Lỗi kích hoạt mã khuyến mãi " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivatePromotion(Long promotionId) {
+        try {
+            Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
+            if (!promotion.isActivated()) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "DEACTIVATE_PROMOTION_FAILED",
+                        "Mã khuyến mãi này đã bị huủy kích hoạt"
+                ));
+            }
+            promotion.setActivated(false);
+            promotionRepository.save(promotion);
+            return ResponseEntity.ok(ResponseWrapper.success("Đã hủy kích hoạt mã khuyến mãi"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_PROMOTION_FAILED",
+                    "Lỗi hủy kích hoạt mã khuyến mãi " + e.getMessage()
+            ));
         }
     }
 
