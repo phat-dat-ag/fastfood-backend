@@ -6,17 +6,19 @@ import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.repository.CategoryRepository;
+import com.example.fastfoodshop.response.CategoryResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.PromotionUtils;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -145,14 +147,12 @@ public class CategoryService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getCategories() {
+    public ResponseEntity<ResponseWrapper<CategoryResponse>> getCategories(int page, int size) {
         try {
-            List<Category> categories = categoryRepository.findByIsDeletedFalse();
-            ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
-            for (Category category : categories) {
-                categoryDTOs.add(new CategoryDTO(category));
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(categoryDTOs));
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new CategoryResponse(categoryPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_CATEGORY_FAILED",

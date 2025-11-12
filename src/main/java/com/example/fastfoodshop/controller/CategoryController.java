@@ -3,14 +3,15 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.dto.CategoryDTO;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
+import com.example.fastfoodshop.request.PageRequest;
+import com.example.fastfoodshop.response.CategoryResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CategoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 
 @Controller
 @RequestMapping("/api/admin/category")
@@ -24,8 +25,10 @@ public class CategoryController {
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getCategories() {
-        return categoryService.getCategories();
+    public ResponseEntity<ResponseWrapper<CategoryResponse>> getCategories(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return categoryService.getCategories(request.getPage(), request.getSize());
     }
 
     @PutMapping()
