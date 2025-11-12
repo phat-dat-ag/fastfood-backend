@@ -5,7 +5,12 @@ import com.example.fastfoodshop.entity.*;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.ReviewResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +26,12 @@ public class ReviewService {
     private final OrderService orderService;
     private final ProductService productService;
     private final ReviewImageService reviewImageService;
+
+    private Review findUndeletedReviewOrThrow(Long reviewId) {
+        return reviewRepository.findById(reviewId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy đánh giá hoặc đánh giá đã bị xóa")
+        );
+    }
 
     @Transactional
     public ResponseEntity<ResponseWrapper<String>> createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId) {
@@ -112,6 +123,33 @@ public class ReviewService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_REVIEW_FAILED",
                     "Lỗi lấy các đánh giá của đơn hàng " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ReviewResponse>> getAllReviewsByAdmin(int page, int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+            Page<Review> reviewPage = reviewRepository.findByIsDeletedFalse(pageable);
+            return ResponseEntity.ok(ResponseWrapper.success(new ReviewResponse(reviewPage)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_REVIEWS_FAILED",
+                    "Lỗi lấy tất cả các review cho quản trị viên " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deleteReview(Long reviewId) {
+        try {
+            Review review = findUndeletedReviewOrThrow(reviewId);
+            review.setDeleted(true);
+            reviewRepository.save(review);
+            return ResponseEntity.ok(ResponseWrapper.success("Đã xóa đánh giá"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DELETE_REVIEW_FAILED",
+                    "Lỗi xóa đánh giá sản phẩm " + e.getMessage()
             ));
         }
     }

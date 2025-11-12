@@ -1,8 +1,10 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.ReviewDTO;
+import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.ReviewForm;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.ReviewResponse;
 import com.example.fastfoodshop.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,18 @@ public class ReviewController {
             @RequestParam("productId") Long productId
     ) {
         return reviewService.getAllReviewsByProduct(productId);
+    }
+
+    @GetMapping("/manage")
+    ResponseEntity<ResponseWrapper<ReviewResponse>> getAllReviewsByAdmin(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return reviewService.getAllReviewsByAdmin(request.getPage(), request.getSize());
+    }
+
+    @DeleteMapping("/manage")
+    ResponseEntity<ResponseWrapper<String>> deleteReview(@RequestParam("reviewId") Long reviewId) {
+        return reviewService.deleteReview(reviewId);
     }
 }
 

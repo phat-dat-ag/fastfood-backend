@@ -57,6 +57,7 @@ public class ProductDTO {
             this.promotions.add(new PromotionDTO(promotion));
         }
         for (Review review : product.getReviews().stream()
+                .filter(review -> !review.isDeleted())
                 .sorted(Comparator.comparing(Review::getRating).reversed())
                 .limit(5)
                 .toList()) {
