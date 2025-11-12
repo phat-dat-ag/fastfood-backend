@@ -48,6 +48,12 @@ public class CategoryService {
         return categoryRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
     }
 
+    public Category findUndeletedCategoryOrThrow(String categorySlug) {
+        return categoryRepository.findBySlug(categorySlug).orElseThrow(
+                () -> new RuntimeException("Danh mục không tồn tại hoặc đã bị xóa")
+        );
+    }
+
     public void handleCategoryImage(Category category, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;

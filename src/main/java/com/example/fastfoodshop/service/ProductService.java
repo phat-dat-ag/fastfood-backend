@@ -4,14 +4,19 @@ import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.repository.ProductRepository;
+import com.example.fastfoodshop.response.ProductResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -133,26 +138,27 @@ public class ProductService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts() {
+    public ResponseEntity<ResponseWrapper<ProductResponse>> getAllProductsByCategory(
+            String categorySlug, int page, int size
+    ) {
         try {
-            ArrayList<Product> products = productRepository.findByIsDeletedFalse();
-            ArrayList<ProductDTO> productDTOs = new ArrayList<>();
-            for (Product product : products) {
-                productDTOs.add(new ProductDTO(product));
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
+            Category category = categoryService.findUndeletedCategoryOrThrow(categorySlug);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Product> productPage = productRepository.findByCategoryAndIsDeletedFalse(category, pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new ProductResponse(productPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_PRODUCT_FAILED",
-                    "Lỗi lấy sản phẩm: " + e.getMessage())
+                    "GET_ALL_PRODUCT_BY_CATEGORY_FAILED",
+                    "Lỗi lấy tất cả sản phẩm theo danh mục: " + e.getMessage())
             );
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts(String categorySlug) {
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProductsByCategory(String categorySlug) {
         try {
             Category category = categoryService.findCategoryOrThrow(categorySlug);
-            ArrayList<Product> products = productRepository.findByCategoryAndIsDeletedFalse(category);
+            List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
             ArrayList<ProductDTO> productDTOs = new ArrayList<>();
             for (Product product : products) {
@@ -163,8 +169,27 @@ public class ProductService {
             return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_PRODUCT_FAILED",
-                    "Lỗi lấy sản phẩm của danh mục: " + e.getMessage())
+                    "GET_ALL_DISPLAYABLE_PRODUCT_BY_CATEGORY_FAILED",
+                    "Lỗi lấy sản phẩm trưng bày của danh mục: " + e.getMessage())
+            );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProducts() {
+        try {
+            List<Product> products = productRepository.findByIsDeletedFalseAndIsActivatedTrue();
+
+            ArrayList<ProductDTO> productDTOs = new ArrayList<>();
+            for (Product product : products) {
+                ProductDTO productDTO = new ProductDTO(product);
+                categoryService.applyPromotion(productDTO, product.getCategory());
+                productDTOs.add(productDTO);
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_DISPLAYABLE_PRODUCTS_FAILED",
+                    "Lỗi lấy sản phẩm trưng bày cho người dùng: " + e.getMessage())
             );
         }
     }

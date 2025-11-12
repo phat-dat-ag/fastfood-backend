@@ -2,9 +2,12 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.request.ProductCreateRequest;
+import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
 import com.example.fastfoodshop.request.ProductUpdateRequest;
+import com.example.fastfoodshop.response.ProductResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -27,22 +30,10 @@ public class ProductController {
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProducts() {
-        return productService.getProducts();
-    }
-
-    @GetMapping("/by-category")
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getProductsByCategory(
-            @RequestParam("categorySlug") String categorySlug
+    public ResponseEntity<ResponseWrapper<ProductResponse>> getAllProductsByCategory(
+            @Valid @ModelAttribute ProductGetByCategoryRequest request
     ) {
-        return productService.getProducts(categorySlug);
-    }
-
-    @GetMapping("/detail")
-    public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(
-            @RequestParam("slug") String slug
-    ) {
-        return productService.getProductBySlug(slug);
+        return productService.getAllProductsByCategory(request.getCategorySlug(), request.getPage(), request.getSize());
     }
 
     @PutMapping()
@@ -56,5 +47,24 @@ public class ProductController {
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<ProductDTO>> deleteProduct(@RequestParam("id") Long id) {
         return productService.deleteCategory(id);
+    }
+
+    @GetMapping("/display/all/by-category")
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProductsByCategory(
+            @RequestParam("categorySlug") String categorySlug
+    ) {
+        return productService.getAllDisplayableProductsByCategory(categorySlug);
+    }
+
+    @GetMapping("/display/all")
+    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProducts() {
+        return productService.getAllDisplayableProducts();
+    }
+
+    @GetMapping("/display/detail")
+    public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(
+            @RequestParam("slug") String slug
+    ) {
+        return productService.getProductBySlug(slug);
     }
 }
