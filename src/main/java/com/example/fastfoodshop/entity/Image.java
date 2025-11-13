@@ -2,6 +2,7 @@ package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
 import com.example.fastfoodshop.enums.PageType;
+import com.example.fastfoodshop.enums.SectionType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class Image extends BaseAuditableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "section_type", length = 30)
-    private PageType sectionType;
+    private SectionType sectionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)

@@ -9,14 +9,14 @@ import java.time.ZoneId;
 @Data
 public class ImageDTO {
     private Long id;
-    private String imageUrl;
+    private String url;
     private String alternativeText;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     public ImageDTO(Image image) {
         this.id = image.getId();
-        this.imageUrl = image.getUrl();
+        this.url = image.getUrl();
         this.alternativeText = image.getAlternativeText();
         this.createdAt = image.getCreatedAt().
                 atZone(ZoneId.systemDefault())
