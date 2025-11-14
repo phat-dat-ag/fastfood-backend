@@ -62,7 +62,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/admin/image/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/image/**").permitAll()
                         .requestMatchers("/api/admin/category/display/**").permitAll()
                         .requestMatchers("/api/admin/product/display/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
@@ -80,7 +80,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/topic-difficulty/**").hasRole("ADMIN")
                         .requestMatchers("/api/award/**").hasRole("ADMIN")
                         .requestMatchers("/api/question/**").hasRole("ADMIN")
-                        .requestMatchers("/api/admin/image/**").hasRole("ADMIN")
+                        .requestMatchers("/api/image/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/quiz/**").hasAnyRole("USER", "STAFF", "ADMIN")
                         .requestMatchers("/api/staff/**").hasRole("STAFF")
