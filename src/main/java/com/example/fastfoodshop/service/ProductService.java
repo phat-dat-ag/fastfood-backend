@@ -1,9 +1,14 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.entity.Review;
+import com.example.fastfoodshop.projection.ProductRatingStatsProjection;
+import com.example.fastfoodshop.projection.ProductSoldCountProjection;
 import com.example.fastfoodshop.repository.ProductRepository;
+import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.response.ProductResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.SlugUtils;
@@ -18,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +31,7 @@ public class ProductService {
     private final CloudinaryService cloudinaryService;
     private final CategoryService categoryService;
     private final ProductRepository productRepository;
+    private final ReviewRepository reviewRepository;
 
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
@@ -160,9 +167,30 @@ public class ProductService {
             Category category = categoryService.findCategoryOrThrow(categorySlug);
             List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
+            List<Long> productIds = products.stream().map(Product::getId).toList();
+
+            var ratingStats = productRepository.getRatingStatsByProductIds(productIds);
+            Map<Long, ProductRatingStatsProjection> ratingMap = ratingStats.stream()
+                    .collect(Collectors.toMap(ProductRatingStatsProjection::getProductId, r -> r));
+
+            var soldStats = productRepository.getSoldCountByProductIds(productIds);
+            Map<Long, ProductSoldCountProjection> soldMap = soldStats.stream()
+                    .collect(Collectors.toMap(ProductSoldCountProjection::getProductId, s -> s));
+
+
             ArrayList<ProductDTO> productDTOs = new ArrayList<>();
             for (Product product : products) {
                 ProductDTO productDTO = new ProductDTO(product);
+
+                ProductRatingStatsProjection r = ratingMap.get(product.getId());
+                if (r != null) {
+                    productDTO.setAverageRating(r.getAvgRating() != null ? r.getAvgRating() : 0.0);
+                    productDTO.setReviewCount(r.getReviewCount());
+                }
+
+                ProductSoldCountProjection s = soldMap.get(product.getId());
+                productDTO.setSoldCount(s != null ? s.getSoldCount() : 0L);
+
                 categoryService.applyPromotion(productDTO, category);
                 productDTOs.add(productDTO);
             }
@@ -199,6 +227,29 @@ public class ProductService {
             Product product = findProductOrThrow(slug);
             Category category = product.getCategory();
             ProductDTO productDTO = new ProductDTO(product);
+
+            ProductRatingStatsProjection ratingStats = productRepository.getRatingStatsByProductIds(
+                    List.of(product.getId())
+            ).stream().findFirst().orElse(null);
+            if (ratingStats != null) {
+                productDTO.setAverageRating(ratingStats.getAvgRating() != null ? ratingStats.getAvgRating() : 0.0);
+                productDTO.setReviewCount(ratingStats.getReviewCount());
+            }
+
+            ProductSoldCountProjection soldStats = productRepository.getSoldCountByProductIds(
+                    List.of(product.getId())
+            ).stream().findFirst().orElse(null);
+            productDTO.setSoldCount(soldStats != null ? soldStats.getSoldCount() : 0L);
+
+            Pageable top5 = PageRequest.of(0, 5);
+            List<Review> topReviews = reviewRepository.findTop5ByProductIdOrderByRatingDescCreatedAtDesc(
+                    product.getId(), top5
+            );
+            List<ReviewDTO> reviewDTOs = topReviews.stream()
+                    .map(ReviewDTO::new)
+                    .toList();
+            productDTO.setReviews(new ArrayList<>(reviewDTOs));
+
             categoryService.applyPromotion(productDTO, category);
             return ResponseEntity.ok(ResponseWrapper.success(productDTO));
         } catch (RuntimeException e) {

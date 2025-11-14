@@ -2,13 +2,11 @@ package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Promotion;
-import com.example.fastfoodshop.entity.Review;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 
 @Data
 public class ProductDTO {
@@ -29,6 +27,10 @@ public class ProductDTO {
     private ArrayList<ReviewDTO> reviews = new ArrayList<>();
     private int discountedPrice;
     private Long promotionId;
+
+    private double averageRating;
+    private long reviewCount;
+    private long soldCount;
 
     public ProductDTO(Product product) {
         this.categoryId = product.getCategory().getId();
@@ -55,13 +57,6 @@ public class ProductDTO {
 
         for (Promotion promotion : product.getPromotions()) {
             this.promotions.add(new PromotionDTO(promotion));
-        }
-        for (Review review : product.getReviews().stream()
-                .filter(review -> !review.isDeleted())
-                .sorted(Comparator.comparing(Review::getRating).reversed())
-                .limit(5)
-                .toList()) {
-            this.reviews.add(new ReviewDTO(review));
         }
     }
 }
