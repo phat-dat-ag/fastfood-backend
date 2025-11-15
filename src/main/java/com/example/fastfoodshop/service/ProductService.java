@@ -52,6 +52,18 @@ public class ProductService {
         return productRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
     }
 
+    private Product findActivatedProductOrThrow(Long id) {
+        return productRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(id).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy sản phẩm này đang được kích hoạt")
+        );
+    }
+
+    private Product findDeactivatedProductOrThrow(Long id) {
+        return productRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(id).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy sản phẩm này đang bị hủy kích hoạt")
+        );
+    }
+
     private void handleProductImage(Product product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
@@ -257,6 +269,36 @@ public class ProductService {
                     "GET_PRODUCT_FAILED",
                     "Lỗi lấy sản phẩm: " + e.getMessage())
             );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateProduct(Long id) {
+        try {
+            Product product = findDeactivatedProductOrThrow(id);
+            product.setActivated(true);
+
+            productRepository.save(product);
+            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt sản phẩm thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_PRODUCT_FAILED",
+                    "Lỗi kích hoạt sản phẩm " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateProduct(Long id) {
+        try {
+            Product product = findActivatedProductOrThrow(id);
+            product.setActivated(false);
+
+            productRepository.save(product);
+            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt sản phẩm thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_PRODUCT_FAILED",
+                    "Lỗi hủy kích hoạt sản phẩm " + e.getMessage()
+            ));
         }
     }
 

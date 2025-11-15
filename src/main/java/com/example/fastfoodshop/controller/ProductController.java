@@ -44,6 +44,16 @@ public class ProductController {
         );
     }
 
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activateProduct(@RequestParam("id") Long id) {
+        return productService.activateProduct(id);
+    }
+
+    @PutMapping("deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivateProduct(@RequestParam("id") Long id) {
+        return productService.deactivateProduct(id);
+    }
+
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<ProductDTO>> deleteProduct(@RequestParam("id") Long id) {
         return productService.deleteCategory(id);

@@ -18,6 +18,10 @@ import java.util.Optional;
 public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsBySlug(String slug);
 
+    Optional<Product> findByIdAndIsActivatedTrueAndIsDeletedFalse(Long id);
+
+    Optional<Product> findByIdAndIsActivatedFalseAndIsDeletedFalse(Long id);
+
     Optional<Product> findBySlug(String slug);
 
     Page<Product> findByCategoryAndIsDeletedFalse(Category category, Pageable pageable);
