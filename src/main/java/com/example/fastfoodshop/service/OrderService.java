@@ -36,6 +36,7 @@ public class OrderService {
     private final CartService cartService;
     private final OrderNoteService orderNoteService;
     private final OrderDetailService orderDetailService;
+    private final ProductService productService;
     private final PromotionService promotionService;
     private final UserService userService;
     private final AddressService addressService;
@@ -77,6 +78,12 @@ public class OrderService {
     private void checkOrderTotalAmountLimitOrThrow(int orderTotalAmount) {
         if (orderTotalAmount > OrderConstant.MAX_ORDER_TOTAL_AMOUNT)
             throw new RuntimeException("Tổng đơn hàng không vượt quá 2 000 000 VNĐ");
+    }
+
+    private void checkAllActivatedProducts(ArrayList<CartDTO> cartDTOs) {
+        for (CartDTO cartDTO : cartDTOs) {
+            productService.checkActivatedCategoryAndActivatedProduct(cartDTO.getProduct().getId());
+        }
     }
 
     private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
@@ -132,6 +139,7 @@ public class OrderService {
             DeliveryRequest deliveryRequest = new DeliveryRequest();
             deliveryRequest.setAddressId(addressId);
             CartResponse cartResponse = cartService.getCartResponse(phone, promotionCode, deliveryRequest);
+            checkAllActivatedProducts(cartResponse.getCarts());
 
             Order order = new Order();
             checkCashOnDeliveryLimitOrThrow(cartResponse.getTotalPrice());
@@ -166,6 +174,7 @@ public class OrderService {
             DeliveryRequest deliveryRequest = new DeliveryRequest();
             deliveryRequest.setAddressId(addressId);
             CartResponse cartResponse = cartService.getCartResponse(phone, promotionCode, deliveryRequest);
+            checkAllActivatedProducts(cartResponse.getCarts());
 
             Order order = new Order();
             checkOrderTotalAmountLimitOrThrow(cartResponse.getTotalPrice());

@@ -52,6 +52,24 @@ public class ProductService {
         return productRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
     }
 
+    public void checkActivatedCategoryAndActivatedProduct(Long productId) {
+        Product product = findProductOrThrow(productId);
+        if (product.isDeleted())
+            throw new RuntimeException("Sản phẩm: " + product.getName() + " đã bị xóa khỏi hệ thống");
+        if (!product.isActivated())
+            throw new RuntimeException("Sản phẩm: " + product.getName() + " đang tạm ngừng kinh doanh");
+
+        Category category = product.getCategory();
+        if (category.isDeleted())
+            throw new RuntimeException(
+                    "Danh mục: " + category.getName() + " của sản phẩm " + product.getName() + " đã bị xóa khỏi hệ thống"
+            );
+        if (!category.isActivated())
+            throw new RuntimeException(
+                    "Danh mục: " + category.getName() + " của sản phẩm " + product.getName() + " đang tạm ngừng kinh doanh"
+            );
+    }
+
     private Product findActivatedProductOrThrow(Long id) {
         return productRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(id).orElseThrow(
                 () -> new RuntimeException("Không tìm thấy sản phẩm này đang được kích hoạt")
@@ -237,6 +255,7 @@ public class ProductService {
     public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(String slug) {
         try {
             Product product = findProductOrThrow(slug);
+            checkActivatedCategoryAndActivatedProduct(product.getId());
             Category category = product.getCategory();
             ProductDTO productDTO = new ProductDTO(product);
 
