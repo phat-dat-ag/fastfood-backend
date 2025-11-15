@@ -19,6 +19,10 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     Optional<Category> findBySlug(String slug);
 
+    Optional<Category> findByIdAndIsActivatedTrueAndIsDeletedFalse(Long id);
+
+    Optional<Category> findByIdAndIsActivatedFalseAndIsDeletedFalse(Long id);
+
     @Query(value = """
             SELECT c.name, SUM(od.discounted_price * od.quantity) as totalRevenue, SUM(od.quantity) as totalQuantitySold
             FROM categories c

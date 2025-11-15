@@ -43,6 +43,16 @@ public class CategoryController {
         return categoryService.updateCategory(req.getId(), req.getName(), req.getDescription(), req.isActivated(), req.getImageUrl());
     }
 
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activateCategory(@RequestParam("id") Long id) {
+        return categoryService.activateCategory(id);
+    }
+
+    @PutMapping("/deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivateCategory(@RequestParam("id") Long id) {
+        return categoryService.deactivateCategory(id);
+    }
+
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<CategoryDTO>> deleteCategory(@RequestParam("id") Long id) {
         return categoryService.deleteCategory(id);

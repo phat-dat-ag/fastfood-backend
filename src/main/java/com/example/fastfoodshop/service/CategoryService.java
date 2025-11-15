@@ -54,6 +54,18 @@ public class CategoryService {
         );
     }
 
+    public Category findActivatedCategoryOrThrow(Long id) {
+        return categoryRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(id).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy danh mục này đang kích hoạt")
+        );
+    }
+
+    public Category findDeactivatedCategoryOrThrow(Long id) {
+        return categoryRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(id).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy danh mục này đang bị hủy kích hoạt")
+        );
+    }
+
     public void handleCategoryImage(Category category, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
@@ -166,6 +178,36 @@ public class CategoryService {
                     "GET_CATEGORY_FAILED",
                     "Lỗi lấy danh mục sản phẩm: " + e.getMessage())
             );
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateCategory(Long id) {
+        try {
+            Category category = findDeactivatedCategoryOrThrow(id);
+            category.setActivated(true);
+
+            categoryRepository.save(category);
+            return ResponseEntity.ok(ResponseWrapper.success("Đã kích hoạt danh mục"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_CATEGORY_FAILED",
+                    "Lỗi kích hoạt danh mục " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateCategory(Long id) {
+        try {
+            Category category = findActivatedCategoryOrThrow(id);
+            category.setActivated(false);
+
+            categoryRepository.save(category);
+            return ResponseEntity.ok(ResponseWrapper.success("Đã hủy kích hoạt danh mục"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_CATEGORY_FAILED",
+                    "Lỗi hủy kích hoạt danh mục " + e.getMessage()
+            ));
         }
     }
 
