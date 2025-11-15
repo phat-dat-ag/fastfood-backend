@@ -215,14 +215,11 @@ public class PromotionService {
     public ResponseEntity<ResponseWrapper<ArrayList<PromotionDTO>>> getValidPromotionOrder(String phone) {
         try {
             User user = userService.findUserOrThrow(phone);
-            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId());
+            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now());
             ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
-            LocalDateTime now = LocalDateTime.now();
 
             for (Promotion promotion : orderPromotions) {
-                if (!promotion.isDeleted() && promotion.isActivated() && now.isAfter(promotion.getStartAt()) && now.isBefore(promotion.getEndAt())) {
-                    validOrderPromotions.add(new PromotionDTO(promotion));
-                }
+                validOrderPromotions.add(new PromotionDTO(promotion));
             }
             return ResponseEntity.ok(ResponseWrapper.success(validOrderPromotions));
         } catch (Exception e) {
