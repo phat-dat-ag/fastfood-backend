@@ -2,11 +2,12 @@ package com.example.fastfoodshop.repository;
 
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.entity.TopicDifficulty;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface TopicDifficultyRepository extends JpaRepository<TopicDifficulty, Long> {
@@ -14,7 +15,11 @@ public interface TopicDifficultyRepository extends JpaRepository<TopicDifficulty
 
     Optional<TopicDifficulty> findBySlugAndIsDeletedFalse(String slug);
 
-    List<TopicDifficulty> findByTopicAndIsDeletedFalse(Topic topic);
+    Optional<TopicDifficulty> findByIdAndIsDeletedFalseAndIsActivatedTrue(Long topicDifficultyId);
+
+    Optional<TopicDifficulty> findByIdAndIsDeletedFalseAndIsActivatedFalse(Long topicDifficultyId);
+
+    Page<TopicDifficulty> findByTopicAndIsDeletedFalse(Topic topic, Pageable pageable);
 
 
     @Query(value = """

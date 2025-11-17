@@ -2,15 +2,16 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.TopicDifficultyDTO;
 import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
+import com.example.fastfoodshop.request.TopicDifficultyGetByTopicRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.TopicDifficultyResponse;
 import com.example.fastfoodshop.service.TopicDifficultyService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 
 @Controller
 @RequestMapping("/api/topic-difficulty")
@@ -40,8 +41,20 @@ public class TopicDifficultyController {
     }
 
     @GetMapping("/by-topic-slug")
-    public ResponseEntity<ResponseWrapper<ArrayList<TopicDifficultyDTO>>> getAllTopicDifficultiesByTopic(@RequestParam("topicSlug") String topicSlug) {
-        return topicDifficultyService.getAllTopicDifficultiesByTopic(topicSlug);
+    public ResponseEntity<ResponseWrapper<TopicDifficultyResponse>> getAllTopicDifficultiesByTopic(
+            @Valid @ModelAttribute TopicDifficultyGetByTopicRequest request
+    ) {
+        return topicDifficultyService.getAllTopicDifficultiesByTopic(request.getTopicSlug(), request.getPage(), request.getSize());
+    }
+
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activateTopicDifficulty(@RequestParam("topicDifficultyId") Long topicDifficultyId) {
+        return topicDifficultyService.activateTopicDifficulty(topicDifficultyId);
+    }
+
+    @PutMapping("/deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivateTopicDifficulty(@RequestParam("topicDifficultyId") Long topicDifficultyId) {
+        return topicDifficultyService.deactivateTopicDifficulty(topicDifficultyId);
     }
 
     @DeleteMapping()

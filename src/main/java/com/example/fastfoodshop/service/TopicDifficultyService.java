@@ -7,13 +7,15 @@ import com.example.fastfoodshop.repository.TopicDifficultyRepository;
 import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.TopicDifficultyResponse;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +36,18 @@ public class TopicDifficultyService {
 
     private TopicDifficulty findTopicDifficultyOrThrow(Long topicDifficultyId) {
         return topicDifficultyRepository.findById(topicDifficultyId).orElseThrow(() -> new RuntimeException("Không tìm thấy độ khó của chủ đề"));
+    }
+
+    private TopicDifficulty findActivatedTopicDifficulty(Long topicDifficultyId) {
+        return topicDifficultyRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(topicDifficultyId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy độ khó này đang được kích hoạt")
+        );
+    }
+
+    private TopicDifficulty findDeactivatedTopicDifficulty(Long topicDifficultyId) {
+        return topicDifficultyRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(topicDifficultyId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy độ khó này đang bị hủy kích hoạt")
+        );
     }
 
     public TopicDifficulty findValidTopicDifficultyOrThrow(String topicDifficultySlug) {
@@ -103,21 +117,47 @@ public class TopicDifficultyService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<TopicDifficultyDTO>>> getAllTopicDifficultiesByTopic(String topicSlug) {
+    public ResponseEntity<ResponseWrapper<TopicDifficultyResponse>> getAllTopicDifficultiesByTopic(String topicSlug, int page, int size) {
         try {
             Topic topic = topicService.findValidTopicOrThrow(topicSlug);
-            List<TopicDifficulty> topicDifficulties = topicDifficultyRepository.findByTopicAndIsDeletedFalse(topic);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<TopicDifficulty> topicDifficultyPage = topicDifficultyRepository.findByTopicAndIsDeletedFalse(topic, pageable);
 
-            ArrayList<TopicDifficultyDTO> topicDifficultyDTOs = new ArrayList<>();
-            for (TopicDifficulty topicDifficulty : topicDifficulties) {
-                topicDifficultyDTOs.add(new TopicDifficultyDTO(topicDifficulty));
-            }
-
-            return ResponseEntity.ok(ResponseWrapper.success(topicDifficultyDTOs));
+            return ResponseEntity.ok(ResponseWrapper.success(new TopicDifficultyResponse(topicDifficultyPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_TOPIC_DIFFICULTIES_FAILED",
                     "Lỗi khi lấy các độ khó cho chủ đề " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateTopicDifficulty(Long topicDifficultyId) {
+        try {
+            TopicDifficulty topicDifficulty = findDeactivatedTopicDifficulty(topicDifficultyId);
+            topicDifficulty.setActivated(true);
+            topicDifficultyRepository.save(topicDifficulty);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Đã kích hoạt độ khó"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_TOPIC_DIFFICULTY_FAILED",
+                    "Lỗi kích hoạt độ khó " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateTopicDifficulty(Long topicDifficultyId) {
+        try {
+            TopicDifficulty topicDifficulty = findActivatedTopicDifficulty(topicDifficultyId);
+            topicDifficulty.setActivated(false);
+            topicDifficultyRepository.save(topicDifficulty);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Đã hủy kích hoạt độ khó"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_TOPIC_DIFFICULTY_FAILED",
+                    "Lỗi hủy kích hoạt độ khó " + e.getMessage()
             ));
         }
     }
