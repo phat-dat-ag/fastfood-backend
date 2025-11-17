@@ -1,20 +1,22 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.QuestionDTO;
 import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.repository.QuestionRepository;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
+import com.example.fastfoodshop.response.QuestionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +27,24 @@ public class QuestionService {
     private final TopicDifficultyService topicDifficultyService;
     private final AnswerService answerService;
     private final QuestionRepository questionRepository;
+
+    private Question findUndeletedQuestion(Long questionId) {
+        return questionRepository.findByIdAndIsDeletedFalse(questionId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy câu hỏi này tồn tại")
+        );
+    }
+
+    private Question findActivatedQuestion(Long questionId) {
+        return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(questionId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy câu hỏi này đang kích hoạt")
+        );
+    }
+
+    private Question findDeactivatedQuestion(Long questionId) {
+        return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(questionId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy câu hỏi này đang bị hủy kích hoạt")
+        );
+    }
 
     private void handleQuestionImage(Question question, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
@@ -98,22 +118,63 @@ public class QuestionService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<QuestionDTO>>> getAllQuestionsByTopicDifficulty(String topicDifficultySlug) {
+    public ResponseEntity<ResponseWrapper<QuestionResponse>> getAllQuestionsByTopicDifficulty(String topicDifficultySlug, int page, int size) {
         try {
             TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
-            List<Question> questions = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Question> questionPage = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
-            ArrayList<QuestionDTO> questionDTOs = new ArrayList<>();
-            for (Question question : questions) {
-                questionDTOs.add(QuestionDTO.createAdminQuestion(question));
-            }
-
-            return ResponseEntity.ok(ResponseWrapper.success(questionDTOs));
+            return ResponseEntity.ok(ResponseWrapper.success(new QuestionResponse(questionPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_QUESTIONS_FAILED",
                     "Lỗi lấy các câu hỏi của độ khó " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateQuestion(Long questionId) {
+        try {
+            Question question = findDeactivatedQuestion(questionId);
+            question.setActivated(true);
+            questionRepository.save(question);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt câu hỏi thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_QUESTION_FAILED",
+                    "Lỗi kích hoạt câu hỏi " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateQuestion(Long questionId) {
+        try {
+            Question question = findActivatedQuestion(questionId);
+            question.setActivated(false);
+            questionRepository.save(question);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt câu hỏi thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_QUESTION_FAILED",
+                    "Lỗi hủy kích hoạt câu hỏi " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deleteQuestion(Long questionId) {
+        try {
+            Question question = findUndeletedQuestion(questionId);
+            question.setDeleted(true);
+            questionRepository.save(question);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Xóa câu hỏi thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DELETE_QUESTION_FAILED",
+                    "Lỗi xóa câu hỏi " + e.getMessage()
             ));
         }
     }
