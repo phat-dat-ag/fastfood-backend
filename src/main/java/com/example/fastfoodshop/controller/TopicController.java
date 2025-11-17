@@ -1,10 +1,13 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.TopicDTO;
+import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.TopicCreateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.TopicDisplayResponse;
+import com.example.fastfoodshop.response.TopicResponse;
 import com.example.fastfoodshop.service.TopicService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -38,13 +41,23 @@ public class TopicController {
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseWrapper<ArrayList<TopicDTO>>> getAllTopics() {
-        return topicService.getAllTopics();
+    public ResponseEntity<ResponseWrapper<TopicResponse>> getAllTopics(@Valid @ModelAttribute PageRequest request) {
+        return topicService.getAllTopics(request.getPage(), request.getSize());
     }
 
     @GetMapping("/display")
     public ResponseEntity<ResponseWrapper<List<TopicDisplayResponse>>> getDisplayableTopics() {
         return topicService.getDisplayableTopics();
+    }
+
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activateTopic(@RequestParam("topicId") Long topicId) {
+        return topicService.activateTopic(topicId);
+    }
+
+    @PutMapping("/deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivateTopic(@RequestParam("topicId") Long topicId) {
+        return topicService.deactivateTopic(topicId);
     }
 
     @DeleteMapping()

@@ -2,6 +2,8 @@ package com.example.fastfoodshop.repository;
 
 import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
 import com.example.fastfoodshop.entity.Topic;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -13,7 +15,11 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     Optional<Topic> findBySlugAndIsDeletedFalse(String slug);
 
-    List<Topic> findByIsDeletedFalse();
+    Optional<Topic> findByIdAndIsDeletedFalseAndIsActivatedTrue(Long topicId);
+
+    Optional<Topic> findByIdAndIsDeletedFalseAndIsActivatedFalse(Long topicId);
+
+    Page<Topic> findByIsDeletedFalse(Pageable pageable);
 
     @Query("""
                 SELECT new com.example.fastfoodshop.dto.TopicDifficultyFullDTO(
