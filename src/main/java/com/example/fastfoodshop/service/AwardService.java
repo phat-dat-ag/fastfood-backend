@@ -5,13 +5,16 @@ import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.request.AwardCreateRequest;
+import com.example.fastfoodshop.response.AwardResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.util.NumberUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +26,18 @@ public class AwardService {
 
     private Award findAwardOrThrow(Long id) {
         return awardRepository.findById(id).orElseThrow(() -> new RuntimeException("Phần thưởng không tồn tại hoặc đã bị xóa"));
+    }
+
+    private Award findActivatedAward(Long awardId) {
+        return awardRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(awardId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy phần thưởng này đang kích hoạt")
+        );
+    }
+
+    private Award findDeactivatedAward(Long awardId) {
+        return awardRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(awardId).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy phần thưởng này đang bị hủy kích hoạt")
+        );
     }
 
     private void buildAward(Award award, AwardCreateRequest request) {
@@ -66,20 +81,47 @@ public class AwardService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<AwardDTO>>> getAllAwardsByTopicDifficulty(String topicDifficultySlug) {
+    public ResponseEntity<ResponseWrapper<AwardResponse>> getAllAwardsByTopicDifficulty(String topicDifficultySlug, int page, int size) {
         try {
+            Pageable pageable = PageRequest.of(page, size);
             TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
-            List<Award> awards = awardRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty);
+            Page<Award> awardPage = awardRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
-            ArrayList<AwardDTO> awardDTOs = new ArrayList<>();
-            for (Award award : awards) {
-                awardDTOs.add(new AwardDTO(award));
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(awardDTOs));
+            return ResponseEntity.ok(ResponseWrapper.success(new AwardResponse(awardPage)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ALL_AWARDS_FAILED",
                     "Lỗi lấy các phần thưởng của độ khó " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> activateAward(Long awardId) {
+        try {
+            Award award = findDeactivatedAward(awardId);
+            award.setActivated(true);
+            awardRepository.save(award);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt phần thưởng thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ACTIVATE_AWARD_FAILED",
+                    "Lỗi kích hoạt phần thưởng " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<String>> deactivateAward(Long awardId) {
+        try {
+            Award award = findActivatedAward(awardId);
+            award.setActivated(false);
+            awardRepository.save(award);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt phần thưởng thành công"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "DEACTIVATE_AWARD_FAILED",
+                    "Lỗi hủy kích hoạt phần thưởng " + e.getMessage()
             ));
         }
     }

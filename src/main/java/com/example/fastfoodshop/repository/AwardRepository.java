@@ -2,6 +2,8 @@ package com.example.fastfoodshop.repository;
 
 import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,7 +12,11 @@ import java.util.List;
 import java.util.Optional;
 
 public interface AwardRepository extends JpaRepository<Award, Long> {
-    List<Award> findByTopicDifficultyAndIsDeletedFalse(TopicDifficulty topicDifficulty);
+    Page<Award> findByTopicDifficultyAndIsDeletedFalse(TopicDifficulty topicDifficulty, Pageable pageable);
+
+    Optional<Award> findByIdAndIsDeletedFalseAndIsActivatedTrue(Long awardId);
+
+    Optional<Award> findByIdAndIsDeletedFalseAndIsActivatedFalse(Long awardId);
 
     @Query(value = """
                 SELECT *

@@ -2,14 +2,15 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.dto.AwardDTO;
 import com.example.fastfoodshop.request.AwardCreateRequest;
+import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
+import com.example.fastfoodshop.response.AwardResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.AwardService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.ArrayList;
 
 @Controller
 @RequestMapping("/api/award")
@@ -26,10 +27,20 @@ public class AwardController {
     }
 
     @GetMapping
-    public ResponseEntity<ResponseWrapper<ArrayList<AwardDTO>>> getAllAwardsByTopicDifficulty(
-            @RequestParam("topicDifficultySlug") String topicDifficultySlug
+    public ResponseEntity<ResponseWrapper<AwardResponse>> getAllAwardsByTopicDifficulty(
+            @Valid @ModelAttribute AwardGetByTopicDifficultyRequest request
     ) {
-        return awardService.getAllAwardsByTopicDifficulty(topicDifficultySlug);
+        return awardService.getAllAwardsByTopicDifficulty(request.getTopicDifficultySlug(), request.getPage(), request.getSize());
+    }
+
+    @PutMapping("/activate")
+    public ResponseEntity<ResponseWrapper<String>> activateAward(@RequestParam("awardId") Long awardId) {
+        return awardService.activateAward(awardId);
+    }
+
+    @PutMapping("/deactivate")
+    public ResponseEntity<ResponseWrapper<String>> deactivateAward(@RequestParam("awardId") Long awardId) {
+        return awardService.deactivateAward(awardId);
     }
 
     @DeleteMapping
