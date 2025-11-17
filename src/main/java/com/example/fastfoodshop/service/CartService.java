@@ -106,6 +106,9 @@ public class CartService {
 
         if (promotionCode != null && !promotionCode.isEmpty()) {
             PromotionCodeCheckResultDTO result = promotionService.checkPromotionCode(promotionCode, cartResponse.getSubtotalPrice());
+            if (!result.isSuccess()) {
+                throw new RuntimeException(result.getMessage());
+            }
             cartResponse.setApplyPromotionResult(result);
             int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponse.getSubtotalPrice(), result.getPromotion());
             cartResponse.setTotalPrice(totalPrice);
