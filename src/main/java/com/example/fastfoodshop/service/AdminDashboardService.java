@@ -1,17 +1,8 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.CategoryStatsDTO;
-import com.example.fastfoodshop.dto.OrderStatsDTO;
-import com.example.fastfoodshop.dto.ProductStatsDTO;
-import com.example.fastfoodshop.dto.UserStatsDTO;
-import com.example.fastfoodshop.projection.CategoryStatsProjection;
-import com.example.fastfoodshop.projection.OrderStatsProjection;
-import com.example.fastfoodshop.projection.ProductStatsProjection;
-import com.example.fastfoodshop.projection.UserStatsProjection;
-import com.example.fastfoodshop.repository.CategoryRepository;
-import com.example.fastfoodshop.repository.OrderRepository;
-import com.example.fastfoodshop.repository.ProductRepository;
-import com.example.fastfoodshop.repository.UserRepository;
+import com.example.fastfoodshop.dto.*;
+import com.example.fastfoodshop.projection.*;
+import com.example.fastfoodshop.repository.*;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +18,8 @@ public class AdminDashboardService {
     private final OrderRepository orderRepository;
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final TopicRepository topicRepository;
+    private final TopicDifficultyRepository topicDifficultyRepository;
 
     public ResponseEntity<ResponseWrapper<UserStatsDTO>> getUserStats() {
         try {
@@ -105,6 +98,38 @@ public class AdminDashboardService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_PRODUCT_STATS_FAILED",
                     "Lỗi lấy dữ liệu thống kê các sản phẩm " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<List<TopicStatsDTO>>> getTopicStats() {
+        try {
+            List<TopicStatsProjection> statsProjections = topicRepository.getStats();
+            List<TopicStatsDTO> topicStatsDTOs = new ArrayList<>();
+            for (TopicStatsProjection statsProjection : statsProjections) {
+                topicStatsDTOs.add(new TopicStatsDTO(statsProjection));
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(topicStatsDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_TOPIC_STATS_FAILED",
+                    "Lỗi lấy dữ liệu thống kê các chủ đề " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<List<TopicDifficultyStatsDTO>>> getTopicDifficultyStats() {
+        try {
+            List<TopicDifficultyStatsProjection> statsProjections = topicDifficultyRepository.getStats();
+            List<TopicDifficultyStatsDTO> topicDifficultyStatsDTOs = new ArrayList<>();
+            for (TopicDifficultyStatsProjection statsProjection : statsProjections) {
+                topicDifficultyStatsDTOs.add(new TopicDifficultyStatsDTO(statsProjection));
+            }
+            return ResponseEntity.ok(ResponseWrapper.success(topicDifficultyStatsDTOs));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_TOPIC_DIFFICULTY_STATS_FAILED",
+                    "Lỗi lấy dữ liệu thống kê các độ khó " + e.getMessage()
             ));
         }
     }

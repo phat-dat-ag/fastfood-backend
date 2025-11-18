@@ -2,6 +2,7 @@ package com.example.fastfoodshop.repository;
 
 import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
 import com.example.fastfoodshop.entity.Topic;
+import com.example.fastfoodshop.projection.TopicStatsProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -20,6 +21,20 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     Optional<Topic> findByIdAndIsDeletedFalseAndIsActivatedFalse(Long topicId);
 
     Page<Topic> findByIsDeletedFalse(Pageable pageable);
+
+    @Query(value = """
+            SELECT
+            	t.id,
+                t.name,
+                COUNT(q.id) AS total_quizzes_played,
+                COUNT(q.promotion_id) AS total_promotions_received
+            FROM topics t
+            LEFT JOIN topic_difficulties td ON td.topic_id = t.id
+            LEFT JOIN  quizzes q ON q.topic_difficulty_id = td.id
+            WHERE td.is_deleted = false
+            GROUP BY t.id
+            """, nativeQuery = true)
+    List<TopicStatsProjection> getStats();
 
     @Query("""
                 SELECT new com.example.fastfoodshop.dto.TopicDifficultyFullDTO(

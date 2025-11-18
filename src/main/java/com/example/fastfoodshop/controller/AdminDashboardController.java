@@ -1,9 +1,6 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.CategoryStatsDTO;
-import com.example.fastfoodshop.dto.OrderStatsDTO;
-import com.example.fastfoodshop.dto.ProductStatsDTO;
-import com.example.fastfoodshop.dto.UserStatsDTO;
+import com.example.fastfoodshop.dto.*;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
@@ -38,5 +35,15 @@ public class AdminDashboardController {
     @GetMapping("/product")
     public ResponseEntity<ResponseWrapper<List<ProductStatsDTO>>> getProductStats() {
         return adminDashboardService.getProductStats();
+    }
+
+    @GetMapping("/topic")
+    public ResponseEntity<ResponseWrapper<List<TopicStatsDTO>>> getTopicStats() {
+        return adminDashboardService.getTopicStats();
+    }
+
+    @GetMapping("/topic-difficulty")
+    public ResponseEntity<ResponseWrapper<List<TopicDifficultyStatsDTO>>> getTopicDifficultyStats() {
+        return adminDashboardService.getTopicDifficultyStats();
     }
 }
