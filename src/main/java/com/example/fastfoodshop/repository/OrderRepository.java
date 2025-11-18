@@ -32,6 +32,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             """)
     Optional<Order> findCompletedOrCancelledOrderByIdAndUser(@Param("orderId") Long orderId, @Param("user") User user);
 
+    Optional<Order> findByIdAndUserAndDeliveredAtIsNotNull(Long id, User user);
+
     @Query(value = """
             SELECT
                 COUNT(CASE WHEN order_status = 'PENDING' THEN 1 END) AS pendingOrderAmount,

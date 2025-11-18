@@ -46,8 +46,10 @@ public class OrderController {
     }
 
     @GetMapping("/by-order-id")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(@RequestParam("orderId") Long orderId) {
-        return orderService.getOrder(orderId);
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam("orderId") Long orderId) {
+        return orderService.getOrder(userDetails.getUsername(), orderId);
     }
 
     @GetMapping("/staff/unfinished-orders/all")

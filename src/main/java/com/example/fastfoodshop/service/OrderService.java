@@ -62,6 +62,12 @@ public class OrderService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng hợp lệ của người dùng này"));
     }
 
+    private Order findDeliveredOrderOrThrow(Long orderId, User user) {
+        return orderRepository.findByIdAndUserAndDeliveredAtIsNotNull(orderId, user).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy đơn hàng của người dùng này chờ đánh giá")
+        );
+    }
+
     private Order findOrderForUpdate(Long orderId) {
         Order order = findOrderOrThrow(orderId);
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
@@ -244,9 +250,10 @@ public class OrderService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(Long orderId) {
+    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(String phone, Long orderId) {
         try {
-            Order order = findOrderOrThrow(orderId);
+            User user = userService.findUserOrThrow(phone);
+            Order order = findDeliveredOrderOrThrow(orderId, user);
             return ResponseEntity.ok(ResponseWrapper.success(new OrderDTO(order)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
