@@ -5,9 +5,13 @@ import com.example.fastfoodshop.entity.*;
 import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.repository.QuizRepository;
 import com.example.fastfoodshop.request.QuizQuestionSubmitRequest;
+import com.example.fastfoodshop.response.QuizFeedbackResponse;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,7 +86,9 @@ public class QuizService {
     }
 
     private Quiz findQuizHistoryOrThrow(Long quizId, User user) {
-        return quizRepository.findByIdAndUser(quizId, user).orElseThrow(() -> new RuntimeException("Không tìm thấy lịch sử tham gia của người dunng"));
+        return quizRepository.findByIdAndUserAndCompletedAtIsNotNull(quizId, user).orElseThrow(
+                () -> new RuntimeException("Không tìm thấy lịch sử tham gia của người dùng")
+        );
     }
 
     @Transactional
@@ -215,6 +221,38 @@ public class QuizService {
         }
     }
 
+    public ResponseEntity<ResponseWrapper<String>> addFeedbackToCompletedQuiz(String phone, Long quizId, String feedback) {
+        try {
+            User user = userService.findUserOrThrow(phone);
+            Quiz quiz = findQuizHistoryOrThrow(quizId, user);
+
+            if (quiz.getFeedbackAt() != null) {
+                return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                        "ADD_FEEDBACK_TO_QUIZ_FAILED",
+                        "Trò chơi này đã được đánh giá"
+                ));
+            }
+
+            LocalDateTime completedAt = quiz.getCompletedAt();
+            boolean canGiveFeedback = completedAt != null
+                    && completedAt.plusDays(QuizConstants.FEEDBACK_ALLOWED_DURATION_DAYS)
+                    .isAfter(LocalDateTime.now());
+
+            if (canGiveFeedback) {
+                quiz.setFeedback(feedback);
+                quiz.setFeedbackAt(LocalDateTime.now());
+            }
+            quizRepository.save(quiz);
+
+            return ResponseEntity.ok(ResponseWrapper.success("Đã thêm đánh giá cho trò chơi"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "ADD_FEEDBACK_TO_QUIZ_FAILED",
+                    "Lỗi thêm đánh giá cho trò chơi " + e.getMessage()
+            ));
+        }
+    }
+
     public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(String phone) {
         try {
             User user = userService.findUserOrThrow(phone);
@@ -242,6 +280,20 @@ public class QuizService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_QUIZ_HISTORY_DETAIL_FAILED",
                     "Lỗi lấy chi tiết lịch sử thử thách " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<QuizFeedbackResponse>> getAllFeedbacksByAdmin(int page, int size) {
+        try {
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Quiz> quizPage = quizRepository.findByFeedbackAtIsNotNull(pageable);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new QuizFeedbackResponse(quizPage)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ALL_FEEDBACKS_FAILED",
+                    "Lỗi lấy các góp ý trò chơi " + e.getMessage()
             ));
         }
     }

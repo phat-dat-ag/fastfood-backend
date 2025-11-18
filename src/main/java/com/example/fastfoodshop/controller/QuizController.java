@@ -1,6 +1,9 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.request.PageRequest;
+import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
 import com.example.fastfoodshop.request.QuizSubmitRequest;
+import com.example.fastfoodshop.response.QuizFeedbackResponse;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.QuizService;
@@ -41,6 +44,14 @@ public class QuizController {
         );
     }
 
+    @PutMapping()
+    public ResponseEntity<ResponseWrapper<String>> addFeedbackToQuiz(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody QuizAddFeedbackRequest request
+    ) {
+        return quizService.addFeedbackToCompletedQuiz(userDetails.getUsername(), request.getQuizId(), request.getFeedback());
+    }
+
     @GetMapping("/by-user")
     public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(
             @AuthenticationPrincipal UserDetails userDetails
@@ -54,5 +65,10 @@ public class QuizController {
             @RequestParam("quizId") Long quizId
     ) {
         return quizService.getQuizHistoryDetailByUser(userDetails.getUsername(), quizId);
+    }
+
+    @GetMapping("/manage")
+    public ResponseEntity<ResponseWrapper<QuizFeedbackResponse>> getAllFeedbacksByAdmin(@Valid @ModelAttribute PageRequest request) {
+        return quizService.getAllFeedbacksByAdmin(request.getPage(), request.getSize());
     }
 }

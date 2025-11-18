@@ -23,6 +23,8 @@ public class QuizResponse {
     private TopicDifficultyDTO topicDifficulty;
     private PromotionDTO promotion;
     private List<QuestionDTO> questions;
+    private String feedback;
+    private LocalDateTime feedbackAt;
 
     private QuizResponse(Quiz quiz, List<QuestionDTO> questionDTOs) {
         this.id = quiz.getId();
@@ -33,6 +35,8 @@ public class QuizResponse {
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         this.questions = questionDTOs;
+        this.feedback = quiz.getFeedback();
+        this.feedbackAt = quiz.getFeedbackAt();
     }
 
     public static QuizResponse createUserQuizResponse(Quiz quiz, ArrayList<Question> questions) {
