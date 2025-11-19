@@ -3,16 +3,20 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PageType;
+import com.example.fastfoodshop.projection.ItemPromotionProjection;
 import com.example.fastfoodshop.repository.ImageRepository;
+import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
 import com.example.fastfoodshop.response.AboutUsImageResponse;
 import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
+import com.example.fastfoodshop.response.ItemPromotionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +25,7 @@ import java.util.Map;
 public class ImageService {
     private final CloudinaryService cloudinaryService;
     private final UserService userService;
+    private final PromotionRepository promotionRepository;
     private final ImageRepository imageRepository;
 
     private Image findImageOrThrow(Long imageId) {
@@ -79,6 +84,21 @@ public class ImageService {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_CHALLENGE_INTRODUCTION_PAGE_IMAGE_FAILED",
                     "Lỗi lấy các ảnh trong trang giới thiệu thử thách " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ItemPromotionResponse>> getItemPromotionImages() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            List<ItemPromotionProjection> categoryProjections = promotionRepository.getDisplayableCategoryPromotionsLimited4(now);
+            List<ItemPromotionProjection> productProjections = promotionRepository.getDisplayableProductPromotionsLimited4(now);
+
+            return ResponseEntity.ok(ResponseWrapper.success(new ItemPromotionResponse(categoryProjections, productProjections)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_ITEM_PROMOTION_PAGE_IMAGE_FAILED",
+                    "Lỗi lấy các ảnh trong trang giới thiệu khuyến mãi " + e.getMessage()
             ));
         }
     }

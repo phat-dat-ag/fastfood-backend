@@ -3,6 +3,7 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.request.ImageCreateRequest;
 import com.example.fastfoodshop.response.AboutUsImageResponse;
 import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
+import com.example.fastfoodshop.response.ItemPromotionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.ImageService;
 import jakarta.validation.Valid;
@@ -35,6 +36,11 @@ public class ImageController {
     @GetMapping("/challenge-introduction")
     public ResponseEntity<ResponseWrapper<ChallengeIntroductionImageResponse>> getChallengeIntroductionImage() {
         return imageService.getChallengeIntroductionImages();
+    }
+
+    @GetMapping("/promotion")
+    public ResponseEntity<ResponseWrapper<ItemPromotionResponse>> getItemPromotionImage() {
+        return imageService.getItemPromotionImages();
     }
 
     @DeleteMapping()
