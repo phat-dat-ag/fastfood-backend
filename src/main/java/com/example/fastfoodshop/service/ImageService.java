@@ -5,7 +5,8 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PageType;
 import com.example.fastfoodshop.repository.ImageRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
-import com.example.fastfoodshop.response.AboutUseImageResponse;
+import com.example.fastfoodshop.response.AboutUsImageResponse;
+import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -58,14 +59,26 @@ public class ImageService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<AboutUseImageResponse>> getAboutUsPageImages() {
+    public ResponseEntity<ResponseWrapper<AboutUsImageResponse>> getAboutUsPageImages() {
         try {
             List<Image> images = imageRepository.findByPageType(PageType.ABOUT_US);
-            return ResponseEntity.ok(ResponseWrapper.success(new AboutUseImageResponse(images)));
+            return ResponseEntity.ok(ResponseWrapper.success(new AboutUsImageResponse(images)));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_ABOUT_US_PAGE_IMAGE_FAILED",
                     "Lỗi lấy các ảnh trong trang về chúng tôi " + e.getMessage()
+            ));
+        }
+    }
+
+    public ResponseEntity<ResponseWrapper<ChallengeIntroductionImageResponse>> getChallengeIntroductionImages() {
+        try {
+            List<Image> images = imageRepository.findByPageType(PageType.CHALLENGE);
+            return ResponseEntity.ok(ResponseWrapper.success(new ChallengeIntroductionImageResponse(images)));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ResponseWrapper.error(
+                    "GET_CHALLENGE_INTRODUCTION_PAGE_IMAGE_FAILED",
+                    "Lỗi lấy các ảnh trong trang giới thiệu thử thách " + e.getMessage()
             ));
         }
     }
