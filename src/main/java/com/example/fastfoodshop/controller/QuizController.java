@@ -4,6 +4,7 @@ import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
 import com.example.fastfoodshop.request.QuizSubmitRequest;
 import com.example.fastfoodshop.response.QuizFeedbackResponse;
+import com.example.fastfoodshop.response.QuizHistoryResponse;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.QuizService;
@@ -53,10 +54,11 @@ public class QuizController {
     }
 
     @GetMapping("/by-user")
-    public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(
-            @AuthenticationPrincipal UserDetails userDetails
+    public ResponseEntity<ResponseWrapper<QuizHistoryResponse>> getAllHistoryQuizzesByUser(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @ModelAttribute PageRequest request
     ) {
-        return quizService.getAllHistoryQuizzesByUser(userDetails.getUsername());
+        return quizService.getAllHistoryQuizzesByUser(userDetails.getUsername(), request.getPage(), request.getSize());
     }
 
     @GetMapping("/by-user/detail")

@@ -6,6 +6,7 @@ import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.repository.QuizRepository;
 import com.example.fastfoodshop.request.QuizQuestionSubmitRequest;
 import com.example.fastfoodshop.response.QuizFeedbackResponse;
+import com.example.fastfoodshop.response.QuizHistoryResponse;
 import com.example.fastfoodshop.response.QuizResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import lombok.RequiredArgsConstructor;
@@ -253,16 +254,13 @@ public class QuizService {
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<QuizResponse>>> getAllHistoryQuizzesByUser(String phone) {
+    public ResponseEntity<ResponseWrapper<QuizHistoryResponse>> getAllHistoryQuizzesByUser(String phone, int page, int size) {
         try {
             User user = userService.findUserOrThrow(phone);
-            List<Quiz> quizzes = quizRepository.findByUserAndCompletedAtIsNotNull(user);
+            Pageable pageable = PageRequest.of(page, size);
+            Page<Quiz> quizPage = quizRepository.findByUserAndCompletedAtIsNotNull(user, pageable);
 
-            ArrayList<QuizResponse> quizResponses = new ArrayList<>();
-            for (Quiz quiz : quizzes) {
-                quizResponses.add(QuizResponse.createReviewQuizResponse(quiz));
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(quizResponses));
+            return ResponseEntity.ok(ResponseWrapper.success(new QuizHistoryResponse(quizPage)));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(ResponseWrapper.error(
                     "GET_REVIEW_QUIZZES_BY_USER_FAILED",
