@@ -7,36 +7,56 @@ import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.QuizQuestion;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 public class QuizResponse {
     private Long id;
-    private LocalDateTime startedAt;
-    private LocalDateTime completedAt;
-    private LocalDateTime expiredAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private OffsetDateTime startedAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private OffsetDateTime completedAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private OffsetDateTime expiredAt;
     private UserDTO user;
     private TopicDifficultyDTO topicDifficulty;
     private PromotionDTO promotion;
     private List<QuestionDTO> questions;
     private String feedback;
-    private LocalDateTime feedbackAt;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
+    private OffsetDateTime feedbackAt;
 
     private QuizResponse(Quiz quiz, List<QuestionDTO> questionDTOs) {
         this.id = quiz.getId();
-        this.startedAt = quiz.getStartedAt();
-        this.completedAt = quiz.getCompletedAt();
-        this.expiredAt = quiz.getStartedAt().plusSeconds(quiz.getTopicDifficulty().getDuration());
+        this.startedAt = quiz.getStartedAt()
+                .atZone(ZoneId.systemDefault())
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toOffsetDateTime();
+
+        this.completedAt = quiz.getCompletedAt() != null
+                ? quiz.getCompletedAt().atZone(ZoneId.systemDefault())
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toOffsetDateTime()
+                : null;
+
+        this.expiredAt = this.startedAt.plusSeconds(quiz.getTopicDifficulty().getDuration());
         this.user = new UserDTO(quiz.getUser());
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
         this.questions = questionDTOs;
         this.feedback = quiz.getFeedback();
-        this.feedbackAt = quiz.getFeedbackAt();
+        this.feedbackAt = quiz.getFeedbackAt() != null
+                ? quiz.getFeedbackAt().atZone(ZoneId.systemDefault())
+                .withZoneSameInstant(ZoneOffset.UTC)
+                .toOffsetDateTime()
+                : null;
     }
 
     public static QuizResponse createUserQuizResponse(Quiz quiz, ArrayList<Question> questions) {
