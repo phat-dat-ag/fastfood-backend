@@ -38,7 +38,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             SELECT
                 COUNT(CASE WHEN order_status = 'PENDING' THEN 1 END) AS pendingOrderAmount,
                 COUNT(CASE WHEN order_status = 'CONFIRMED' THEN 1 END) AS confirmedOrderAmount,
-                COUNT(CASE WHEN order_status = 'DELEVERING' THEN 1 END) AS deliveringOrderAmount,
+                COUNT(CASE WHEN order_status = 'DELIVERING' THEN 1 END) AS deliveringOrderAmount,
                 COUNT(CASE WHEN order_status = 'DELIVERED' THEN 1 END) AS deliveredOrderAmount,
                 COUNT(CASE WHEN order_status = 'CANCELLED' THEN 1 END) AS cancelledOrderAmount,
             
