@@ -1,8 +1,8 @@
 package com.example.fastfoodshop.constant;
 
 public class StoreConstants {
-    public static final double STORE_LATITUDE = 10.02681177017709;
-    public static final double STORE_LONGITUDE = 105.77427899250046;
+    public static final double STORE_LATITUDE = 10.037092508817665;
+    public static final double STORE_LONGITUDE = 105.75989894879467;
 
     public static final int MAX_DELIVERY_RADIUS_KM = 10;
 
