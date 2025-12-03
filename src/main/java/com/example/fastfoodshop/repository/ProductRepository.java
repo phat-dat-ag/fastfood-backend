@@ -43,7 +43,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("""
                 SELECT p.id AS productId,
-                       COUNT(od.id) AS soldCount
+                       SUM(od.quantity) AS soldCount
                 FROM Product p
                 JOIN p.orderDetails od
                 JOIN od.order o
