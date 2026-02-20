@@ -60,6 +60,10 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/api-docs/**"
+                        ).permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/image/**").permitAll()

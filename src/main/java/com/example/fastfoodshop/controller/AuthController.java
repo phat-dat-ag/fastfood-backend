@@ -1,7 +1,11 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.*;
-import com.example.fastfoodshop.request.*;
+import com.example.fastfoodshop.dto.UserDTO;
+import com.example.fastfoodshop.request.ForgetPasswordRequest;
+import com.example.fastfoodshop.request.VerifyForgetPasswordReqest;
+import com.example.fastfoodshop.request.SignInRequest;
+import com.example.fastfoodshop.request.SignUpRequest;
+import com.example.fastfoodshop.request.VerifySignUpRequest;
 import com.example.fastfoodshop.response.OTPResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.SignInResponse;
@@ -10,7 +14,11 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
