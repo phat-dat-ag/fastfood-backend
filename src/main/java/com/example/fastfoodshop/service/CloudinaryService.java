@@ -1,56 +1,15 @@
 package com.example.fastfoodshop.service;
 
-import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.Map;
 
-@Service
-@RequiredArgsConstructor
-public class CloudinaryService {
-    private final Cloudinary cloudinary;
+public interface CloudinaryService {
+    Map<?, ?> uploadImage(MultipartFile file, String folderName);
 
-    public Map<?, ?> uploadImage(MultipartFile file, String folderName) {
-        try {
-            return cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
-                            "folder", folderName,
-                            "resource_type", "auto"
-                    )
-            );
-        } catch (IOException e) {
-            throw new RuntimeException("Upload image failed", e);
-        }
-    }
+    Map<?, ?> uploadAudio(MultipartFile file, String folder);
 
-    public Map<?, ?> uploadAudio(MultipartFile file, String folder) {
-        try {
-            return cloudinary.uploader().upload(file.getBytes(),
-                    Map.of("folder", folder, "resource_type", "video"));
-        } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi tải âm thanh lên Cloudinary: " + e.getMessage(), e);
-        }
-    }
+    boolean deleteImage(String publicId);
 
-    public boolean deleteImage(String publicId) {
-        try {
-            Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
-            return ("ok").equals(result.get("result"));
-        } catch (IOException e) {
-            throw new RuntimeException("Delete image failed", e);
-        }
-    }
-
-    public boolean deleteAudio(String publicId) {
-        try {
-            Map<?, ?> result = cloudinary.uploader().destroy(publicId,
-                    Map.of("resource_type", "video"));
-            return "ok".equals(result.get("result"));
-        } catch (IOException e) {
-            return false;
-        }
-    }
+    boolean deleteAudio(String publicId);
 }
