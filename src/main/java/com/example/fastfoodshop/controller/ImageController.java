@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 @RequestMapping("/api/image")
 @RequiredArgsConstructor
-public class ImageController {
+public class ImageController extends BaseController {
     private final ImageService imageService;
 
     @PostMapping()
@@ -30,26 +30,26 @@ public class ImageController {
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute ImageCreateRequest imageCreateRequest
     ) {
-        return imageService.uploadImage(userDetails.getUsername(), imageCreateRequest);
+        return okResponse(imageService.uploadImage(userDetails.getUsername(), imageCreateRequest));
     }
 
     @GetMapping("/about-us")
     public ResponseEntity<ResponseWrapper<AboutUsImageResponse>> getAboutUsPageImage() {
-        return imageService.getAboutUsPageImages();
+        return okResponse(imageService.getAboutUsPageImages());
     }
 
     @GetMapping("/challenge-introduction")
     public ResponseEntity<ResponseWrapper<ChallengeIntroductionImageResponse>> getChallengeIntroductionImage() {
-        return imageService.getChallengeIntroductionImages();
+        return okResponse(imageService.getChallengeIntroductionImages());
     }
 
     @GetMapping("/promotion")
     public ResponseEntity<ResponseWrapper<ItemPromotionResponse>> getItemPromotionImage() {
-        return imageService.getItemPromotionImages();
+        return okResponse(imageService.getItemPromotionImages());
     }
 
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<String>> deleteImage(@RequestParam("imageId") Long imageId) {
-        return imageService.deleteImage(imageId);
+        return okResponse(imageService.deleteImage(imageId));
     }
 }

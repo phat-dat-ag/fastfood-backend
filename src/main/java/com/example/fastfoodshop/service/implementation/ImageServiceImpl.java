@@ -3,6 +3,7 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PageType;
+import com.example.fastfoodshop.exception.image.ImageNotFoundException;
 import com.example.fastfoodshop.projection.ItemPromotionProjection;
 import com.example.fastfoodshop.repository.ImageRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
@@ -10,12 +11,10 @@ import com.example.fastfoodshop.request.ImageCreateRequest;
 import com.example.fastfoodshop.response.AboutUsImageResponse;
 import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
 import com.example.fastfoodshop.response.ItemPromotionResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ImageService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,7 +31,7 @@ public class ImageServiceImpl implements ImageService {
     private final ImageRepository imageRepository;
 
     private Image findImageOrThrow(Long imageId) {
-        return imageRepository.findById(imageId).orElseThrow(() -> new RuntimeException("Không tìm thấy ảnh"));
+        return imageRepository.findById(imageId).orElseThrow(() -> new ImageNotFoundException(imageId));
     }
 
     private void handleUploadImage(Image image, MultipartFile imageFile) {
@@ -46,78 +45,43 @@ public class ImageServiceImpl implements ImageService {
         image.setPublicId((String) result.get("public_id"));
     }
 
-    public ResponseEntity<ResponseWrapper<String>> uploadImage(String phone, ImageCreateRequest imageCreateRequest) {
-        try {
-            User user = userService.findUserOrThrow(phone);
+    public String uploadImage(String phone, ImageCreateRequest imageCreateRequest) {
+        User user = userService.findUserOrThrow(phone);
 
-            Image image = new Image();
-            image.setUser(user);
-            image.setAlternativeText(imageCreateRequest.getAlternativeText());
-            image.setPageType(imageCreateRequest.getPageType());
-            image.setSectionType(imageCreateRequest.getSectionType());
-            handleUploadImage(image, imageCreateRequest.getImageFile());
+        Image image = new Image();
+        image.setUser(user);
+        image.setAlternativeText(imageCreateRequest.getAlternativeText());
+        image.setPageType(imageCreateRequest.getPageType());
+        image.setSectionType(imageCreateRequest.getSectionType());
+        handleUploadImage(image, imageCreateRequest.getImageFile());
 
-            imageRepository.save(image);
-            return ResponseEntity.ok(ResponseWrapper.success("Đã lưu ảnh thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "UPLOAD_IMAGE_FAILED",
-                    "Lỗi tải ảnh " + e.getMessage()
-            ));
-        }
+        imageRepository.save(image);
+        return "Đã lưu ảnh thành công";
     }
 
-    public ResponseEntity<ResponseWrapper<AboutUsImageResponse>> getAboutUsPageImages() {
-        try {
-            List<Image> images = imageRepository.findByPageType(PageType.ABOUT_US);
-            return ResponseEntity.ok(ResponseWrapper.success(new AboutUsImageResponse(images)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ABOUT_US_PAGE_IMAGE_FAILED",
-                    "Lỗi lấy các ảnh trong trang về chúng tôi " + e.getMessage()
-            ));
-        }
+    public AboutUsImageResponse getAboutUsPageImages() {
+        List<Image> images = imageRepository.findByPageType(PageType.ABOUT_US);
+        return new AboutUsImageResponse(images);
     }
 
-    public ResponseEntity<ResponseWrapper<ChallengeIntroductionImageResponse>> getChallengeIntroductionImages() {
-        try {
-            List<Image> images = imageRepository.findByPageType(PageType.CHALLENGE);
-            return ResponseEntity.ok(ResponseWrapper.success(new ChallengeIntroductionImageResponse(images)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_CHALLENGE_INTRODUCTION_PAGE_IMAGE_FAILED",
-                    "Lỗi lấy các ảnh trong trang giới thiệu thử thách " + e.getMessage()
-            ));
-        }
+    public ChallengeIntroductionImageResponse getChallengeIntroductionImages() {
+        List<Image> images = imageRepository.findByPageType(PageType.CHALLENGE);
+        return new ChallengeIntroductionImageResponse(images);
     }
 
-    public ResponseEntity<ResponseWrapper<ItemPromotionResponse>> getItemPromotionImages() {
-        try {
-            LocalDateTime now = LocalDateTime.now();
-            List<ItemPromotionProjection> categoryProjections = promotionRepository.getDisplayableCategoryPromotionsLimited4(now);
-            List<ItemPromotionProjection> productProjections = promotionRepository.getDisplayableProductPromotionsLimited4(now);
+    public ItemPromotionResponse getItemPromotionImages() {
+        LocalDateTime now = LocalDateTime.now();
+        List<ItemPromotionProjection> categoryProjections = promotionRepository.getDisplayableCategoryPromotionsLimited4(now);
+        List<ItemPromotionProjection> productProjections = promotionRepository.getDisplayableProductPromotionsLimited4(now);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new ItemPromotionResponse(categoryProjections, productProjections)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ITEM_PROMOTION_PAGE_IMAGE_FAILED",
-                    "Lỗi lấy các ảnh trong trang giới thiệu khuyến mãi " + e.getMessage()
-            ));
-        }
+        return new ItemPromotionResponse(categoryProjections, productProjections);
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deleteImage(Long imageId) {
-        try {
-            Image image = findImageOrThrow(imageId);
-            cloudinaryService.deleteImage(image.getPublicId());
-            imageRepository.delete(image);
+    public String deleteImage(Long imageId) {
+        Image image = findImageOrThrow(imageId);
+        cloudinaryService.deleteImage(image.getPublicId());
+        imageRepository.delete(image);
 
-            return ResponseEntity.ok(ResponseWrapper.success("Xóa ảnh thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DELETE_IMAGE_FAILED",
-                    "Lỗi xóa ảnh " + e.getMessage()
-            ));
-        }
+        return "Xóa ảnh thành công";
     }
 }
