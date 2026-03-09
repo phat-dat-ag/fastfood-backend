@@ -10,11 +10,11 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.enums.PromotionType;
+import com.example.fastfoodshop.exception.promotion.*;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.PromotionResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.service.PromotionService;
@@ -25,7 +25,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -47,253 +46,161 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionRepository.findByCode(code).isPresent();
     }
 
-    private Promotion buildPromotionCategoryFromRequest(PromotionCreateRequest request) {
+    private Promotion buildPromotionCategoryFromRequest(PromotionCreateRequest promotionCreateRequest) {
         Promotion promotion = new Promotion();
-        promotion.setType(request.getType());
-        promotion.setValue(request.getValue());
-        promotion.setStartAt(request.getStartAt());
-        promotion.setEndAt(request.getEndAt());
-        promotion.setQuantity(request.getQuantity());
+        promotion.setType(promotionCreateRequest.getType());
+        promotion.setValue(promotionCreateRequest.getValue());
+        promotion.setStartAt(promotionCreateRequest.getStartAt());
+        promotion.setEndAt(promotionCreateRequest.getEndAt());
+        promotion.setQuantity(promotionCreateRequest.getQuantity());
         promotion.setUsedQuantity(0);
-        promotion.setMaxDiscountAmount(request.getMaxDiscountAmount());
-        promotion.setMinSpendAmount(request.getMinSpendAmount());
-        promotion.setCode(request.getCode());
-        promotion.setGlobal(request.getIsGlobal());
-        promotion.setActivated(request.getIsActivated());
+        promotion.setMaxDiscountAmount(promotionCreateRequest.getMaxDiscountAmount());
+        promotion.setMinSpendAmount(promotionCreateRequest.getMinSpendAmount());
+        promotion.setCode(promotionCreateRequest.getCode());
+        promotion.setGlobal(promotionCreateRequest.getIsGlobal());
+        promotion.setActivated(promotionCreateRequest.getIsActivated());
         promotion.setDeleted(false);
         return promotion;
     }
 
-    private Promotion findUndeletedPromotionOrThrow(Long id) {
-        return promotionRepository.findByIdAndIsDeletedFalse(id).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại hoặc đã bị xóa"));
+    private Promotion findUndeletedPromotionOrThrow(Long promotionId) {
+        return promotionRepository.findByIdAndIsDeletedFalse(promotionId).orElseThrow(
+                () -> new PromotionNotFoundException(promotionId)
+        );
     }
 
-    private Promotion findPromotionOrThrow(String code) {
-        return promotionRepository.findByCode(code).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
+    private Promotion findPromotionOrThrow(String promotionCode) {
+        return promotionRepository.findByCode(promotionCode).orElseThrow(
+                () -> new PromotionNotFoundException(promotionCode)
+        );
     }
 
-    public Promotion findPromotionOrThrow(Long id) {
-        return promotionRepository.findById(id).orElseThrow(() -> new RuntimeException("Mã khuyến mãi không tồn tại"));
+    public Promotion findPromotionOrThrow(Long promotionId) {
+        return promotionRepository.findById(promotionId).orElseThrow(
+                () -> new PromotionNotFoundException(promotionId)
+        );
     }
 
     public void increasePromotionUsageCount(Long promotionId) {
         Promotion promotion = findPromotionOrThrow(promotionId);
         if (promotion.getUsedQuantity() >= promotion.getQuantity()) {
-            throw new RuntimeException("Mã khuyến mãi đã hết lượt sử dụng");
+            throw new UnavailablePromotionException(promotionId);
         }
         promotion.setUsedQuantity(promotion.getUsedQuantity() + 1);
         promotionRepository.save(promotion);
     }
 
     public PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice) {
-        try {
-            Promotion promotion = findPromotionOrThrow(promotionCode);
-            if (!promotion.isGlobal())
-                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này không áp dụng cho đơn hàng được");
-            if (!promotion.isActivated())
-                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này đã bị vô hiệu hóa");
+        Promotion promotion = findPromotionOrThrow(promotionCode);
+        if (!promotion.isGlobal())
+            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này không áp dụng cho đơn hàng được");
+        if (!promotion.isActivated())
+            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này đã bị vô hiệu hóa");
 
-            LocalDateTime now = LocalDateTime.now();
-            if (now.isBefore(promotion.getStartAt()))
-                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi chưa có hiệu lực!");
-            if (now.isAfter(promotion.getEndAt()))
-                return PromotionCodeCheckResultDTO.error("Mã khuyến mãi đã hết hiệu lực");
-            if (promotion.getUsedQuantity() >= promotion.getQuantity())
-                return PromotionCodeCheckResultDTO.error("Đã hết lượt khuyến mãi!");
-            if (promotion.getMinSpendAmount() > orderPrice)
-                return PromotionCodeCheckResultDTO.error("Tổng đơn hàng chưa đủ điều kiện khuyến mãi!");
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isBefore(promotion.getStartAt()))
+            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi chưa có hiệu lực!");
+        if (now.isAfter(promotion.getEndAt()))
+            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi đã hết hiệu lực");
+        if (promotion.getUsedQuantity() >= promotion.getQuantity())
+            return PromotionCodeCheckResultDTO.error("Đã hết lượt khuyến mãi!");
+        if (promotion.getMinSpendAmount() > orderPrice)
+            return PromotionCodeCheckResultDTO.error("Tổng đơn hàng chưa đủ điều kiện khuyến mãi!");
 
-            return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", new PromotionDTO(promotion));
-
-        } catch (Exception e) {
-            return PromotionCodeCheckResultDTO.error("Áp dụng khuyến mãi thất bại: " + e.getMessage());
-        }
+        return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", new PromotionDTO(promotion));
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionCategory(PromotionCreateRequest request) {
-        try {
-            if (checkUniqueCode(request.getCode())) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                                "CREATE_PROMOTION_FAILED",
-                                "Mã khuyến mãi đã tồn tại"
-                        )
-                );
-            }
-            Category category = categoryService.findCategoryOrThrow(request.getCategoryId());
-
-            Promotion promotion = buildPromotionCategoryFromRequest(request);
-            promotion.setCategory(category);
-            Promotion savedPromotion = promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(savedPromotion)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "CREATE_PROMOTION_FAILED",
-                            "Lỗi khi tạo mã khuyến mãi " + e.getMessage()
-                    )
-            );
+    public PromotionDTO createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
+        if (checkUniqueCode(promotionCreateRequest.getCode())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
+        Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.getCategoryId());
+
+        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
+        promotion.setCategory(category);
+        Promotion savedPromotion = promotionRepository.save(promotion);
+        return new PromotionDTO(savedPromotion);
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionProduct(PromotionCreateRequest request) {
-        try {
-            if (checkUniqueCode(request.getCode())) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                                "CREATE_PROMOTION_FAILED",
-                                "Mã khuyến mãi đã tồn tại"
-                        )
-                );
-            }
-            Product product = productService.findProductOrThrow(request.getProductId());
-
-            Promotion promotion = buildPromotionCategoryFromRequest(request);
-            promotion.setProduct(product);
-            Promotion savedPromotion = promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(savedPromotion)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "CREATE_PROMOTION_FAILED",
-                            "Lỗi khi tạo mã khuyến mãi " + e.getMessage()
-                    )
-            );
+    public PromotionDTO createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
+        if (checkUniqueCode(promotionCreateRequest.getCode())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
+        Product product = productService.findProductOrThrow(promotionCreateRequest.getProductId());
+
+        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
+        promotion.setProduct(product);
+        Promotion savedPromotion = promotionRepository.save(promotion);
+        return new PromotionDTO(savedPromotion);
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionOrder(PromotionCreateRequest request) {
-        try {
-            if (checkUniqueCode(request.getCode())) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                                "CREATE_PROMOTION_FAILED",
-                                "Mã khuyến mãi đã tồn tại"
-                        )
-                );
-            }
-
-            Promotion promotion = buildPromotionCategoryFromRequest(request);
-            Promotion savedPromotion = promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(savedPromotion)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "CREATE_PROMOTION_FAILED",
-                            "Lỗi khi tạo mã khuyến mãi " + e.getMessage()
-                    )
-            );
+    public PromotionDTO createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
+        if (checkUniqueCode(promotionCreateRequest.getCode())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
+
+        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
+        Promotion savedPromotion = promotionRepository.save(promotion);
+        return new PromotionDTO(savedPromotion);
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Promotion> categoryPromotionPage = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse(pageable);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(categoryPromotionPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "GET_PROMOTION_CATEGORY_FAILED",
-                            "Lỗi khi lấy mã khuyến mãi theo danh mục " + e.getMessage()
-                    )
-            );
-        }
+    public PromotionResponse getPromotionCategory(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Promotion> categoryPromotionPage = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse(pageable);
+        return new PromotionResponse(categoryPromotionPage);
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Promotion> productPromotionPage = promotionRepository.findByProductIsNotNullAndIsDeletedFalse(pageable);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(productPromotionPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "GET_PROMOTION_PRODUCT_FAILED",
-                            "Lỗi khi lấy mã khuyến mãi theo sản phẩm " + e.getMessage()
-                    )
-            );
-        }
+    public PromotionResponse getPromotionProduct(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Promotion> productPromotionPage = promotionRepository.findByProductIsNotNullAndIsDeletedFalse(pageable);
+        return new PromotionResponse(productPromotionPage);
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Promotion> orderPromotionPage = promotionRepository.findGlobalOrderPromotions(pageable);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionResponse(orderPromotionPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "GET_PROMOTION_PRODUCT_FAILED",
-                            "Lỗi khi lấy mã khuyến mãi cho đơn hàng " + e.getMessage()
-                    )
-            );
-        }
+    public PromotionResponse getPromotionOrder(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Promotion> orderPromotionPage = promotionRepository.findGlobalOrderPromotions(pageable);
+        return new PromotionResponse(orderPromotionPage);
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<PromotionDTO>>> getValidPromotionOrder(String phone) {
-        try {
-            User user = userService.findUserOrThrow(phone);
-            List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now());
-            ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
+    public ArrayList<PromotionDTO> getValidPromotionOrder(String phone) {
+        User user = userService.findUserOrThrow(phone);
+        List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now());
+        ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
 
-            for (Promotion promotion : orderPromotions) {
-                validOrderPromotions.add(new PromotionDTO(promotion));
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(validOrderPromotions));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "GET_PROMOTION_PRODUCT_FAILED",
-                            "Lỗi khi lấy mã khuyến mãi cho đơn hàng " + e.getMessage()
-                    )
-            );
+        for (Promotion promotion : orderPromotions) {
+            validOrderPromotions.add(new PromotionDTO(promotion));
         }
+        return validOrderPromotions;
     }
 
-    public ResponseEntity<ResponseWrapper<String>> activatePromotion(Long promotionId) {
-        try {
-            Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
-            if (promotion.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                        "ACTIVATE_PROMOTION_FAILED",
-                        "Mã khuyến mãi này đã được kích hoạt"
-                ));
-            }
-            promotion.setActivated(true);
-            promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success("Đã kích hoạt mã khuyến mãi"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "ACTIVATE_PROMOTION_FAILED",
-                    "Lỗi kích hoạt mã khuyến mãi " + e.getMessage()
-            ));
+    public String activatePromotion(Long promotionId) {
+        Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
+        if (promotion.isActivated()) {
+            throw new InvalidPromotionStatusException();
         }
+        promotion.setActivated(true);
+        promotionRepository.save(promotion);
+        return "Đã kích hoạt mã khuyến mãi";
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deactivatePromotion(Long promotionId) {
-        try {
-            Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
-            if (!promotion.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                        "DEACTIVATE_PROMOTION_FAILED",
-                        "Mã khuyến mãi này đã bị huủy kích hoạt"
-                ));
-            }
-            promotion.setActivated(false);
-            promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success("Đã hủy kích hoạt mã khuyến mãi"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DEACTIVATE_PROMOTION_FAILED",
-                    "Lỗi hủy kích hoạt mã khuyến mãi " + e.getMessage()
-            ));
+    public String deactivatePromotion(Long promotionId) {
+        Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
+        if (!promotion.isActivated()) {
+            throw new InvalidPromotionStatusException();
         }
+        promotion.setActivated(false);
+        promotionRepository.save(promotion);
+        return "Đã hủy kích hoạt mã khuyến mãi";
     }
 
-    public ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotion(Long promotionId) {
-        try {
-            Promotion promotion = findPromotionOrThrow(promotionId);
-            promotion.setDeleted(true);
-            Promotion deletedPromotion = promotionRepository.save(promotion);
-            return ResponseEntity.ok(ResponseWrapper.success(new PromotionDTO(deletedPromotion)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "DELETE_PROMOTION_FAILED",
-                            "Lỗi khi xóa mã khuyến mãi " + e.getMessage()
-                    )
-            );
+    public PromotionDTO deletePromotion(Long promotionId) {
+        Promotion promotion = findPromotionOrThrow(promotionId);
+        if (promotion.isDeleted()) {
+            throw new DeletedPromotionException();
         }
+        promotion.setDeleted(true);
+        Promotion deletedPromotion = promotionRepository.save(promotion);
+        return new PromotionDTO(deletedPromotion);
     }
 
     private String generatePromotionCode(Long userId, Long quizId, LocalDateTime completedAt) {
@@ -309,7 +216,7 @@ public class PromotionServiceImpl implements PromotionService {
 
     public Promotion grantPromotion(User user, Quiz quiz) {
         if (quiz.getCompletedAt() == null)
-            throw new RuntimeException("Lỗi tạo phần thưởng: Bài kiểm tra chưa hoàn thành");
+            throw new UncompletedQuizException();
         String promotionCode = generatePromotionCode(user.getId(), quiz.getId(), quiz.getCompletedAt());
 
         Award award = awardService.getRandomAwardByTopicDifficulty(quiz.getTopicDifficulty());

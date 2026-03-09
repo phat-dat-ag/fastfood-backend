@@ -7,37 +7,35 @@ import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.PromotionResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
-import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
 
 public interface PromotionService {
-    Promotion findPromotionOrThrow(Long id);
+    Promotion findPromotionOrThrow(Long promotionId);
 
     void increasePromotionUsageCount(Long promotionId);
 
     PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice);
 
-    ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionCategory(PromotionCreateRequest request);
+    PromotionDTO createPromotionCategory(PromotionCreateRequest promotionCreateRequest);
 
-    ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionProduct(PromotionCreateRequest request);
+    PromotionDTO createPromotionProduct(PromotionCreateRequest promotionCreateRequest);
 
-    ResponseEntity<ResponseWrapper<PromotionDTO>> createPromotionOrder(PromotionCreateRequest request);
+    PromotionDTO createPromotionOrder(PromotionCreateRequest promotionCreateRequest);
 
-    ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionCategory(int page, int size);
+    PromotionResponse getPromotionCategory(int page, int size);
 
-    ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionProduct(int page, int size);
+    PromotionResponse getPromotionProduct(int page, int size);
 
-    ResponseEntity<ResponseWrapper<PromotionResponse>> getPromotionOrder(int page, int size);
+    PromotionResponse getPromotionOrder(int page, int size);
 
-    ResponseEntity<ResponseWrapper<ArrayList<PromotionDTO>>> getValidPromotionOrder(String phone);
+    ArrayList<PromotionDTO> getValidPromotionOrder(String phone);
 
-    ResponseEntity<ResponseWrapper<String>> activatePromotion(Long promotionId);
+    String activatePromotion(Long promotionId);
 
-    ResponseEntity<ResponseWrapper<String>> deactivatePromotion(Long promotionId);
+    String deactivatePromotion(Long promotionId);
 
-    ResponseEntity<ResponseWrapper<PromotionDTO>> deletePromotion(Long promotionId);
+    PromotionDTO deletePromotion(Long promotionId);
 
     Promotion grantPromotion(User user, Quiz quiz);
 }
