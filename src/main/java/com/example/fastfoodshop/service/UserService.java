@@ -2,9 +2,10 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.User;
-import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.request.ChangePasswordRequest;
+import com.example.fastfoodshop.request.SignUpRequest;
+import com.example.fastfoodshop.request.UserUpdateRequest;
 import com.example.fastfoodshop.response.UserResponse;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
@@ -14,27 +15,27 @@ public interface UserService {
 
     User findUserOrThrow(String phone);
 
-    User createUser(String name, String phone, String email, String rawPassword, String birthdayString);
+    User createUser(SignUpRequest signUpRequest);
 
-    User updateUser(User user, String name, String phone, String email, String rawPassword, String birthdayString);
+    User updateUser(User user, SignUpRequest signUpRequest);
 
     User updateUser(User user, String rawPassword);
 
     User updateUser(User user);
 
-    ResponseEntity<ResponseWrapper<UserResponse>> getAllCustomers(int page, int size);
+    UserResponse getAllCustomers(int page, int size);
 
-    ResponseEntity<ResponseWrapper<UserResponse>> getAllStaff(int page, int size);
+    UserResponse getAllStaff(int page, int size);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> updateUser(String phone, String name, String birthdayString, String email);
+    UserDTO updateUser(String phone, UserUpdateRequest userUpdateRequest);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> changePassword(String phone, String password, String newPassword);
+    UserDTO changePassword(String phone, ChangePasswordRequest changePasswordRequest);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(String phone, MultipartFile file);
+    UserDTO updateAvatar(String phone, MultipartFile file);
 
-    ResponseEntity<ResponseWrapper<String>> activateAccount(Long userId);
+    String activateAccount(Long userId);
 
-    ResponseEntity<ResponseWrapper<String>> deactivateAccount(Long userId);
+    String deactivateAccount(Long userId);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(String phone);
+    UserDTO deleteUser(String phone);
 }

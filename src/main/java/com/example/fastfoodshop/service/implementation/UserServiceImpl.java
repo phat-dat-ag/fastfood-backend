@@ -3,17 +3,23 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.UserRole;
+import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
+import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
+import com.example.fastfoodshop.exception.user.UserNotFoundException;
 import com.example.fastfoodshop.repository.UserRepository;
-import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.request.ChangePasswordRequest;
+import com.example.fastfoodshop.request.SignUpRequest;
+import com.example.fastfoodshop.request.UserUpdateRequest;
 import com.example.fastfoodshop.response.UserResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,28 +35,30 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
 
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
     public Optional<User> getUserByPhone(String phone) {
         return userRepository.findByPhone(phone);
     }
 
     public User findUserOrThrow(String phone) {
-        return userRepository.findByPhone(phone).orElseThrow(() -> new RuntimeException("Tài khoản không tồn tại"));
+        return userRepository.findByPhone(phone).orElseThrow(() -> new UserNotFoundException(phone));
     }
 
     private User findUndeletedUserByIdOrThrow(Long userId) {
         return userRepository.findByIdAndIsDeletedFalse(userId).orElseThrow(
-                () -> new RuntimeException("Tài khoản không tồn tại hoặc bị xóa")
+                () -> new UserNotFoundException(userId)
         );
     }
 
-    public User createUser(String name, String phone, String email, String rawPassword, String birthdayString) {
-        LocalDate birthday = LocalDate.parse(birthdayString);
+    public User createUser(SignUpRequest signUpRequest) {
+        LocalDate birthday = LocalDate.parse(signUpRequest.getBirthdayString());
 
         User user = new User();
-        user.setName(name);
-        user.setPhone(phone);
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setName(signUpRequest.getName());
+        user.setPhone(signUpRequest.getPhone());
+        user.setEmail(signUpRequest.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(signUpRequest.getPassword()));
         user.setBirthday(birthday);
         user.setActivated(false);
         user.setDeleted(false);
@@ -59,13 +67,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public User updateUser(User user, String name, String phone, String email, String rawPassword, String birthdayString) {
-        LocalDate birthday = LocalDate.parse(birthdayString);
+    public User updateUser(User user, SignUpRequest signUpRequest) {
+        LocalDate birthday = LocalDate.parse(signUpRequest.getBirthdayString());
 
-        user.setName(name);
-        user.setPhone(phone);
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+        user.setName(signUpRequest.getName());
+        user.setPhone(signUpRequest.getPhone());
+        user.setEmail(signUpRequest.getEmail());
+        user.setPasswordHash(passwordEncoder.encode(signUpRequest.getPassword()));
         user.setBirthday(birthday);
         user.setActivated(false);
         user.setDeleted(false);
@@ -84,58 +92,40 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public ResponseEntity<ResponseWrapper<UserResponse>> getAllCustomers(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-            Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER, pageable);
+    public UserResponse getAllCustomers(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER, pageable);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new UserResponse(userPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_USER_FAILED",
-                    "Lỗi khi lấy các thông tin khách hàng " + e.getMessage()
-            ));
-        }
+        return new UserResponse(userPage);
     }
 
-    public ResponseEntity<ResponseWrapper<UserResponse>> getAllStaff(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-            Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF, pageable);
+    public UserResponse getAllStaff(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF, pageable);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new UserResponse(userPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_USER_FAILED",
-                    "Lỗi khi lấy các thông tin nhân viên " + e.getMessage()
-            ));
-        }
+        return new UserResponse(userPage);
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> updateUser(String phone, String name, String birthdayString, String email) {
+    public UserDTO updateUser(String phone, UserUpdateRequest userUpdateRequest) {
         User user = findUserOrThrow(phone);
-        LocalDate birthday = LocalDate.parse(birthdayString);
-        user.setName(name);
-        user.setEmail(email);
+        LocalDate birthday = LocalDate.parse(userUpdateRequest.getBirthdayString());
+        user.setName(userUpdateRequest.getName());
+        user.setEmail(userUpdateRequest.getEmail());
         user.setBirthday(birthday);
 
-        try {
-            User updatedUser = userRepository.save(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(updatedUser)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("USER_UPDATE_FAILED", e.getMessage()));
-        }
+        User updatedUser = userRepository.save(user);
+        return new UserDTO(updatedUser);
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> changePassword(String phone, String password, String newPassword) {
+    public UserDTO changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
         User user = findUserOrThrow(phone);
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_PASSWORD", "Mật khẩu chưa chính xác"));
+        if (!passwordEncoder.matches(changePasswordRequest.getPassword(), user.getPasswordHash())) {
+            throw new InvalidPasswordException();
         }
 
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
         User updatedUser = userRepository.save(user);
-        return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(updatedUser)));
+        return new UserDTO(updatedUser);
     }
 
     public void handleAvatarImage(User user, MultipartFile file) {
@@ -152,78 +142,48 @@ public class UserServiceImpl implements UserService {
             try {
                 boolean isSuccess = cloudinaryService.deleteImage(oldAvatarPublicId);
                 if (isSuccess) {
-                    System.out.println("Dọn dẹp ảnh cũ thành công");
+                    log.info("Old avatar deleted successfully: {}", oldAvatarPublicId);
                 }
             } catch (Exception e) {
-                System.out.println("Ngoại lệ khi dọn dẹp ảnh cũ: " + e.getMessage());
+                log.warn("Failed to delete old avatar: {}", oldAvatarPublicId, e);
             }
         }
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(String phone, MultipartFile file) {
-        try {
-            User user = findUserOrThrow(phone);
-            handleAvatarImage(user, file);
-            User updatedUser = userRepository.save(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(updatedUser)));
-        } catch (Exception e) {
-            System.out.println("Lỗi: " + e.getMessage());
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("EXCEPTION", "Có ngoại lệ khi cập nhật ảnh đại diện"));
-        }
+    public UserDTO updateAvatar(String phone, MultipartFile file) {
+        User user = findUserOrThrow(phone);
+        handleAvatarImage(user, file);
+        User updatedUser = userRepository.save(user);
+        return new UserDTO(updatedUser);
     }
 
-    public ResponseEntity<ResponseWrapper<String>> activateAccount(Long userId) {
-        try {
-            User user = findUndeletedUserByIdOrThrow(userId);
-            if (user.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                        "ACTIVATE_ACCOUNT_FAILED",
-                        "Tài khoản hiện đang được kích hoạt"
-                ));
-            }
-            user.setActivated(true);
-            userRepository.save(user);
-            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt tài khoản thành công"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "ACTIVATE_ACCOUNT_FAILED",
-                    "Lỗi kích hoạt tài khoản " + e.getMessage()
-            ));
+    public String activateAccount(Long userId) {
+        User user = findUndeletedUserByIdOrThrow(userId);
+        if (user.isActivated()) {
+            throw new InvalidUserStatusException();
         }
+        user.setActivated(true);
+        userRepository.save(user);
+        return "Kích hoạt tài khoản thành công";
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deactivateAccount(Long userId) {
-        try {
-            User user = findUndeletedUserByIdOrThrow(userId);
-            if (!user.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                        "DEACTIVATE_ACCOUNT_FAILED",
-                        "Tài khoản hiện đang bị hủy kích hoạt"
-                ));
-            }
-            user.setActivated(false);
-            userRepository.save(user);
-            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt tài khoản thành công"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DEACTIVATE_ACCOUNT_FAILED",
-                    "Lỗi hủy kích hoạt tài khoản " + e.getMessage()
-            ));
+    public String deactivateAccount(Long userId) {
+        User user = findUndeletedUserByIdOrThrow(userId);
+        if (!user.isActivated()) {
+            throw new InvalidUserStatusException();
         }
+        user.setActivated(false);
+        userRepository.save(user);
+        return "Hủy kích hoạt tài khoản thành công";
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(String phone) {
-        try {
-            User user = findUserOrThrow(phone);
-            user.setDeleted(true);
-            User deleteUser = userRepository.save(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(deleteUser)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "DELETE_ACCOUNT_FAILED",
-                            "Lỗi khi xóa tài khoản " + e.getMessage()
-                    )
-            );
+    public UserDTO deleteUser(String phone) {
+        User user = findUserOrThrow(phone);
+        if (user.isDeleted()) {
+            throw new InvalidUserStatusException();
         }
+        user.setDeleted(true);
+        User deletedUser = userRepository.save(user);
+        return new UserDTO(deletedUser);
     }
 }

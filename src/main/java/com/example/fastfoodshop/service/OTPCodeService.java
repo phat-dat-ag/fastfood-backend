@@ -10,5 +10,5 @@ public interface OTPCodeService {
 
     OTPCode sendOTP(User user, String emailTitle, String emailMessage);
 
-    OTPCode updateOTPCode(OTPCode otpCode, boolean isUsed);
+    void updateOTPCode(OTPCode otpCode, boolean isUsed);
 }

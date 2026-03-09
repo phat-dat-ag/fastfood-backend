@@ -3,16 +3,18 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.auth.PhoneAlreadyExistsException;
+import com.example.fastfoodshop.exception.auth.InvalidOTPCodeException;
+import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
+import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
+import com.example.fastfoodshop.request.*;
 import com.example.fastfoodshop.response.OTPResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.SignInResponse;
 import com.example.fastfoodshop.security.JwtUtil;
 import com.example.fastfoodshop.service.AuthService;
 import com.example.fastfoodshop.service.OTPCodeService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,22 +32,22 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final OTPCodeService otpCodeService;
 
-    public ResponseEntity<ResponseWrapper<OTPResponse>> signUp(String name, String phone, String email, String rawPassword, String birthdayString) {
-        Optional<User> optionalUser = userService.getUserByPhone(phone);
+    public OTPResponse signUp(SignUpRequest signUpRequest) {
+        Optional<User> optionalUser = userService.getUserByPhone(signUpRequest.getPhone());
 
         if (optionalUser.isPresent() && optionalUser.get().isActivated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ResponseWrapper.error("AUTH_INVALID_PHONE", "Số điện thoại đã được đăng ký"));
+            throw new PhoneAlreadyExistsException(signUpRequest.getPhone());
         }
 
         if (optionalUser.isPresent()) {
             User dbUser = optionalUser.get();
-            User updatedUser = userService.updateUser(dbUser, name, phone, email, rawPassword, birthdayString);
+            User updatedUser = userService.updateUser(dbUser, signUpRequest);
 
             List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(updatedUser);
+            LocalDateTime now = LocalDateTime.now();
             for (OTPCode otpCode : otpCodes) {
-                LocalDateTime now = LocalDateTime.now();
                 if (now.isBefore(otpCode.getExpiredAt())) {
-                    return ResponseEntity.ok(ResponseWrapper.success(new OTPResponse(updatedUser.getPhone(), otpCode.getExpiredAt())));
+                    return new OTPResponse(updatedUser.getPhone(), otpCode.getExpiredAt());
                 }
             }
             OTPCode otp = otpCodeService.sendOTP(
@@ -53,115 +55,90 @@ public class AuthServiceImpl implements AuthService {
                     "Đăng ký tài khoản mới",
                     "Mã OTP đăng ký tài khoản mới của bạn là: "
             );
-            return ResponseEntity.ok(ResponseWrapper.success(new OTPResponse(dbUser.getPhone(), otp.getExpiredAt())));
+            return new OTPResponse(updatedUser.getPhone(), otp.getExpiredAt());
         }
 
-        User user = userService.createUser(name, phone, email, rawPassword, birthdayString);
+        User user = userService.createUser(signUpRequest);
         OTPCode otp = otpCodeService.sendOTP(
                 user,
                 "Đăng ký tài khoản mới",
                 "Mã OTP đăng ký tài khoản mới của bạn là: "
         );
-        return ResponseEntity.ok(ResponseWrapper.success(new OTPResponse(user.getPhone(), otp.getExpiredAt())));
+        return new OTPResponse(user.getPhone(), otp.getExpiredAt());
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> verifySignUpOTP(String phone, String code) {
-        try {
-            User user = userService.findUserOrThrow(phone);
-            List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
-            LocalDateTime now = LocalDateTime.now();
+    public UserDTO verifySignUpOTP(VerifySignUpRequest verifySignUpRequest) {
+        User user = userService.findUserOrThrow(verifySignUpRequest.getPhone());
+        List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
+        LocalDateTime now = LocalDateTime.now();
 
-            for (OTPCode otpCode : otpCodes) {
-                if (now.isBefore(otpCode.getExpiredAt()) && code.equals(otpCode.getCode())) {
-                    user.setActivated(true);
-                    User dbUser = userService.updateUser(user);
-                    OTPCode dbOtpCode = otpCodeService.updateOTPCode(otpCode, true);
-                    return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(dbUser)));
-                }
+        for (OTPCode otpCode : otpCodes) {
+            if (now.isBefore(otpCode.getExpiredAt()) && verifySignUpRequest.getOtp().equals(otpCode.getCode())) {
+                user.setActivated(true);
+                User dbUser = userService.updateUser(user);
+                otpCodeService.updateOTPCode(otpCode, true);
+                return new UserDTO(dbUser);
             }
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_OTP", "Mã OTP không hợp lệ"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_OTP", "Lỗi xác thực OTP " + e.getMessage()));
         }
+        throw new InvalidOTPCodeException();
     }
 
-    public ResponseEntity<ResponseWrapper<SignInResponse>> signIn(String phone, String password) {
-        try {
-            User dbUser = userService.findUserOrThrow(phone);
+    public SignInResponse signIn(SignInRequest signInRequest) {
+        User dbUser = userService.findUserOrThrow(signInRequest.getPhone());
 
-            if (dbUser.isDeleted()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_ACCOUNT", "Tài khoản đã bị xóa"));
-            }
-
-            if (!dbUser.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_ACCOUNT", "Tài khoản chưa được kích hoạt"));
-            }
-
-            if (!passwordEncoder.matches(password, dbUser.getPasswordHash())) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_PASSWORD", "Mật khẩu chưa chính xác"));
-            }
-
-            String token = jwtUtil.generateToken(dbUser);
-            SignInResponse data = new SignInResponse(token, dbUser);
-            return ResponseEntity.ok(ResponseWrapper.success(data));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_SIGN_IN", "Lỗi đăng nhập " + e.getMessage()));
+        if (dbUser.isDeleted() || !dbUser.isActivated()) {
+            throw new InvalidUserStatusException();
         }
+
+        if (!passwordEncoder.matches(signInRequest.getPassword(), dbUser.getPasswordHash())) {
+            throw new InvalidPasswordException();
+        }
+
+        String token = jwtUtil.generateToken(dbUser);
+        return new SignInResponse(token, dbUser);
     }
 
-    public ResponseEntity<ResponseWrapper<OTPResponse>> forgetPassword(String phone, String newPassword) {
-        try {
-            User user = userService.findUserOrThrow(phone);
-            if (!user.isActivated()) {
-                return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_ACCOUNT", "Tài khoản chưa được kích hoạt"));
-            }
-
-            List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
-            for (OTPCode otpCode : otpCodes) {
-                LocalDateTime now = LocalDateTime.now();
-                if (now.isBefore(otpCode.getExpiredAt())) {
-                    return ResponseEntity.ok(ResponseWrapper.success(new OTPResponse(user.getPhone(), otpCode.getExpiredAt())));
-                }
-            }
-            OTPCode otpCode = otpCodeService.sendOTP(
-                    user,
-                    "Lấy lại mật khẩu",
-                    "Mã OTP để lấy lại mật khẩu của bạn là: "
-            );
-            OTPResponse response = new OTPResponse(user.getPhone(), otpCode.getExpiredAt());
-            return ResponseEntity.ok(ResponseWrapper.success(response));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("FORGET_PASSWORD_FAILED", "Lỗi khi quên mật khẩu " + e.getMessage()));
+    public OTPResponse forgetPassword(ForgetPasswordRequest forgetPasswordRequest) {
+        User user = userService.findUserOrThrow(forgetPasswordRequest.getPhone());
+        if (!user.isActivated()) {
+            throw new InvalidUserStatusException();
         }
+
+        List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
+        LocalDateTime now = LocalDateTime.now();
+        for (OTPCode otpCode : otpCodes) {
+            if (now.isBefore(otpCode.getExpiredAt())) {
+                return new OTPResponse(user.getPhone(), otpCode.getExpiredAt());
+            }
+        }
+        OTPCode otpCode = otpCodeService.sendOTP(
+                user,
+                "Lấy lại mật khẩu",
+                "Mã OTP để lấy lại mật khẩu của bạn là: "
+        );
+        return new OTPResponse(user.getPhone(), otpCode.getExpiredAt());
     }
 
-    public ResponseEntity<ResponseWrapper<UserDTO>> verifyForgetPasswordOTP(String phone, String code, String newPassword) {
-        try {
-            User user = userService.findUserOrThrow(phone);
-            List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
-            LocalDateTime now = LocalDateTime.now();
-            for (OTPCode otpCode : otpCodes) {
-                if (now.isBefore(otpCode.getExpiredAt()) && code.equals(otpCode.getCode())) {
-                    User dbUser = userService.updateUser(user, newPassword);
-                    OTPCode dbOtpCode = otpCodeService.updateOTPCode(otpCode, true);
-                    return ResponseEntity.ok(ResponseWrapper.success(new UserDTO(dbUser)));
-                }
+    public UserDTO verifyForgetPasswordOTP(VerifyForgetPasswordRequest verifyForgetPasswordRequest) {
+
+        User user = userService.findUserOrThrow(verifyForgetPasswordRequest.getPhone());
+        List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
+        LocalDateTime now = LocalDateTime.now();
+        for (OTPCode otpCode : otpCodes) {
+            if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.getOtp().equals(otpCode.getCode())) {
+                User dbUser = userService.updateUser(user, verifyForgetPasswordRequest.getNewPassword());
+                otpCodeService.updateOTPCode(otpCode, true);
+                return new UserDTO(dbUser);
             }
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_OTP", "Mã OTP không hợp lệ"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("AUTH_INVALID_OTP", "Lỗi xác thực OTP quên mật khẩu " + e.getMessage()));
         }
+        throw new InvalidOTPCodeException();
     }
 
-    public ResponseEntity<ResponseWrapper<SignInResponse>> verify(Authentication authentication) {
-        try {
-            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String phone = userDetails.getUsername();
-            User user = userService.findUserOrThrow(phone);
-            String newToken = jwtUtil.generateToken(user);
-            return ResponseEntity.ok(ResponseWrapper.success(new SignInResponse(newToken, user)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error("VERIFY_FAILED", "Lỗi xác thực token " + e.getMessage()));
-        }
+    public SignInResponse verify(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String phone = userDetails.getUsername();
+        User user = userService.findUserOrThrow(phone);
+        String newToken = jwtUtil.generateToken(user);
+        return new SignInResponse(newToken, user);
     }
 }

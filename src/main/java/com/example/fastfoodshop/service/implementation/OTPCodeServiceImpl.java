@@ -50,9 +50,9 @@ public class OTPCodeServiceImpl implements OTPCodeService {
         }
     }
 
-    public OTPCode updateOTPCode(OTPCode otpCode, boolean isUsed) {
+    public void updateOTPCode(OTPCode otpCode, boolean isUsed) {
         otpCode.setUsed(isUsed);
-        return otpCodeRepository.save(otpCode);
+        otpCodeRepository.save(otpCode);
     }
 }
 

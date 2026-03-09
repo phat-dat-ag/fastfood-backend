@@ -1,22 +1,21 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.request.*;
 import com.example.fastfoodshop.response.SignInResponse;
 import com.example.fastfoodshop.response.OTPResponse;
 import com.example.fastfoodshop.dto.UserDTO;
-import com.example.fastfoodshop.response.ResponseWrapper;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 public interface AuthService {
-    ResponseEntity<ResponseWrapper<OTPResponse>> signUp(String name, String phone, String email, String rawPassword, String birthdayString);
+    OTPResponse signUp(SignUpRequest signUpRequest);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> verifySignUpOTP(String phone, String code);
+    UserDTO verifySignUpOTP(VerifySignUpRequest verifySignUpRequest);
 
-    ResponseEntity<ResponseWrapper<SignInResponse>> signIn(String phone, String password);
+    SignInResponse signIn(SignInRequest signInRequest);
 
-    ResponseEntity<ResponseWrapper<OTPResponse>> forgetPassword(String phone, String newPassword);
+    OTPResponse forgetPassword(ForgetPasswordRequest forgetPasswordRequest);
 
-    ResponseEntity<ResponseWrapper<UserDTO>> verifyForgetPasswordOTP(String phone, String code, String newPassword);
+    UserDTO verifyForgetPasswordOTP(VerifyForgetPasswordRequest verifyForgetPasswordReqest);
 
-    ResponseEntity<ResponseWrapper<SignInResponse>> verify(Authentication authentication);
+    SignInResponse verify(Authentication authentication);
 }
