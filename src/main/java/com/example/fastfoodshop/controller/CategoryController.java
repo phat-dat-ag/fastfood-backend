@@ -24,43 +24,47 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/admin/category")
 @RequiredArgsConstructor
-public class CategoryController {
+public class CategoryController extends BaseController {
     private final CategoryService categoryService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(@ModelAttribute CategoryCreateRequest req) {
-        return categoryService.createCategory(req.getName(), req.getDescription(), req.isActivated(), req.getImageUrl());
+    public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(
+            @ModelAttribute CategoryCreateRequest categoryCreateRequest
+    ) {
+        return okResponse(categoryService.createCategory(categoryCreateRequest));
     }
 
     @GetMapping()
     public ResponseEntity<ResponseWrapper<CategoryResponse>> getCategories(
             @Valid @ModelAttribute PageRequest request
     ) {
-        return categoryService.getCategories(request.getPage(), request.getSize());
+        return okResponse(categoryService.getCategories(request.getPage(), request.getSize()));
     }
 
     @GetMapping("/display")
     public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getDisplayableCategories() {
-        return categoryService.getDisplayableCategories();
+        return okResponse(categoryService.getDisplayableCategories());
     }
 
     @PutMapping()
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(@ModelAttribute CategoryUpdateRequest req) {
-        return categoryService.updateCategory(req.getId(), req.getName(), req.getDescription(), req.isActivated(), req.getImageUrl());
+    public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(
+            @ModelAttribute CategoryUpdateRequest categoryUpdateRequest
+    ) {
+        return okResponse(categoryService.updateCategory(categoryUpdateRequest));
     }
 
     @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<String>> activateCategory(@RequestParam("id") Long id) {
-        return categoryService.activateCategory(id);
+    public ResponseEntity<ResponseWrapper<String>> activateCategory(@RequestParam("id") Long categoryId) {
+        return okResponse(categoryService.activateCategory(categoryId));
     }
 
     @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<String>> deactivateCategory(@RequestParam("id") Long id) {
-        return categoryService.deactivateCategory(id);
+    public ResponseEntity<ResponseWrapper<String>> deactivateCategory(@RequestParam("id") Long categoryId) {
+        return okResponse(categoryService.deactivateCategory(categoryId));
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> deleteCategory(@RequestParam("id") Long id) {
-        return categoryService.deleteCategory(id);
+    public ResponseEntity<ResponseWrapper<CategoryDTO>> deleteCategory(@RequestParam("id") Long categoryId) {
+        return okResponse(categoryService.deleteCategory(categoryId));
     }
 }

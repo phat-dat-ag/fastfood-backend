@@ -5,18 +5,22 @@ import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Promotion;
+import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
+import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.repository.CategoryRepository;
+import com.example.fastfoodshop.request.CategoryCreateRequest;
+import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.response.CategoryResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.util.PromotionUtils;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,6 +35,8 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
 
+    private static final Logger log = LoggerFactory.getLogger(CategoryServiceImpl.class);
+
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
         String uniqueSlug = baseSlug;
@@ -42,33 +48,37 @@ public class CategoryServiceImpl implements CategoryService {
         return uniqueSlug;
     }
 
-    public Category findCategoryOrThrow(Long id) {
-        return categoryRepository.findById(id).orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
+    public Category findCategoryOrThrow(Long categoryId) {
+        return categoryRepository.findById(categoryId).orElseThrow(
+                () -> new CategoryNotFoundException(categoryId)
+        );
     }
 
-    public Category findCategoryOrThrow(String slug) {
-        return categoryRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Danh mục không tồn tại"));
+    public Category findCategoryOrThrow(String categorySlug) {
+        return categoryRepository.findBySlug(categorySlug).orElseThrow(
+                () -> new CategoryNotFoundException(categorySlug)
+        );
     }
 
     public Category findUndeletedCategoryOrThrow(String categorySlug) {
         return categoryRepository.findBySlug(categorySlug).orElseThrow(
-                () -> new RuntimeException("Danh mục không tồn tại hoặc đã bị xóa")
+                () -> new CategoryNotFoundException(categorySlug)
         );
     }
 
-    public Category findActivatedCategoryOrThrow(Long id) {
-        return categoryRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(id).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy danh mục này đang kích hoạt")
+    public Category findActivatedCategoryOrThrow(Long categoryId) {
+        return categoryRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(categoryId).orElseThrow(
+                () -> new CategoryNotFoundException(categoryId)
         );
     }
 
-    public Category findDeactivatedCategoryOrThrow(Long id) {
-        return categoryRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(id).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy danh mục này đang bị hủy kích hoạt")
+    public Category findDeactivatedCategoryOrThrow(Long categoryId) {
+        return categoryRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(categoryId).orElseThrow(
+                () -> new CategoryNotFoundException(categoryId)
         );
     }
 
-    public void handleCategoryImage(Category category, MultipartFile imageFile) {
+    private void handleCategoryImage(Category category, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
 
@@ -81,8 +91,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                log.info("Old category image deleted successfully: {}", oldPublicId);
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn ảnh danh mục cũ: " + e.getMessage());
+                log.warn("Failed to delete old category image: {}", oldPublicId, e);
             }
         }
     }
@@ -128,122 +139,76 @@ public class CategoryServiceImpl implements CategoryService {
         productDTO.setDiscountedPrice(discountedPrice);
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> createCategory(String name, String description, boolean activated, MultipartFile imageFile) {
-        try {
-            String slug = generateUniqueSlug(name);
+    public CategoryDTO createCategory(CategoryCreateRequest categoryCreateRequest) {
+        String slug = generateUniqueSlug(categoryCreateRequest.getName());
 
-            Category category = new Category();
-            category.setSlug(slug);
-            category.setName(name);
-            category.setDescription(description);
-            category.setActivated(activated);
+        Category category = new Category();
+        category.setSlug(slug);
+        category.setName(categoryCreateRequest.getName());
+        category.setDescription(categoryCreateRequest.getDescription());
+        category.setActivated(categoryCreateRequest.isActivated());
 
-            handleCategoryImage(category, imageFile);
+        handleCategoryImage(category, categoryCreateRequest.getImageUrl());
 
-            Category savedCategory = categoryRepository.save(category);
-            return ResponseEntity.ok(ResponseWrapper.success(new CategoryDTO(savedCategory)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "CREATE_CATEGORY_FAILED",
-                    "Lỗi tạo danh mục sản phẩm: " + e.getMessage())
-            );
-        }
+        Category savedCategory = categoryRepository.save(category);
+        return new CategoryDTO(savedCategory);
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> updateCategory(Long id, String name, String description, boolean activated, MultipartFile imageFile) {
-        try {
-            Category category = findCategoryOrThrow(id);
-            category.setName(name);
-            category.setDescription(description);
-            category.setActivated(activated);
+    public CategoryDTO updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
+        Category category = findCategoryOrThrow(categoryUpdateRequest.getId());
+        category.setName(categoryUpdateRequest.getName());
+        category.setDescription(categoryUpdateRequest.getDescription());
+        category.setActivated(categoryUpdateRequest.isActivated());
 
-            handleCategoryImage(category, imageFile);
+        handleCategoryImage(category, categoryUpdateRequest.getImageUrl());
 
-            Category savedCategory = categoryRepository.save(category);
-            return ResponseEntity.ok(ResponseWrapper.success(new CategoryDTO(savedCategory)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "UPDATE_CATEGORY_FAILED",
-                    "Lỗi cập nhật danh mục sản phẩm: " + e.getMessage())
-            );
-        }
+        Category savedCategory = categoryRepository.save(category);
+        return new CategoryDTO(savedCategory);
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryResponse>> getCategories(int page, int size) {
-        try {
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
+    public CategoryResponse getCategories(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new CategoryResponse(categoryPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_CATEGORY_FAILED",
-                    "Lỗi lấy danh mục sản phẩm: " + e.getMessage())
-            );
-        }
+        return new CategoryResponse(categoryPage);
     }
 
-    public ResponseEntity<ResponseWrapper<String>> activateCategory(Long id) {
-        try {
-            Category category = findDeactivatedCategoryOrThrow(id);
-            category.setActivated(true);
+    public String activateCategory(Long id) {
+        Category category = findDeactivatedCategoryOrThrow(id);
+        category.setActivated(true);
 
-            categoryRepository.save(category);
-            return ResponseEntity.ok(ResponseWrapper.success("Đã kích hoạt danh mục"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "ACTIVATE_CATEGORY_FAILED",
-                    "Lỗi kích hoạt danh mục " + e.getMessage()
-            ));
-        }
+        categoryRepository.save(category);
+        return "Đã kích hoạt danh mục";
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deactivateCategory(Long id) {
-        try {
-            Category category = findActivatedCategoryOrThrow(id);
-            category.setActivated(false);
+    public String deactivateCategory(Long id) {
+        Category category = findActivatedCategoryOrThrow(id);
+        category.setActivated(false);
 
-            categoryRepository.save(category);
-            return ResponseEntity.ok(ResponseWrapper.success("Đã hủy kích hoạt danh mục"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DEACTIVATE_CATEGORY_FAILED",
-                    "Lỗi hủy kích hoạt danh mục " + e.getMessage()
-            ));
-        }
+        categoryRepository.save(category);
+        return "Đã hủy kích hoạt danh mục";
     }
 
-    public ResponseEntity<ResponseWrapper<CategoryDTO>> deleteCategory(Long id) {
-        try {
-            Category category = findCategoryOrThrow(id);
-            category.setDeleted(true);
-
-            Category deletedCategory = categoryRepository.save(category);
-            return ResponseEntity.ok(ResponseWrapper.success(new CategoryDTO(deletedCategory)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DELETE_CATEGORY_FAILED",
-                    "Không thể xóa danh mục: " + e.getMessage())
-            );
+    public CategoryDTO deleteCategory(Long categoryId) {
+        Category category = findCategoryOrThrow(categoryId);
+        if (category.isDeleted()) {
+            throw new DeletedCategoryException(categoryId);
         }
+        category.setDeleted(true);
+
+        Category deletedCategory = categoryRepository.save(category);
+        return new CategoryDTO(deletedCategory);
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<CategoryDTO>>> getDisplayableCategories() {
-        try {
-            List<Category> categories = categoryRepository.findByIsDeletedFalseAndIsActivatedTrue();
-            ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
+    public ArrayList<CategoryDTO> getDisplayableCategories() {
+        List<Category> categories = categoryRepository.findByIsDeletedFalseAndIsActivatedTrue();
+        ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
 
-            for (Category category : categories) {
-                categoryDTOs.add(new CategoryDTO(category));
-            }
-
-            return ResponseEntity.ok(ResponseWrapper.success(categoryDTOs));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_DISPLAYABLE_CATEGORY_FAILED",
-                    "Lỗi lấy danh mục sản phẩm để trưng bày: " + e.getMessage())
-            );
+        for (Category category : categories) {
+            categoryDTOs.add(new CategoryDTO(category));
         }
+
+        return categoryDTOs;
     }
 }
 
