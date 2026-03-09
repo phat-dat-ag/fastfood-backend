@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.otp.SendOTPException;
 import com.example.fastfoodshop.repository.OTPCodeRepository;
 import com.example.fastfoodshop.service.EmailService;
 import com.example.fastfoodshop.service.OTPCodeService;
@@ -45,8 +46,7 @@ public class OTPCodeServiceImpl implements OTPCodeService {
             return otp;
         } catch (Exception e) {
             otpCodeRepository.delete(otp);
-            System.out.println("Lỗi gửi mail: " + e);
-            throw new RuntimeException("Lỗi không gửi được OTP");
+            throw new SendOTPException(e.getMessage());
         }
     }
 
