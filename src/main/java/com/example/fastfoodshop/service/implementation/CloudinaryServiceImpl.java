@@ -2,6 +2,10 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
+import com.example.fastfoodshop.exception.cloudinary.AudioDeleteException;
+import com.example.fastfoodshop.exception.cloudinary.AudioUploadException;
+import com.example.fastfoodshop.exception.cloudinary.ImageDeleteException;
+import com.example.fastfoodshop.exception.cloudinary.ImageUploadException;
 import com.example.fastfoodshop.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +27,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                     )
             );
         } catch (IOException e) {
-            throw new RuntimeException("Upload image failed", e);
+            throw new ImageUploadException(e.getMessage());
         }
     }
 
@@ -32,7 +36,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             return cloudinary.uploader().upload(file.getBytes(),
                     Map.of("folder", folder, "resource_type", "video"));
         } catch (IOException e) {
-            throw new RuntimeException("Lỗi khi tải âm thanh lên Cloudinary: " + e.getMessage(), e);
+            throw new AudioUploadException(e.getMessage());
         }
     }
 
@@ -41,7 +45,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
             Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
             return ("ok").equals(result.get("result"));
         } catch (IOException e) {
-            throw new RuntimeException("Delete image failed", e);
+            throw new ImageDeleteException(e.getMessage());
         }
     }
 
@@ -51,7 +55,7 @@ public class CloudinaryServiceImpl implements CloudinaryService {
                     Map.of("resource_type", "video"));
             return "ok".equals(result.get("result"));
         } catch (IOException e) {
-            return false;
+            throw new AudioDeleteException(e.getMessage());
         }
     }
 }
