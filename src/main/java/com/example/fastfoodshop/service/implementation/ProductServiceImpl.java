@@ -5,21 +5,29 @@ import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Review;
+import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
+import com.example.fastfoodshop.exception.product.DeletedProductException;
+import com.example.fastfoodshop.exception.product.InvalidStatusProductException;
+import com.example.fastfoodshop.exception.product.ProductNotFoundException;
+import com.example.fastfoodshop.exception.product.UnavailableProductException;
 import com.example.fastfoodshop.projection.ProductRatingStatsProjection;
 import com.example.fastfoodshop.projection.ProductSoldCountProjection;
 import com.example.fastfoodshop.repository.ProductRepository;
 import com.example.fastfoodshop.repository.ReviewRepository;
+import com.example.fastfoodshop.request.ProductCreateRequest;
+import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
+import com.example.fastfoodshop.request.ProductUpdateRequest;
 import com.example.fastfoodshop.response.ProductResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -36,6 +44,8 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ReviewRepository reviewRepository;
 
+    private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
+
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
         String uniqueSlug = baseSlug;
@@ -47,41 +57,35 @@ public class ProductServiceImpl implements ProductService {
         return uniqueSlug;
     }
 
-    public Product findProductOrThrow(Long id) {
-        return productRepository.findById(id).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+    public Product findProductOrThrow(Long productId) {
+        return productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
     }
 
-    private Product findProductOrThrow(String slug) {
-        return productRepository.findBySlug(slug).orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
+    private Product findProductOrThrow(String productSlug) {
+        return productRepository.findBySlug(productSlug).orElseThrow(() -> new ProductNotFoundException(productSlug));
     }
 
     public void checkActivatedCategoryAndActivatedProduct(Long productId) {
         Product product = findProductOrThrow(productId);
-        if (product.isDeleted())
-            throw new RuntimeException("Sản phẩm: " + product.getName() + " đã bị xóa khỏi hệ thống");
-        if (!product.isActivated())
-            throw new RuntimeException("Sản phẩm: " + product.getName() + " đang tạm ngừng kinh doanh");
+        if (product.isDeleted() || !product.isActivated()) {
+            throw new UnavailableProductException(product.getName());
+        }
 
         Category category = product.getCategory();
-        if (category.isDeleted())
-            throw new RuntimeException(
-                    "Danh mục: " + category.getName() + " của sản phẩm " + product.getName() + " đã bị xóa khỏi hệ thống"
-            );
-        if (!category.isActivated())
-            throw new RuntimeException(
-                    "Danh mục: " + category.getName() + " của sản phẩm " + product.getName() + " đang tạm ngừng kinh doanh"
-            );
+        if (category.isDeleted() || !category.isActivated()) {
+            throw new UnavailableCategoryException(category.getName());
+        }
     }
 
-    private Product findActivatedProductOrThrow(Long id) {
-        return productRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(id).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy sản phẩm này đang được kích hoạt")
+    private Product findActivatedProductOrThrow(Long productId) {
+        return productRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(productId).orElseThrow(
+                () -> new InvalidStatusProductException(productId)
         );
     }
 
-    private Product findDeactivatedProductOrThrow(Long id) {
-        return productRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(id).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy sản phẩm này đang bị hủy kích hoạt")
+    private Product findDeactivatedProductOrThrow(Long productId) {
+        return productRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(productId).orElseThrow(
+                () -> new InvalidStatusProductException(productId)
         );
     }
 
@@ -98,8 +102,9 @@ public class ProductServiceImpl implements ProductService {
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                log.info("Old product image deleted successfully: {}", oldPublicId);
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn ảnh sản phẩm cũ: " + e.getMessage());
+                log.warn("Failed to delete old product image: {}", oldPublicId, e);
             }
         }
     }
@@ -116,226 +121,160 @@ public class ProductServiceImpl implements ProductService {
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                log.info("Old product 3D model deleted successfully: {}", oldPublicId);
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn mô hình 3D sản phẩm cũ: " + e.getMessage());
+                log.warn("Failed to delete old product 3D model: {}", oldPublicId, e);
             }
         }
     }
 
-    public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(
-            Long category_id, String name, String description, int price, boolean activated,
-            MultipartFile imageFile, MultipartFile modelFile
-    ) {
-        try {
-            Category category = categoryService.findCategoryOrThrow(category_id);
+    public ProductDTO createProduct(ProductCreateRequest productCreateRequest) {
+        Category category = categoryService.findCategoryOrThrow(productCreateRequest.getCategory_id());
 
-            String slug = generateUniqueSlug(name);
+        String slug = generateUniqueSlug(productCreateRequest.getName());
 
-            Product product = new Product();
-            product.setCategory(category);
-            product.setName(name);
-            product.setSlug(slug);
-            product.setDescription(description);
-            product.setPrice(price);
-            product.setActivated(activated);
-            product.setDeleted(false);
+        Product product = new Product();
+        product.setCategory(category);
+        product.setName(productCreateRequest.getName());
+        product.setSlug(slug);
+        product.setDescription(productCreateRequest.getDescription());
+        product.setPrice(productCreateRequest.getPrice());
+        product.setActivated(productCreateRequest.isActivated());
+        product.setDeleted(false);
 
-            handleProductImage(product, imageFile);
-            handleProductModel3D(product, modelFile);
-            Product savedProduct = productRepository.save(product);
-            return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(savedProduct)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "CREATE_PRODUCT_FAILED",
-                            "Lỗi tạo sản phẩm " + e.getMessage()
-                    )
-            );
-        }
+        handleProductImage(product, productCreateRequest.getImageUrl());
+        handleProductModel3D(product, productCreateRequest.getModelUrl());
+        Product savedProduct = productRepository.save(product);
+        return new ProductDTO(savedProduct);
     }
 
-    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(
-            Long id, String name, String description, boolean isActivated,
-            MultipartFile imageFile, MultipartFile modelFile
-    ) {
-        try {
-            Product product = findProductOrThrow(id);
-            product.setName(name);
-            product.setDescription(description);
-            product.setActivated(isActivated);
+    public ProductDTO updateProduct(ProductUpdateRequest productUpdateRequest) {
+        Product product = findProductOrThrow(productUpdateRequest.getId());
+        product.setName(productUpdateRequest.getName());
+        product.setDescription(productUpdateRequest.getDescription());
+        product.setActivated(productUpdateRequest.isActivated());
 
-            handleProductImage(product, imageFile);
-            handleProductModel3D(product, modelFile);
+        handleProductImage(product, productUpdateRequest.getImageUrl());
+        handleProductModel3D(product, productUpdateRequest.getModelUrl());
 
-            Product savedProduct = productRepository.save(product);
-            return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(savedProduct)));
-        } catch (Exception e) {
-            System.out.println("Lỗi cập nhật SP: " + e.getMessage());
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "UPDATE_PRODUCT_FAILED",
-                            "Lỗi cập nhật thông tin sản phẩm"
-                    )
-            );
-        }
+        Product savedProduct = productRepository.save(product);
+        return new ProductDTO(savedProduct);
     }
 
-    public ResponseEntity<ResponseWrapper<ProductResponse>> getAllProductsByCategory(
-            String categorySlug, int page, int size
-    ) {
-        try {
-            Category category = categoryService.findUndeletedCategoryOrThrow(categorySlug);
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Product> productPage = productRepository.findByCategoryAndIsDeletedFalse(category, pageable);
+    public ProductResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
+        Category category = categoryService.findUndeletedCategoryOrThrow(
+                productGetByCategoryRequest.getCategorySlug()
+        );
+        Pageable pageable = PageRequest.of(
+                productGetByCategoryRequest.getPage(), productGetByCategoryRequest.getSize()
+        );
+        Page<Product> productPage = productRepository.findByCategoryAndIsDeletedFalse(category, pageable);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new ProductResponse(productPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_PRODUCT_BY_CATEGORY_FAILED",
-                    "Lỗi lấy tất cả sản phẩm theo danh mục: " + e.getMessage())
-            );
-        }
+        return new ProductResponse(productPage);
     }
 
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProductsByCategory(String categorySlug) {
-        try {
-            Category category = categoryService.findCategoryOrThrow(categorySlug);
-            List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
+    public ArrayList<ProductDTO> getAllDisplayableProductsByCategory(String categorySlug) {
+        Category category = categoryService.findCategoryOrThrow(categorySlug);
+        List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
-            List<Long> productIds = products.stream().map(Product::getId).toList();
+        List<Long> productIds = products.stream().map(Product::getId).toList();
 
-            var ratingStats = productRepository.getRatingStatsByProductIds(productIds);
-            Map<Long, ProductRatingStatsProjection> ratingMap = ratingStats.stream()
-                    .collect(Collectors.toMap(ProductRatingStatsProjection::getProductId, r -> r));
+        var ratingStats = productRepository.getRatingStatsByProductIds(productIds);
+        Map<Long, ProductRatingStatsProjection> ratingMap = ratingStats.stream()
+                .collect(Collectors.toMap(ProductRatingStatsProjection::getProductId, r -> r));
 
-            var soldStats = productRepository.getSoldCountByProductIds(productIds);
-            Map<Long, ProductSoldCountProjection> soldMap = soldStats.stream()
-                    .collect(Collectors.toMap(ProductSoldCountProjection::getProductId, s -> s));
+        var soldStats = productRepository.getSoldCountByProductIds(productIds);
+        Map<Long, ProductSoldCountProjection> soldMap = soldStats.stream()
+                .collect(Collectors.toMap(ProductSoldCountProjection::getProductId, s -> s));
 
 
-            ArrayList<ProductDTO> productDTOs = new ArrayList<>();
-            for (Product product : products) {
-                ProductDTO productDTO = new ProductDTO(product);
-
-                ProductRatingStatsProjection r = ratingMap.get(product.getId());
-                if (r != null) {
-                    productDTO.setAverageRating(r.getAvgRating() != null ? r.getAvgRating() : 0.0);
-                    productDTO.setReviewCount(r.getReviewCount());
-                }
-
-                ProductSoldCountProjection s = soldMap.get(product.getId());
-                productDTO.setSoldCount(s != null ? s.getSoldCount() : 0L);
-
-                categoryService.applyPromotion(productDTO, category);
-                productDTOs.add(productDTO);
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_DISPLAYABLE_PRODUCT_BY_CATEGORY_FAILED",
-                    "Lỗi lấy sản phẩm trưng bày của danh mục: " + e.getMessage())
-            );
-        }
-    }
-
-    public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProducts() {
-        try {
-            List<Product> products = productRepository.findByIsDeletedFalseAndIsActivatedTrue();
-
-            ArrayList<ProductDTO> productDTOs = new ArrayList<>();
-            for (Product product : products) {
-                ProductDTO productDTO = new ProductDTO(product);
-                categoryService.applyPromotion(productDTO, product.getCategory());
-                productDTOs.add(productDTO);
-            }
-            return ResponseEntity.ok(ResponseWrapper.success(productDTOs));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_DISPLAYABLE_PRODUCTS_FAILED",
-                    "Lỗi lấy sản phẩm trưng bày cho người dùng: " + e.getMessage())
-            );
-        }
-    }
-
-    public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(String slug) {
-        try {
-            Product product = findProductOrThrow(slug);
-            checkActivatedCategoryAndActivatedProduct(product.getId());
-            Category category = product.getCategory();
+        ArrayList<ProductDTO> productDTOs = new ArrayList<>();
+        for (Product product : products) {
             ProductDTO productDTO = new ProductDTO(product);
 
-            ProductRatingStatsProjection ratingStats = productRepository.getRatingStatsByProductIds(
-                    List.of(product.getId())
-            ).stream().findFirst().orElse(null);
-            if (ratingStats != null) {
-                productDTO.setAverageRating(ratingStats.getAvgRating() != null ? ratingStats.getAvgRating() : 0.0);
-                productDTO.setReviewCount(ratingStats.getReviewCount());
+            ProductRatingStatsProjection r = ratingMap.get(product.getId());
+            if (r != null) {
+                productDTO.setAverageRating(r.getAvgRating() != null ? r.getAvgRating() : 0.0);
+                productDTO.setReviewCount(r.getReviewCount());
             }
 
-            ProductSoldCountProjection soldStats = productRepository.getSoldCountByProductIds(
-                    List.of(product.getId())
-            ).stream().findFirst().orElse(null);
-            productDTO.setSoldCount(soldStats != null ? soldStats.getSoldCount() : 0L);
-
-            Pageable top5 = PageRequest.of(0, 5);
-            List<Review> topReviews = reviewRepository.findTop5ByProductIdOrderByRatingDescCreatedAtDesc(
-                    product.getId(), top5
-            );
-            List<ReviewDTO> reviewDTOs = topReviews.stream()
-                    .map(ReviewDTO::new)
-                    .toList();
-            productDTO.setReviews(new ArrayList<>(reviewDTOs));
+            ProductSoldCountProjection s = soldMap.get(product.getId());
+            productDTO.setSoldCount(s != null ? s.getSoldCount() : 0L);
 
             categoryService.applyPromotion(productDTO, category);
-            return ResponseEntity.ok(ResponseWrapper.success(productDTO));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_PRODUCT_FAILED",
-                    "Lỗi lấy sản phẩm: " + e.getMessage())
-            );
+            productDTOs.add(productDTO);
         }
+        return productDTOs;
     }
 
-    public ResponseEntity<ResponseWrapper<String>> activateProduct(Long id) {
-        try {
-            Product product = findDeactivatedProductOrThrow(id);
-            product.setActivated(true);
+    public ArrayList<ProductDTO> getAllDisplayableProducts() {
+        List<Product> products = productRepository.findByIsDeletedFalseAndIsActivatedTrue();
 
-            productRepository.save(product);
-            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt sản phẩm thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "ACTIVATE_PRODUCT_FAILED",
-                    "Lỗi kích hoạt sản phẩm " + e.getMessage()
-            ));
+        ArrayList<ProductDTO> productDTOs = new ArrayList<>();
+        for (Product product : products) {
+            ProductDTO productDTO = new ProductDTO(product);
+            categoryService.applyPromotion(productDTO, product.getCategory());
+            productDTOs.add(productDTO);
         }
+        return productDTOs;
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deactivateProduct(Long id) {
-        try {
-            Product product = findActivatedProductOrThrow(id);
-            product.setActivated(false);
+    public ProductDTO getProductBySlug(String productSlug) {
+        Product product = findProductOrThrow(productSlug);
+        checkActivatedCategoryAndActivatedProduct(product.getId());
+        Category category = product.getCategory();
+        ProductDTO productDTO = new ProductDTO(product);
 
-            productRepository.save(product);
-            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt sản phẩm thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DEACTIVATE_PRODUCT_FAILED",
-                    "Lỗi hủy kích hoạt sản phẩm " + e.getMessage()
-            ));
+        ProductRatingStatsProjection ratingStats = productRepository.getRatingStatsByProductIds(
+                List.of(product.getId())
+        ).stream().findFirst().orElse(null);
+        if (ratingStats != null) {
+            productDTO.setAverageRating(ratingStats.getAvgRating() != null ? ratingStats.getAvgRating() : 0.0);
+            productDTO.setReviewCount(ratingStats.getReviewCount());
         }
+
+        ProductSoldCountProjection soldStats = productRepository.getSoldCountByProductIds(
+                List.of(product.getId())
+        ).stream().findFirst().orElse(null);
+        productDTO.setSoldCount(soldStats != null ? soldStats.getSoldCount() : 0L);
+
+        Pageable top5 = PageRequest.of(0, 5);
+        List<Review> topReviews = reviewRepository.findTop5ByProductIdOrderByRatingDescCreatedAtDesc(
+                product.getId(), top5
+        );
+        List<ReviewDTO> reviewDTOs = topReviews.stream()
+                .map(ReviewDTO::new)
+                .toList();
+        productDTO.setReviews(new ArrayList<>(reviewDTOs));
+
+        categoryService.applyPromotion(productDTO, category);
+        return productDTO;
     }
 
-    public ResponseEntity<ResponseWrapper<ProductDTO>> deleteCategory(Long id) {
-        try {
-            Product product = findProductOrThrow(id);
-            product.setDeleted(true);
+    public String activateProduct(Long productId) {
+        Product product = findDeactivatedProductOrThrow(productId);
+        product.setActivated(true);
 
-            Product deletedProduct = productRepository.save(product);
-            return ResponseEntity.ok(ResponseWrapper.success(new ProductDTO(deletedProduct)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DELETE_PRODUCT_FAILED",
-                    "Lỗi xóa sản phẩm " + e.getMessage())
-            );
+        productRepository.save(product);
+        return "Kích hoạt sản phẩm thành công";
+    }
+
+    public String deactivateProduct(Long productId) {
+        Product product = findActivatedProductOrThrow(productId);
+        product.setActivated(false);
+
+        productRepository.save(product);
+        return "Hủy kích hoạt sản phẩm thành công";
+    }
+
+    public ProductDTO deleteCategory(Long productId) {
+        Product product = findProductOrThrow(productId);
+        if (product.isDeleted()) {
+            throw new DeletedProductException(productId);
         }
+        product.setDeleted(true);
+
+        Product deletedProduct = productRepository.save(product);
+        return new ProductDTO(deletedProduct);
     }
 }

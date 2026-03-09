@@ -2,41 +2,33 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.request.ProductCreateRequest;
+import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
+import com.example.fastfoodshop.request.ProductUpdateRequest;
 import com.example.fastfoodshop.response.ProductResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 
 public interface ProductService {
-    Product findProductOrThrow(Long id);
+    Product findProductOrThrow(Long productId);
 
     void checkActivatedCategoryAndActivatedProduct(Long productId);
 
-    ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(
-            Long category_id, String name, String description, int price, boolean activated,
-            MultipartFile imageFile, MultipartFile modelFile
-    );
+    ProductDTO createProduct(ProductCreateRequest productCreateRequest);
 
-    ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(
-            Long id, String name, String description, boolean isActivated,
-            MultipartFile imageFile, MultipartFile modelFile
-    );
+    ProductDTO updateProduct(ProductUpdateRequest productUpdateRequest);
 
-    ResponseEntity<ResponseWrapper<ProductResponse>> getAllProductsByCategory(
-            String categorySlug, int page, int size
-    );
+    ProductResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest);
 
-    ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProductsByCategory(String categorySlug);
+    ArrayList<ProductDTO> getAllDisplayableProductsByCategory(String categorySlug);
 
-    ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProducts();
+    ArrayList<ProductDTO> getAllDisplayableProducts();
 
-    ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(String slug);
+    ProductDTO getProductBySlug(String productSlug);
 
-    ResponseEntity<ResponseWrapper<String>> activateProduct(Long id);
+    String activateProduct(Long productId);
 
-    ResponseEntity<ResponseWrapper<String>> deactivateProduct(Long id);
+    String deactivateProduct(Long productId);
 
-    ResponseEntity<ResponseWrapper<ProductDTO>> deleteCategory(Long id);
+    ProductDTO deleteCategory(Long productId);
 }

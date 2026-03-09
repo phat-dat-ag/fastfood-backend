@@ -24,63 +24,61 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/admin/product")
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductController extends BaseController {
     private final ProductService productService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(@ModelAttribute ProductCreateRequest req) {
-        return productService.createProduct(
-                req.getCategory_id(), req.getName(), req.getDescription(), req.getPrice(), req.isActivated(),
-                req.getImageUrl(), req.getModelUrl()
-        );
+    public ResponseEntity<ResponseWrapper<ProductDTO>> createProduct(
+            @ModelAttribute ProductCreateRequest productCreateRequest
+    ) {
+        return okResponse(productService.createProduct(productCreateRequest));
     }
 
     @GetMapping()
     public ResponseEntity<ResponseWrapper<ProductResponse>> getAllProductsByCategory(
-            @Valid @ModelAttribute ProductGetByCategoryRequest request
+            @Valid @ModelAttribute ProductGetByCategoryRequest productGetByCategoryRequest
     ) {
-        return productService.getAllProductsByCategory(request.getCategorySlug(), request.getPage(), request.getSize());
+        return okResponse(productService.getAllProductsByCategory(productGetByCategoryRequest));
     }
 
     @PutMapping()
-    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(@ModelAttribute ProductUpdateRequest req) {
-        return productService.updateProduct(
-                req.getId(), req.getName(), req.getDescription(), req.isActivated(),
-                req.getImageUrl(), req.getModelUrl()
-        );
+    public ResponseEntity<ResponseWrapper<ProductDTO>> updateProduct(
+            @ModelAttribute ProductUpdateRequest productUpdateRequest
+    ) {
+        return okResponse(productService.updateProduct(productUpdateRequest));
     }
 
     @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<String>> activateProduct(@RequestParam("id") Long id) {
-        return productService.activateProduct(id);
+    public ResponseEntity<ResponseWrapper<String>> activateProduct(@RequestParam("id") Long productId) {
+        return okResponse(productService.activateProduct(productId));
     }
 
     @PutMapping("deactivate")
-    public ResponseEntity<ResponseWrapper<String>> deactivateProduct(@RequestParam("id") Long id) {
-        return productService.deactivateProduct(id);
+    public ResponseEntity<ResponseWrapper<String>> deactivateProduct(@RequestParam("id") Long productId) {
+        return okResponse(productService.deactivateProduct(productId));
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<ProductDTO>> deleteProduct(@RequestParam("id") Long id) {
-        return productService.deleteCategory(id);
+    public ResponseEntity<ResponseWrapper<ProductDTO>> deleteProduct(@RequestParam("id") Long productId) {
+        return okResponse(productService.deleteCategory(productId));
     }
 
     @GetMapping("/display/all/by-category")
     public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProductsByCategory(
             @RequestParam("categorySlug") String categorySlug
     ) {
-        return productService.getAllDisplayableProductsByCategory(categorySlug);
+        return okResponse(productService.getAllDisplayableProductsByCategory(categorySlug));
     }
 
     @GetMapping("/display/all")
     public ResponseEntity<ResponseWrapper<ArrayList<ProductDTO>>> getAllDisplayableProducts() {
-        return productService.getAllDisplayableProducts();
+        return okResponse(productService.getAllDisplayableProducts());
     }
 
     @GetMapping("/display/detail")
     public ResponseEntity<ResponseWrapper<ProductDTO>> getProductBySlug(
-            @RequestParam("slug") String slug
+            @RequestParam("slug") String productSlug
     ) {
-        return productService.getProductBySlug(slug);
+        return okResponse(productService.getProductBySlug(productSlug));
     }
 }
