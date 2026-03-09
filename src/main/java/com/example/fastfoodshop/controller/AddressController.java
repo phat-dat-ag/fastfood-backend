@@ -20,29 +20,29 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RestController
 @RequestMapping("/api/address")
 @RequiredArgsConstructor
-public class AddressController {
+public class AddressController extends BaseController {
     private final AddressService addressService;
 
     @PostMapping
     public ResponseEntity<ResponseWrapper<AddressDTO>> createAddress(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody AddressCreateRequest request
+            @RequestBody AddressCreateRequest addressCreateRequest
     ) {
-        return addressService.createAddress(userDetails.getUsername(), request);
+        return okResponse(addressService.createAddress(userDetails.getUsername(), addressCreateRequest));
     }
 
     @GetMapping
     public ResponseEntity<ResponseWrapper<AddressResponse>> getAddress(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
-        return addressService.getAddressesByUser(userDetails.getUsername());
+        return okResponse(addressService.getAddressesByUser(userDetails.getUsername()));
     }
 
     @DeleteMapping
     public ResponseEntity<ResponseWrapper<AddressDTO>> deleteAddress(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("id") Long id
+            @RequestParam("id") Long addressId
     ) {
-        return addressService.deleteAddress(userDetails.getUsername(), id);
+        return okResponse(addressService.deleteAddress(userDetails.getUsername(), addressId));
     }
 }
