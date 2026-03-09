@@ -22,15 +22,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
-public class CartController {
+public class CartController extends BaseController {
     private final CartService cartService;
 
     @PostMapping()
     public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody CartCreateRequest req
+            @RequestBody CartCreateRequest cartCreateRequest
     ) {
-        return cartService.addProductToCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
+        return okResponse(cartService.addProductToCart(userDetails.getUsername(), cartCreateRequest));
     }
 
     @PostMapping("/my-cart")
@@ -39,15 +39,15 @@ public class CartController {
             @RequestParam("code") String code,
             @RequestBody(required = false) DeliveryRequest deliveryRequest
     ) {
-        return cartService.getCartDetailByUser(userDetails.getUsername(), code, deliveryRequest);
+        return okResponse(cartService.getCartDetailByUser(userDetails.getUsername(), code, deliveryRequest));
     }
 
     @PutMapping()
     public ResponseEntity<ResponseWrapper<CartDTO>> updateCart(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody CartUpdateRequest req
+            @RequestBody CartUpdateRequest cartUpdateRequest
     ) {
-        return cartService.updateCart(userDetails.getUsername(), req.getProductId(), req.getQuantity());
+        return okResponse(cartService.updateCart(userDetails.getUsername(), cartUpdateRequest));
     }
 
     @DeleteMapping()
@@ -55,6 +55,6 @@ public class CartController {
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("productId") Long productId
     ) {
-        return cartService.deleteProductFromCart(userDetails.getUsername(), productId);
+        return okResponse(cartService.deleteProductFromCart(userDetails.getUsername(), productId));
     }
 }

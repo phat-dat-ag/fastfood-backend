@@ -9,10 +9,14 @@ import com.example.fastfoodshop.entity.Cart;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.cart.CartNotFoundException;
+import com.example.fastfoodshop.exception.cart.ProductAmountExceededException;
+import com.example.fastfoodshop.exception.cart.QuantityExceededException;
 import com.example.fastfoodshop.repository.CartRepository;
+import com.example.fastfoodshop.request.CartCreateRequest;
+import com.example.fastfoodshop.request.CartUpdateRequest;
 import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.CartResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.UserService;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.ProductService;
@@ -21,7 +25,6 @@ import com.example.fastfoodshop.service.DeliveryService;
 import com.example.fastfoodshop.service.CartService;
 import com.example.fastfoodshop.util.PromotionUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -40,60 +43,49 @@ public class CartServiceImpl implements CartService {
 
     private Cart findCartOrThrow(User user, Product product) {
         return cartRepository.findByUserAndProduct(user, product).orElseThrow(
-                () -> new RuntimeException("Không thấy sản phẩm này trong giỏ hàng của người dùng")
+                () -> new CartNotFoundException(product.getId())
         );
     }
 
     private void setNewProductQuantityOrThrow(Cart cart, int quantity) {
         int newQuantity = cart.getQuantity() + quantity;
         if (newQuantity > CartConstant.MAX_QUANTITY_PER_PRODUCT) {
-            throw new RuntimeException("Số lượng tối đa mỗi sản phẩm là " + CartConstant.MAX_QUANTITY_PER_PRODUCT);
+            throw new QuantityExceededException();
         }
         cart.setQuantity(newQuantity);
     }
 
     private void updateNewProductQuantityOrThrow(Cart cart, int newQuantity) {
         if (newQuantity > CartConstant.MAX_QUANTITY_PER_PRODUCT) {
-            throw new RuntimeException("Số lượng tối đa mỗi sản phẩm là " + CartConstant.MAX_QUANTITY_PER_PRODUCT);
+            throw new QuantityExceededException();
         }
         cart.setQuantity(newQuantity);
     }
 
-    public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(String userPhone, Long productId, int quantity) {
-        try {
-            User user = userService.findUserOrThrow(userPhone);
-            Product product = productService.findProductOrThrow(productId);
-            List<Cart> carts = cartRepository.findByUser(user);
-            Optional<Cart> optionalCart = cartRepository.findByUserAndProduct(user, product);
+    public CartDTO addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
+        User user = userService.findUserOrThrow(userPhone);
+        Product product = productService.findProductOrThrow(cartCreateRequest.getProductId());
+        List<Cart> carts = cartRepository.findByUser(user);
+        Optional<Cart> optionalCart = cartRepository.findByUserAndProduct(user, product);
 
-            if (optionalCart.isEmpty()) {
-                if (carts.size() >= CartConstant.MAX_PRODUCT_TYPES_PER_CART) {
-                    return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "ADD_PRODUCT_TO_CART_FAILED",
-                            "Số loại sản phẩm trong giỏ hàng tối đa là " + CartConstant.MAX_PRODUCT_TYPES_PER_CART
-                    ));
-                }
+        if (optionalCart.isEmpty()) {
+            if (carts.size() >= CartConstant.MAX_PRODUCT_TYPES_PER_CART) {
+                throw new ProductAmountExceededException();
             }
-
-            Cart cart = optionalCart.orElseGet(() -> {
-                Cart newCart = new Cart();
-                newCart.setUser(user);
-                newCart.setProduct(product);
-                newCart.setQuantity(0);
-                return newCart;
-            });
-
-            setNewProductQuantityOrThrow(cart, quantity);
-
-            Cart savedCart = cartRepository.save(cart);
-            return ResponseEntity.ok(ResponseWrapper.success(new CartDTO(savedCart)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "ADD_PRODUCT_TO_CART_FAILED",
-                            "Lỗi thêm sản phẩm vào giỏ hàng " + e.getMessage()
-                    )
-            );
         }
+
+        Cart cart = optionalCart.orElseGet(() -> {
+            Cart newCart = new Cart();
+            newCart.setUser(user);
+            newCart.setProduct(product);
+            newCart.setQuantity(0);
+            return newCart;
+        });
+
+        setNewProductQuantityOrThrow(cart, cartCreateRequest.getQuantity());
+
+        Cart savedCart = cartRepository.save(cart);
+        return new CartDTO(savedCart);
     }
 
     public CartResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
@@ -129,53 +121,28 @@ public class CartServiceImpl implements CartService {
         return cartResponse;
     }
 
-    public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
-        try {
-            CartResponse cartResponse = getCartResponse(phone, promotionCode, deliveryRequest);
-            return ResponseEntity.ok(ResponseWrapper.success(cartResponse));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "GET_CART_DETAIL_FAILED",
-                            "Lỗi khi lấy giỏ hàng của người dùng " + e.getMessage()
-                    )
-            );
-        }
+    public CartResponse getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
+        return getCartResponse(phone, promotionCode, deliveryRequest);
     }
 
-    public ResponseEntity<ResponseWrapper<CartDTO>> updateCart(String userPhone, Long productId, int quantity) {
-        try {
-            User user = userService.findUserOrThrow(userPhone);
-            Product product = productService.findProductOrThrow(productId);
-            Cart cart = findCartOrThrow(user, product);
+    public CartDTO updateCart(String userPhone, CartUpdateRequest cartUpdateRequest) {
+        User user = userService.findUserOrThrow(userPhone);
+        Product product = productService.findProductOrThrow(cartUpdateRequest.getProductId());
+        Cart cart = findCartOrThrow(user, product);
 
-            updateNewProductQuantityOrThrow(cart, quantity);
+        updateNewProductQuantityOrThrow(cart, cartUpdateRequest.getQuantity());
 
-            Cart updatedCart = cartRepository.save(cart);
-            return ResponseEntity.ok(ResponseWrapper.success(new CartDTO(updatedCart)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "UPDATE_CART_FAILED",
-                            "Lỗi tăng số lượng cho sản phẩm trong giỏ hàng " + e.getMessage()
-                    )
-            );
-        }
+        Cart updatedCart = cartRepository.save(cart);
+        return new CartDTO(updatedCart);
     }
 
-    public ResponseEntity<ResponseWrapper<CartDTO>> deleteProductFromCart(String phone, Long productId) {
-        try {
-            User user = userService.findUserOrThrow(phone);
-            Product product = productService.findProductOrThrow(productId);
-            Cart cart = findCartOrThrow(user, product);
+    public CartDTO deleteProductFromCart(String phone, Long productId) {
+        User user = userService.findUserOrThrow(phone);
+        Product product = productService.findProductOrThrow(productId);
+        Cart cart = findCartOrThrow(user, product);
 
-            cartRepository.delete(cart);
-            return ResponseEntity.ok(ResponseWrapper.success(new CartDTO(cart)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                            "DELETE_PRODUCT_FROM_CART_FAILED",
-                            "Có lỗi khi xóa sản phẩm khỏi giỏ hàng " + e.getMessage()
-                    )
-            );
-        }
+        cartRepository.delete(cart);
+        return new CartDTO(cart);
     }
 
     public void deleteAllProductFromCart(String phone) {
@@ -183,4 +150,3 @@ public class CartServiceImpl implements CartService {
         cartRepository.deleteAllByUser(user);
     }
 }
-
