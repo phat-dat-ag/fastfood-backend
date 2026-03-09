@@ -6,21 +6,19 @@ import com.example.fastfoodshop.dto.ProductStatsDTO;
 import com.example.fastfoodshop.dto.UserStatsDTO;
 import com.example.fastfoodshop.dto.TopicStatsDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyStatsDTO;
-import com.example.fastfoodshop.response.ResponseWrapper;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface AdminDashboardService {
-    ResponseEntity<ResponseWrapper<UserStatsDTO>> getUserStats();
+    UserStatsDTO getUserStats();
 
-    ResponseEntity<ResponseWrapper<OrderStatsDTO>> getOrderStats();
+    OrderStatsDTO getOrderStats();
 
-    ResponseEntity<ResponseWrapper<List<CategoryStatsDTO>>> getCategoryStats();
+    List<CategoryStatsDTO> getCategoryStats();
 
-    ResponseEntity<ResponseWrapper<List<ProductStatsDTO>>> getProductStats();
+    List<ProductStatsDTO> getProductStats();
 
-    ResponseEntity<ResponseWrapper<List<TopicStatsDTO>>> getTopicStats();
+    List<TopicStatsDTO> getTopicStats();
 
-    ResponseEntity<ResponseWrapper<List<TopicDifficultyStatsDTO>>> getTopicDifficultyStats();
+    List<TopicDifficultyStatsDTO> getTopicDifficultyStats();
 }

@@ -19,36 +19,36 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/dashboard")
 @RequiredArgsConstructor
-public class AdminDashboardController {
+public class AdminDashboardController extends BaseController {
     private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/user")
     public ResponseEntity<ResponseWrapper<UserStatsDTO>> getStats() {
-        return adminDashboardService.getUserStats();
+        return okResponse(adminDashboardService.getUserStats());
     }
 
     @GetMapping("/order")
     public ResponseEntity<ResponseWrapper<OrderStatsDTO>> getOrderStats() {
-        return adminDashboardService.getOrderStats();
+        return okResponse(adminDashboardService.getOrderStats());
     }
 
     @GetMapping("/category")
     public ResponseEntity<ResponseWrapper<List<CategoryStatsDTO>>> getCategoryStats() {
-        return adminDashboardService.getCategoryStats();
+        return okResponse(adminDashboardService.getCategoryStats());
     }
 
     @GetMapping("/product")
     public ResponseEntity<ResponseWrapper<List<ProductStatsDTO>>> getProductStats() {
-        return adminDashboardService.getProductStats();
+        return okResponse(adminDashboardService.getProductStats());
     }
 
     @GetMapping("/topic")
     public ResponseEntity<ResponseWrapper<List<TopicStatsDTO>>> getTopicStats() {
-        return adminDashboardService.getTopicStats();
+        return okResponse(adminDashboardService.getTopicStats());
     }
 
     @GetMapping("/topic-difficulty")
     public ResponseEntity<ResponseWrapper<List<TopicDifficultyStatsDTO>>> getTopicDifficultyStats() {
-        return adminDashboardService.getTopicDifficultyStats();
+        return okResponse(adminDashboardService.getTopicDifficultyStats());
     }
 }
