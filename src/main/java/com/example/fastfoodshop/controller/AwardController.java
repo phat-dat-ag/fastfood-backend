@@ -22,36 +22,36 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @RestController
 @RequestMapping("/api/award")
 @RequiredArgsConstructor
-public class AwardController {
+public class AwardController extends BaseController {
     private final AwardService awardService;
 
     @PostMapping
     public ResponseEntity<ResponseWrapper<AwardDTO>> createAward(
             @RequestParam("topicDifficultySlug") String topicDifficultySlug,
-            @RequestBody AwardCreateRequest request
+            @RequestBody AwardCreateRequest awardCreateRequest
     ) {
-        return awardService.createAward(topicDifficultySlug, request);
+        return okResponse(awardService.createAward(topicDifficultySlug, awardCreateRequest));
     }
 
     @GetMapping
     public ResponseEntity<ResponseWrapper<AwardResponse>> getAllAwardsByTopicDifficulty(
-            @Valid @ModelAttribute AwardGetByTopicDifficultyRequest request
+            @Valid @ModelAttribute AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest
     ) {
-        return awardService.getAllAwardsByTopicDifficulty(request.getTopicDifficultySlug(), request.getPage(), request.getSize());
+        return okResponse(awardService.getAllAwardsByTopicDifficulty(awardGetByTopicDifficultyRequest));
     }
 
     @PutMapping("/activate")
     public ResponseEntity<ResponseWrapper<String>> activateAward(@RequestParam("awardId") Long awardId) {
-        return awardService.activateAward(awardId);
+        return okResponse(awardService.activateAward(awardId));
     }
 
     @PutMapping("/deactivate")
     public ResponseEntity<ResponseWrapper<String>> deactivateAward(@RequestParam("awardId") Long awardId) {
-        return awardService.deactivateAward(awardId);
+        return okResponse(awardService.deactivateAward(awardId));
     }
 
     @DeleteMapping
     ResponseEntity<ResponseWrapper<AwardDTO>> deleteAward(@RequestParam("awardId") Long awardId) {
-        return awardService.deleteAward(awardId);
+        return okResponse(awardService.deleteAward(awardId));
     }
 }
