@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @RestController
 @RequestMapping("/api/question")
 @RequiredArgsConstructor
-public class QuestionController {
+public class QuestionController extends BaseController {
     private final QuestionService questionService;
 
     @PostMapping()
@@ -28,28 +28,28 @@ public class QuestionController {
             @ModelAttribute QuestionForm request,
             @RequestParam("topicDifficultySlug") String topicDifficultySlug
     ) {
-        return questionService.createQuestions(request.getQuestions(), topicDifficultySlug);
+        return okResponse(questionService.createQuestions(request.getQuestions(), topicDifficultySlug));
     }
 
     @GetMapping()
     public ResponseEntity<ResponseWrapper<QuestionResponse>> getAllQuestionsByTopicDifficulty(
-            @Valid @ModelAttribute QuestionGetByTopicDifficultyRequest request
+            @Valid @ModelAttribute QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
     ) {
-        return questionService.getAllQuestionsByTopicDifficulty(request.getTopicDifficultySlug(), request.getPage(), request.getSize());
+        return okResponse(questionService.getAllQuestionsByTopicDifficulty(questionGetByTopicDifficultyRequest));
     }
 
     @PutMapping("/activate")
     public ResponseEntity<ResponseWrapper<String>> activateQuestion(@RequestParam("questionId") Long questionId) {
-        return questionService.activateQuestion(questionId);
+        return okResponse(questionService.activateQuestion(questionId));
     }
 
     @PutMapping("/deactivate")
     public ResponseEntity<ResponseWrapper<String>> deactivateQuestion(@RequestParam("questionId") Long questionId) {
-        return questionService.deactivateQuestion(questionId);
+        return okResponse(questionService.deactivateQuestion(questionId));
     }
 
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<String>> deleteQuestion(@RequestParam("questionId") Long questionId) {
-        return questionService.deleteQuestion(questionId);
+        return okResponse(questionService.deleteQuestion(questionId));
     }
 }

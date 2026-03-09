@@ -3,22 +3,25 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.TopicDifficulty;
+import com.example.fastfoodshop.exception.question.DeletedQuestionException;
+import com.example.fastfoodshop.exception.question.InvalidQuestionStatusException;
+import com.example.fastfoodshop.exception.question.QuestionNotFoundException;
 import com.example.fastfoodshop.repository.QuestionRepository;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
+import com.example.fastfoodshop.request.QuestionGetByTopicDifficultyRequest;
 import com.example.fastfoodshop.response.QuestionResponse;
-import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.AnswerService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.QuestionService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
@@ -32,21 +35,23 @@ public class QuestionServiceImpl implements QuestionService {
     private final AnswerService answerService;
     private final QuestionRepository questionRepository;
 
+    private static final Logger log = LoggerFactory.getLogger(QuestionServiceImpl.class);
+
     private Question findUndeletedQuestion(Long questionId) {
         return questionRepository.findByIdAndIsDeletedFalse(questionId).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy câu hỏi này tồn tại")
+                () -> new QuestionNotFoundException(questionId)
         );
     }
 
     private Question findActivatedQuestion(Long questionId) {
         return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(questionId).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy câu hỏi này đang kích hoạt")
+                () -> new InvalidQuestionStatusException(questionId)
         );
     }
 
     private Question findDeactivatedQuestion(Long questionId) {
         return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(questionId).orElseThrow(
-                () -> new RuntimeException("Không tìm thấy câu hỏi này đang bị hủy kích hoạt")
+                () -> new InvalidQuestionStatusException(questionId)
         );
     }
 
@@ -63,8 +68,9 @@ public class QuestionServiceImpl implements QuestionService {
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                log.info("Old question image deleted successfully: {}", oldPublicId);
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn ảnh câu hỏi cũ: " + e.getMessage());
+                log.warn("Failed to delete old question image: {}", oldPublicId, e);
             }
         }
     }
@@ -82,8 +88,9 @@ public class QuestionServiceImpl implements QuestionService {
         if (oldAudioPublicId != null && !oldAudioPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteAudio(oldAudioPublicId);
+                log.info("Old question audio deleted successfully: {}", oldAudioPublicId);
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn âm thanh câu hỏi cũ: " + e.getMessage());
+                log.warn("Failed to delete old question audio: {}", oldAudioPublicId, e);
             }
         }
     }
@@ -93,93 +100,65 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Transactional
-    public ResponseEntity<ResponseWrapper<String>> createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
-        try {
-            TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+    public String createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
+        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
-            for (QuestionCreateRequest questionCreateRequest : questionCreateRequests) {
-                Question question = new Question();
+        for (QuestionCreateRequest questionCreateRequest : questionCreateRequests) {
+            Question question = new Question();
 
-                question.setTopicDifficulty(topicDifficulty);
-                question.setContent(questionCreateRequest.getContent());
-                question.setActivated(questionCreateRequest.getIsActivated());
+            question.setTopicDifficulty(topicDifficulty);
+            question.setContent(questionCreateRequest.getContent());
+            question.setActivated(questionCreateRequest.getIsActivated());
 
-                handleQuestionImage(question, questionCreateRequest.getImageUrl());
-                handleQuestionAudio(question, questionCreateRequest.getAudioUrl());
+            handleQuestionImage(question, questionCreateRequest.getImageUrl());
+            handleQuestionAudio(question, questionCreateRequest.getAudioUrl());
 
-                Question savedQuestion = questionRepository.save(question);
+            Question savedQuestion = questionRepository.save(question);
 
-                List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.getAnswers(), savedQuestion);
-            }
-            return ResponseEntity.ok(ResponseWrapper.success("Đã lưu các câu hỏi"));
-        } catch (Exception e) {
-            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "CREATE_QUESTIONS_FAILED",
-                    "Lỗi tạo các câu hỏi " + e.getMessage()
-            ));
+            List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.getAnswers(), savedQuestion);
         }
+        return "Đã lưu các câu hỏi";
     }
 
-    public ResponseEntity<ResponseWrapper<QuestionResponse>> getAllQuestionsByTopicDifficulty(String topicDifficultySlug, int page, int size) {
-        try {
-            TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+    public QuestionResponse getAllQuestionsByTopicDifficulty(
+            QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
+    ) {
+        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(
+                questionGetByTopicDifficultyRequest.getTopicDifficultySlug()
+        );
 
-            Pageable pageable = PageRequest.of(page, size);
-            Page<Question> questionPage = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
+        Pageable pageable = PageRequest.of(
+                questionGetByTopicDifficultyRequest.getPage(), questionGetByTopicDifficultyRequest.getSize()
+        );
+        Page<Question> questionPage = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
-            return ResponseEntity.ok(ResponseWrapper.success(new QuestionResponse(questionPage)));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "GET_ALL_QUESTIONS_FAILED",
-                    "Lỗi lấy các câu hỏi của độ khó " + e.getMessage()
-            ));
-        }
+        return new QuestionResponse(questionPage);
     }
 
-    public ResponseEntity<ResponseWrapper<String>> activateQuestion(Long questionId) {
-        try {
-            Question question = findDeactivatedQuestion(questionId);
-            question.setActivated(true);
-            questionRepository.save(question);
+    public String activateQuestion(Long questionId) {
+        Question question = findDeactivatedQuestion(questionId);
+        question.setActivated(true);
+        questionRepository.save(question);
 
-            return ResponseEntity.ok(ResponseWrapper.success("Kích hoạt câu hỏi thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "ACTIVATE_QUESTION_FAILED",
-                    "Lỗi kích hoạt câu hỏi " + e.getMessage()
-            ));
-        }
+        return "Kích hoạt câu hỏi thành công";
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deactivateQuestion(Long questionId) {
-        try {
-            Question question = findActivatedQuestion(questionId);
-            question.setActivated(false);
-            questionRepository.save(question);
+    public String deactivateQuestion(Long questionId) {
+        Question question = findActivatedQuestion(questionId);
+        question.setActivated(false);
+        questionRepository.save(question);
 
-            return ResponseEntity.ok(ResponseWrapper.success("Hủy kích hoạt câu hỏi thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DEACTIVATE_QUESTION_FAILED",
-                    "Lỗi hủy kích hoạt câu hỏi " + e.getMessage()
-            ));
-        }
+        return "Hủy kích hoạt câu hỏi thành công";
     }
 
-    public ResponseEntity<ResponseWrapper<String>> deleteQuestion(Long questionId) {
-        try {
-            Question question = findUndeletedQuestion(questionId);
-            question.setDeleted(true);
-            questionRepository.save(question);
-
-            return ResponseEntity.ok(ResponseWrapper.success("Xóa câu hỏi thành công"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ResponseWrapper.error(
-                    "DELETE_QUESTION_FAILED",
-                    "Lỗi xóa câu hỏi " + e.getMessage()
-            ));
+    public String deleteQuestion(Long questionId) {
+        Question question = findUndeletedQuestion(questionId);
+        if (question.isDeleted()) {
+            throw new DeletedQuestionException(questionId);
         }
+        question.setDeleted(true);
+        questionRepository.save(question);
+
+        return "Xóa câu hỏi thành công";
     }
 }
