@@ -35,46 +35,42 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     public DeliveryDTO calculateDelivery(DeliveryRequest request) {
-        try {
-            if (request == null) {
-                return DeliveryDTO.reject("Hãy chọn địa chỉ hợp lệ để giao hàng nhé");
-            }
-
-            Address address = addressService.findAddressOrThrow(request.getAddressId());
-
-            String url = UriComponentsBuilder
-                    .fromUriString("https://rsapi.goong.io/DistanceMatrix")
-                    .queryParam("origins", StoreConstants.STORE_LATITUDE + "," + StoreConstants.STORE_LONGITUDE)
-                    .queryParam("destinations", address.getLatitude() + "," + address.getLongitude())
-                    .queryParam("vehicle", "car")
-                    .queryParam("api_key", goongApiKey)
-                    .toUriString();
-
-            RestTemplate restTemplate = new RestTemplate();
-            String json = restTemplate.getForObject(url, String.class);
-
-            JSONObject root = new JSONObject(json);
-            JSONObject element = root.getJSONArray("rows")
-                    .getJSONObject(0)
-                    .getJSONArray("elements")
-                    .getJSONObject(0);
-
-            double distanceMeters = element.getJSONObject("distance").getDouble("value");
-            double distanceKm = normalizeDistance(distanceMeters);
-
-            int durationSeconds = element.getJSONObject("duration").getInt("value");
-            int durationMinutes = normalizeDuration(durationSeconds);
-
-            int fee = (int) (StoreConstants.BASE_DELIVERY_FEE + distanceKm * StoreConstants.DELIVERY_FEE_PER_KM);
-
-            if (distanceKm > StoreConstants.MAX_DELIVERY_RADIUS_KM) {
-                return DeliveryDTO.reject("Quý khách thông cảm! Địa chỉ giao hàng không nên vượt quá bán kính 10km");
-            }
-
-            return DeliveryDTO.accept(distanceKm, durationMinutes, NumberUtils.roundToThousand(fee));
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi tính toán phí giao hàng " + e.getMessage());
+        if (request == null) {
+            return DeliveryDTO.reject("Hãy chọn địa chỉ hợp lệ để giao hàng nhé");
         }
+
+        Address address = addressService.findAddressOrThrow(request.getAddressId());
+
+        String url = UriComponentsBuilder
+                .fromUriString("https://rsapi.goong.io/DistanceMatrix")
+                .queryParam("origins", StoreConstants.STORE_LATITUDE + "," + StoreConstants.STORE_LONGITUDE)
+                .queryParam("destinations", address.getLatitude() + "," + address.getLongitude())
+                .queryParam("vehicle", "car")
+                .queryParam("api_key", goongApiKey)
+                .toUriString();
+
+        RestTemplate restTemplate = new RestTemplate();
+        String json = restTemplate.getForObject(url, String.class);
+
+        JSONObject root = new JSONObject(json);
+        JSONObject element = root.getJSONArray("rows")
+                .getJSONObject(0)
+                .getJSONArray("elements")
+                .getJSONObject(0);
+
+        double distanceMeters = element.getJSONObject("distance").getDouble("value");
+        double distanceKm = normalizeDistance(distanceMeters);
+
+        int durationSeconds = element.getJSONObject("duration").getInt("value");
+        int durationMinutes = normalizeDuration(durationSeconds);
+
+        int fee = (int) (StoreConstants.BASE_DELIVERY_FEE + distanceKm * StoreConstants.DELIVERY_FEE_PER_KM);
+
+        if (distanceKm > StoreConstants.MAX_DELIVERY_RADIUS_KM) {
+            return DeliveryDTO.reject("Quý khách thông cảm! Địa chỉ giao hàng không nên vượt quá bán kính 10km");
+        }
+
+        return DeliveryDTO.accept(distanceKm, durationMinutes, NumberUtils.roundToThousand(fee));
     }
 }
 
