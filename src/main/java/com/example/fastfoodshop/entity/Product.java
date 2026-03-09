@@ -1,11 +1,24 @@
 package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,51 +29,53 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "products")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class Product extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "name", nullable = false, length = 80)
-    private String name;
+    String name;
 
     @Column(name = "slug", nullable = false, unique = true)
-    private String slug;
+    String slug;
 
     @Column(name = "price", nullable = false)
-    private int price;
+    int price;
 
     @Column(name = "description", nullable = false, length = 100)
-    private String description;
+    String description;
 
     @Column(name = "image_url")
-    private String imageUrl;
+    String imageUrl;
 
     @Column(name = "image_public_id")
-    private String imagePublicId;
+    String imagePublicId;
 
     @Column(name = "model_url")
-    private String modelUrl;
+    String modelUrl;
 
     @Column(name = "model_public_id")
-    private String modelPublicId;
+    String modelPublicId;
 
     @Column(name = "is_activated", nullable = false)
-    private boolean isActivated;
+    boolean isActivated;
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
-    private Category category;
+    Category category;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Promotion> promotions = new ArrayList<>();
+    List<Promotion> promotions = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<OrderDetail> orderDetails = new ArrayList<>();
+    List<OrderDetail> orderDetails = new ArrayList<>();
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Review> reviews = new ArrayList<>();
+    List<Review> reviews = new ArrayList<>();
 }

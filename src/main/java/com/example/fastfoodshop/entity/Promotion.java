@@ -2,11 +2,26 @@ package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
 import com.example.fastfoodshop.enums.PromotionType;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,63 +33,65 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "promotions")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class Promotion extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "type", length = 30, nullable = false)
-    private PromotionType type;
+    PromotionType type;
 
     @Column(name = "value", nullable = false)
-    private int value;
+    int value;
 
     @Column(name = "start_at", nullable = false)
-    private LocalDateTime startAt;
+    LocalDateTime startAt;
 
     @Column(name = "end_at", nullable = false)
-    private LocalDateTime endAt;
+    LocalDateTime endAt;
 
     @Column(name = "quantity", nullable = false)
-    private int quantity;
+    int quantity;
 
     @Column(name = "used_quantity", nullable = false)
-    private int usedQuantity;
+    int usedQuantity;
 
     @Column(name = "max_discount_amount", nullable = false)
-    private int maxDiscountAmount;
+    int maxDiscountAmount;
 
     @Column(name = "min_spend_amount", nullable = false)
-    private int minSpendAmount;
+    int minSpendAmount;
 
     @Column(name = "code", length = 40, unique = true)
-    private String code;
+    String code;
 
     @Column(name = "is_global", nullable = false)
-    private boolean isGlobal = false;
+    boolean isGlobal = false;
 
     @Column(name = "is_activated", nullable = false)
-    private boolean isActivated = false;
+    boolean isActivated = false;
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = true)
-    private Category category;
+    Category category;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = true)
-    private Product product;
+    Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = true)
-    private User user;
+    User user;
 
     @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Order> orders = new ArrayList<>();
+    List<Order> orders = new ArrayList<>();
 
     @OneToMany(mappedBy = "promotion", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Quiz> quizzes = new ArrayList<>();
+    List<Quiz> quizzes = new ArrayList<>();
 }

@@ -1,11 +1,22 @@
 package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,35 +27,37 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "categories")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class Category extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "name", nullable = false, length = 80)
-    private String name;
+    String name;
 
     @Column(name = "slug", nullable = false, unique = true)
-    private String slug;
+    String slug;
 
     @Column(name = "description", nullable = false, length = 100)
-    private String description;
+    String description;
 
     @Column(name = "image_url")
-    private String imageUrl;
+    String imageUrl;
 
     @Column(name = "image_public_id")
-    private String imagePublicId;
+    String imagePublicId;
 
     @Column(name = "is_activated", nullable = false)
-    private boolean isActivated = false;
+    boolean isActivated = false;
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Product> products = new ArrayList<>();
+    List<Product> products = new ArrayList<>();
 
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Promotion> promotions = new ArrayList<>();
+    List<Promotion> promotions = new ArrayList<>();
 }

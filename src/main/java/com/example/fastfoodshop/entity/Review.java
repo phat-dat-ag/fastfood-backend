@@ -1,11 +1,24 @@
 package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseCreatedEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,28 +29,30 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "reviews")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class Review extends BaseCreatedEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @Column(name = "rating", nullable = false)
-    private int rating;
+    int rating;
 
     @Column(name = "comment", length = 500, nullable = false)
-    private String comment;
+    String comment;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
-    private Order order;
+    Order order;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    Product product;
 
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<ReviewImage> reviewImages = new ArrayList<>();
+    List<ReviewImage> reviewImages = new ArrayList<>();
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
 }

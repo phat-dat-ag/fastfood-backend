@@ -3,11 +3,24 @@ package com.example.fastfoodshop.entity;
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
 import com.example.fastfoodshop.enums.PageType;
 import com.example.fastfoodshop.enums.SectionType;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 @Getter
 @Setter
@@ -15,29 +28,31 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @Table(name = "images")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class Image extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "url", nullable = false)
-    private String url;
+    String url;
 
     @Column(name = "public_id", nullable = false)
-    private String publicId;
+    String publicId;
 
     @Column(name = "alternative_text", nullable = false)
-    private String alternativeText;
+    String alternativeText;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "page_type", length = 30, nullable = false)
-    private PageType pageType;
+    PageType pageType;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "section_type", length = 30)
-    private SectionType sectionType;
+    SectionType sectionType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
-    private User user;
+    User user;
 }

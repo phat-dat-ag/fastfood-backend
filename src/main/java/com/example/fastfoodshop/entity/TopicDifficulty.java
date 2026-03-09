@@ -1,11 +1,24 @@
 package com.example.fastfoodshop.entity;
 
 import com.example.fastfoodshop.entity.base.BaseAuditableEntity;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
+import lombok.experimental.FieldNameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,45 +29,47 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 @Table(name = "topic_difficulties")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldNameConstants(innerTypeName = "Field")
 public class TopicDifficulty extends BaseAuditableEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id;
 
     @Column(name = "name", length = 60, nullable = false)
-    private String name;
+    String name;
 
     @Column(name = "slug", nullable = false, unique = true)
-    private String slug;
+    String slug;
 
     @Column(name = "description", columnDefinition = "TEXT", nullable = false)
-    private String description;
+    String description;
 
     @Column(name = "duration", nullable = false)
-    private int duration;
+    int duration;
 
     @Column(name = "question_count", nullable = false)
-    private int questionCount;
+    int questionCount;
 
     @Column(name = "min_correct_to_reward", nullable = false)
-    private int minCorrectToReward;
+    int minCorrectToReward;
 
     @Column(name = "is_activated", nullable = false)
-    private boolean isActivated;
+    boolean isActivated;
 
     @Column(name = "is_deleted", nullable = false)
-    private boolean isDeleted = false;
+    boolean isDeleted = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "topic_id", nullable = false)
-    private Topic topic;
+    Topic topic;
 
     @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Quiz> quizzes = new ArrayList<>();
+    List<Quiz> quizzes = new ArrayList<>();
 
     @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Award> awards = new ArrayList<>();
+    List<Award> awards = new ArrayList<>();
 
     @OneToMany(mappedBy = "topicDifficulty", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Question> questions = new ArrayList<>();
+    List<Question> questions = new ArrayList<>();
 }
