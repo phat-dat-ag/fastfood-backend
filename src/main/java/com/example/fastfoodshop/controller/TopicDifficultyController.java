@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @RestController
 @RequestMapping("/api/topic-difficulty")
 @RequiredArgsConstructor
-public class TopicDifficultyController {
+public class TopicDifficultyController extends BaseController {
     private final TopicDifficultyService topicDifficultyService;
 
     @PostMapping()
@@ -31,41 +31,49 @@ public class TopicDifficultyController {
             @RequestBody TopicDifficultyCreateRequest topicDifficultyCreateRequest,
             @RequestParam("topicSlug") String topicSlug
     ) {
-        return topicDifficultyService.createTopicDifficulty(topicSlug, topicDifficultyCreateRequest);
+        return okResponse(topicDifficultyService.createTopicDifficulty(topicSlug, topicDifficultyCreateRequest));
     }
 
     @PutMapping()
     public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> updateTopicDifficulty(
             @RequestParam("topicDifficultyId") Long topicDifficultyId,
-            @RequestBody TopicDifficultyUpdateRequest request
+            @RequestBody TopicDifficultyUpdateRequest topicDifficultyUpdateRequest
     ) {
-        return topicDifficultyService.updateTopicDifficulty(topicDifficultyId, request);
+        return okResponse(topicDifficultyService.updateTopicDifficulty(topicDifficultyId, topicDifficultyUpdateRequest));
     }
 
     @GetMapping("/by-slug")
-    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> getTopicDifficultyBySlug(@RequestParam("topicDifficultySlug") String topicDifficultySlug) {
-        return topicDifficultyService.getTopicDifficultyBySlug(topicDifficultySlug);
+    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> getTopicDifficultyBySlug(
+            @RequestParam("topicDifficultySlug") String topicDifficultySlug
+    ) {
+        return okResponse(topicDifficultyService.getTopicDifficultyBySlug(topicDifficultySlug));
     }
 
     @GetMapping("/by-topic-slug")
     public ResponseEntity<ResponseWrapper<TopicDifficultyResponse>> getAllTopicDifficultiesByTopic(
-            @Valid @ModelAttribute TopicDifficultyGetByTopicRequest request
+            @Valid @ModelAttribute TopicDifficultyGetByTopicRequest topicDifficultyGetByTopicRequest
     ) {
-        return topicDifficultyService.getAllTopicDifficultiesByTopic(request.getTopicSlug(), request.getPage(), request.getSize());
+        return okResponse(topicDifficultyService.getAllTopicDifficultiesByTopic(topicDifficultyGetByTopicRequest));
     }
 
     @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<String>> activateTopicDifficulty(@RequestParam("topicDifficultyId") Long topicDifficultyId) {
-        return topicDifficultyService.activateTopicDifficulty(topicDifficultyId);
+    public ResponseEntity<ResponseWrapper<String>> activateTopicDifficulty(
+            @RequestParam("topicDifficultyId") Long topicDifficultyId
+    ) {
+        return okResponse(topicDifficultyService.activateTopicDifficulty(topicDifficultyId));
     }
 
     @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<String>> deactivateTopicDifficulty(@RequestParam("topicDifficultyId") Long topicDifficultyId) {
-        return topicDifficultyService.deactivateTopicDifficulty(topicDifficultyId);
+    public ResponseEntity<ResponseWrapper<String>> deactivateTopicDifficulty(
+            @RequestParam("topicDifficultyId") Long topicDifficultyId
+    ) {
+        return okResponse(topicDifficultyService.deactivateTopicDifficulty(topicDifficultyId));
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> deleteTopicDifficulty(@RequestParam("topicDifficultyId") Long topicDifficultyId) {
-        return topicDifficultyService.deleteTopicDifficulty(topicDifficultyId);
+    public ResponseEntity<ResponseWrapper<TopicDifficultyDTO>> deleteTopicDifficulty(
+            @RequestParam("topicDifficultyId") Long topicDifficultyId
+    ) {
+        return okResponse(topicDifficultyService.deleteTopicDifficulty(topicDifficultyId));
     }
 }
