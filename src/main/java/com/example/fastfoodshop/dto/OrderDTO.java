@@ -43,7 +43,7 @@ public record OrderDTO(
 
         List<ReviewDTO> reviews =
                 order.getReviews().stream()
-                        .map(ReviewDTO::new)
+                        .map(ReviewDTO::from)
                         .toList();
 
         return new OrderDTO(

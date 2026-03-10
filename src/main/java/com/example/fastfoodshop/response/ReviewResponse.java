@@ -18,7 +18,7 @@ public class ReviewResponse {
 
     public ReviewResponse(Page<Review> page) {
         for (Review review : page.getContent()) {
-            this.reviews.add(new ReviewDTO(review));
+            this.reviews.add(ReviewDTO.from(review));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();

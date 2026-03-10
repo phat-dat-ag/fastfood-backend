@@ -251,7 +251,7 @@ public class ProductServiceImpl implements ProductService {
                 product.getId(), top5
         );
         List<ReviewDTO> reviewDTOs = topReviews.stream()
-                .map(ReviewDTO::new)
+                .map(ReviewDTO::from)
                 .toList();
 
         PromotionResult promotionResult = categoryService.applyPromotion(product, category);

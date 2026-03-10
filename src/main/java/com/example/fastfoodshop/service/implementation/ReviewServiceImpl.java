@@ -6,7 +6,13 @@ import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.entity.OrderDetail;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.ReviewImage;
-import com.example.fastfoodshop.exception.review.*;
+import com.example.fastfoodshop.exception.review.OrderAlreadyReviewedException;
+import com.example.fastfoodshop.exception.review.DuplicateReviewProductException;
+import com.example.fastfoodshop.exception.review.IncompleteReviewException;
+import com.example.fastfoodshop.exception.review.OrderNotDeliveredException;
+import com.example.fastfoodshop.exception.review.ProductNotInOrderException;
+import com.example.fastfoodshop.exception.review.ReviewExpiredException;
+import com.example.fastfoodshop.exception.review.ReviewNotFoundException;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
 import com.example.fastfoodshop.response.ReviewResponse;
@@ -96,7 +102,7 @@ public class ReviewServiceImpl implements ReviewService {
 
         ArrayList<ReviewDTO> reviewDTOs = new ArrayList<>();
         for (Review review : reviews) {
-            reviewDTOs.add(new ReviewDTO(review));
+            reviewDTOs.add(ReviewDTO.from(review));
         }
 
         return reviewDTOs;

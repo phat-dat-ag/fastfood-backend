@@ -1,36 +1,34 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Review;
-import com.example.fastfoodshop.entity.ReviewImage;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
+import java.util.List;
 
-@Data
-public class ReviewDTO {
-    private String userName;
-    private String userAvatar;
-    private Long productId;
-    private Long id;
-    private int rating;
-    private String comment;
-    private ArrayList<ReviewImageDTO> reviewImages = new ArrayList<>();
-    private LocalDateTime createdAt;
-
-    public ReviewDTO(Review review) {
-        this.userName = review.getOrder().getUser().getName();
-        this.userAvatar = review.getOrder().getUser().getAvatarUrl();
-        this.productId = review.getProduct().getId();
-        this.id = review.getId();
-        this.rating = review.getRating();
-        this.comment = review.getComment();
-        for (ReviewImage reviewImage : review.getReviewImages()) {
-            this.reviewImages.add(ReviewImageDTO.from(reviewImage));
-        }
-        this.createdAt = review.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
+public record ReviewDTO(
+        String userName,
+        String userAvatar,
+        Long productId,
+        Long id,
+        int rating,
+        String comment,
+        List<ReviewImageDTO> reviewImages,
+        LocalDateTime createdAt
+) {
+    public static ReviewDTO from(Review review) {
+        List<ReviewImageDTO> reviewImages = review.getReviewImages().stream().map(ReviewImageDTO::from).toList();
+        return new ReviewDTO(
+                review.getOrder().getUser().getName(),
+                review.getOrder().getUser().getAvatarUrl(),
+                review.getProduct().getId(),
+                review.getId(),
+                review.getRating(),
+                review.getComment(),
+                reviewImages,
+                review.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+        );
     }
 }
