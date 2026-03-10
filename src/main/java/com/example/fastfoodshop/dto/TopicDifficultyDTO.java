@@ -1,42 +1,40 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.TopicDifficulty;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Data
-public class TopicDifficultyDTO {
-    private String topicName;
-    private Long id;
-    private String name;
-    private String slug;
-    private String description;
-    private int duration;
-    private int questionCount;
-    private int minCorrectToReward;
-    private boolean isActivated;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    public TopicDifficultyDTO(TopicDifficulty topicDifficulty) {
-        this.topicName = topicDifficulty.getTopic().getName();
-        this.id = topicDifficulty.getId();
-        this.name = topicDifficulty.getName();
-        this.slug = topicDifficulty.getSlug();
-        this.description = topicDifficulty.getDescription();
-        this.duration = topicDifficulty.getDuration();
-        this.questionCount = topicDifficulty.getQuestionCount();
-        this.minCorrectToReward = topicDifficulty.getMinCorrectToReward();
-        this.isActivated = topicDifficulty.isActivated();
-        this.createdAt = topicDifficulty.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
-        this.updatedAt = topicDifficulty.getUpdatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
+public record TopicDifficultyDTO(
+        String topicName,
+        Long id,
+        String name,
+        String slug,
+        String description,
+        int duration,
+        int questionCount,
+        int minCorrectToReward,
+        boolean activated,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
+    public static TopicDifficultyDTO from(TopicDifficulty topicDifficulty) {
+        return new TopicDifficultyDTO(
+                topicDifficulty.getTopic().getName(),
+                topicDifficulty.getId(),
+                topicDifficulty.getName(),
+                topicDifficulty.getSlug(),
+                topicDifficulty.getDescription(),
+                topicDifficulty.getDuration(),
+                topicDifficulty.getQuestionCount(),
+                topicDifficulty.getMinCorrectToReward(),
+                topicDifficulty.isActivated(),
+                topicDifficulty.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                topicDifficulty.getUpdatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+        );
     }
 }

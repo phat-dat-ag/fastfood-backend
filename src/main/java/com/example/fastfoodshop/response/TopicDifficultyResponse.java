@@ -18,7 +18,7 @@ public class TopicDifficultyResponse {
 
     public TopicDifficultyResponse(Page<TopicDifficulty> page) {
         for (TopicDifficulty topicDifficulty : page.getContent()) {
-            this.topicDifficulties.add(new TopicDifficultyDTO(topicDifficulty));
+            this.topicDifficulties.add(TopicDifficultyDTO.from(topicDifficulty));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();

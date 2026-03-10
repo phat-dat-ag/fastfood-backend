@@ -86,7 +86,7 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setSlug(slug);
 
         TopicDifficulty savedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return new TopicDifficultyDTO(savedTopicDifficulty);
+        return TopicDifficultyDTO.from(savedTopicDifficulty);
     }
 
     public TopicDifficultyDTO updateTopicDifficulty(
@@ -99,12 +99,12 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setActivated(request.getIsActivated());
 
         TopicDifficulty updatedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return new TopicDifficultyDTO(updatedTopicDifficulty);
+        return TopicDifficultyDTO.from(updatedTopicDifficulty);
     }
 
     public TopicDifficultyDTO getTopicDifficultyBySlug(String topicDifficultySlug) {
         TopicDifficulty topicDifficulty = findValidTopicDifficultyOrThrow(topicDifficultySlug);
-        return new TopicDifficultyDTO(topicDifficulty);
+        return TopicDifficultyDTO.from(topicDifficulty);
     }
 
     public TopicDifficultyResponse getAllTopicDifficultiesByTopic(
@@ -140,6 +140,6 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setDeleted(true);
 
         TopicDifficulty deletedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return new TopicDifficultyDTO(deletedTopicDifficulty);
+        return TopicDifficultyDTO.from(deletedTopicDifficulty);
     }
 }
