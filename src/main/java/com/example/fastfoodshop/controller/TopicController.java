@@ -25,49 +25,53 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/topic")
 @RequiredArgsConstructor
-public class TopicController {
+public class TopicController extends BaseController {
     private final TopicService topicService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<TopicDTO>> createTopic(@RequestBody TopicCreateRequest request) {
-        return topicService.createTopic(request.getName(), request.getDescription(), request.getIsActivated());
+    public ResponseEntity<ResponseWrapper<TopicDTO>> createTopic(
+            @RequestBody TopicCreateRequest topicCreateRequest
+    ) {
+        return okResponse(topicService.createTopic(topicCreateRequest));
     }
 
     @PutMapping()
     public ResponseEntity<ResponseWrapper<TopicDTO>> updateTopic(
             @RequestParam("topicId") Long topicId,
-            @RequestBody TopicCreateRequest request
+            @RequestBody TopicCreateRequest topicCreateRequest
     ) {
-        return topicService.updateTopic(topicId, request.getName(), request.getDescription(), request.getIsActivated());
+        return okResponse(topicService.updateTopic(topicId, topicCreateRequest));
     }
 
     @GetMapping("/by-slug")
-    public ResponseEntity<ResponseWrapper<TopicDTO>> getTopicBySlug(@RequestParam("slug") String slug) {
-        return topicService.getTopicBySlug(slug);
+    public ResponseEntity<ResponseWrapper<TopicDTO>> getTopicBySlug(@RequestParam("slug") String topicSlug) {
+        return okResponse(topicService.getTopicBySlug(topicSlug));
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseWrapper<TopicResponse>> getAllTopics(@Valid @ModelAttribute PageRequest request) {
-        return topicService.getAllTopics(request.getPage(), request.getSize());
+    public ResponseEntity<ResponseWrapper<TopicResponse>> getAllTopics(
+            @Valid @ModelAttribute PageRequest request
+    ) {
+        return okResponse(topicService.getAllTopics(request.getPage(), request.getSize()));
     }
 
     @GetMapping("/display")
     public ResponseEntity<ResponseWrapper<List<TopicDisplayResponse>>> getDisplayableTopics() {
-        return topicService.getDisplayableTopics();
+        return okResponse(topicService.getDisplayableTopics());
     }
 
     @PutMapping("/activate")
     public ResponseEntity<ResponseWrapper<String>> activateTopic(@RequestParam("topicId") Long topicId) {
-        return topicService.activateTopic(topicId);
+        return okResponse(topicService.activateTopic(topicId));
     }
 
     @PutMapping("/deactivate")
     public ResponseEntity<ResponseWrapper<String>> deactivateTopic(@RequestParam("topicId") Long topicId) {
-        return topicService.deactivateTopic(topicId);
+        return okResponse(topicService.deactivateTopic(topicId));
     }
 
     @DeleteMapping()
     public ResponseEntity<ResponseWrapper<TopicDTO>> deleteTopic(@RequestParam("topicId") Long topicId) {
-        return topicService.deleteTopic(topicId);
+        return okResponse(topicService.deleteTopic(topicId));
     }
 }

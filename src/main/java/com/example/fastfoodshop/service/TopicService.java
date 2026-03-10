@@ -2,29 +2,28 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.entity.Topic;
-import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.request.TopicCreateRequest;
 import com.example.fastfoodshop.response.TopicDisplayResponse;
 import com.example.fastfoodshop.response.TopicResponse;
-import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
 public interface TopicService {
     Topic findValidTopicOrThrow(String topicSlug);
 
-    ResponseEntity<ResponseWrapper<TopicDTO>> createTopic(String name, String description, boolean isActivated);
+    TopicDTO createTopic(TopicCreateRequest topicCreateRequest);
 
-    ResponseEntity<ResponseWrapper<TopicDTO>> updateTopic(Long topicId, String name, String description, boolean isActivated);
+    TopicDTO updateTopic(Long topicId, TopicCreateRequest topicCreateRequest);
 
-    ResponseEntity<ResponseWrapper<TopicDTO>> getTopicBySlug(String slug);
+    TopicDTO getTopicBySlug(String topicSlug);
 
-    ResponseEntity<ResponseWrapper<TopicResponse>> getAllTopics(int page, int size);
+    TopicResponse getAllTopics(int page, int size);
 
-    ResponseEntity<ResponseWrapper<List<TopicDisplayResponse>>> getDisplayableTopics();
+    List<TopicDisplayResponse> getDisplayableTopics();
 
-    ResponseEntity<ResponseWrapper<String>> activateTopic(Long topicId);
+    String activateTopic(Long topicId);
 
-    ResponseEntity<ResponseWrapper<String>> deactivateTopic(Long topicId);
+    String deactivateTopic(Long topicId);
 
-    ResponseEntity<ResponseWrapper<TopicDTO>> deleteTopic(Long topicId);
+    TopicDTO deleteTopic(Long topicId);
 }
