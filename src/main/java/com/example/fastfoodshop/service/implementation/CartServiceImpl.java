@@ -104,11 +104,11 @@ public class CartServiceImpl implements CartService {
 
         if (promotionCode != null && !promotionCode.isEmpty()) {
             PromotionCodeCheckResultDTO result = promotionService.checkPromotionCode(promotionCode, cartResponse.getSubtotalPrice());
-            if (!result.isSuccess()) {
-                throw new RuntimeException(result.getMessage());
+            if (!result.success()) {
+                throw new RuntimeException(result.message());
             }
             cartResponse.setApplyPromotionResult(result);
-            int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponse.getSubtotalPrice(), result.getPromotion());
+            int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponse.getSubtotalPrice(), result.promotion());
             cartResponse.setTotalPrice(totalPrice);
         }
 
