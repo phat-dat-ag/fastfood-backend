@@ -17,13 +17,13 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     private final OrderDetailRepository orderDetailRepository;
 
     public void createOrderDetail(CartDTO cartDTO, Order order) {
-        Product product = productService.findProductOrThrow(cartDTO.getProduct().getId());
+        Product product = productService.findProductOrThrow(cartDTO.product().getId());
 
         OrderDetail orderDetail = new OrderDetail();
         orderDetail.setOrder(order);
         orderDetail.setProduct(product);
-        orderDetail.setQuantity(cartDTO.getQuantity());
-        orderDetail.setDiscountedPrice(cartDTO.getProduct().getDiscountedPrice());
+        orderDetail.setQuantity(cartDTO.quantity());
+        orderDetail.setDiscountedPrice(cartDTO.product().getDiscountedPrice());
 
         orderDetailRepository.save(orderDetail);
     }

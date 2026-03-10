@@ -1,10 +1,7 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.constant.CartConstant;
-import com.example.fastfoodshop.dto.CartDTO;
-import com.example.fastfoodshop.dto.DeliveryDTO;
-import com.example.fastfoodshop.dto.ProductDTO;
-import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
+import com.example.fastfoodshop.dto.*;
 import com.example.fastfoodshop.entity.Cart;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
@@ -85,7 +82,7 @@ public class CartServiceImpl implements CartService {
         setNewProductQuantityOrThrow(cart, cartCreateRequest.getQuantity());
 
         Cart savedCart = cartRepository.save(cart);
-        return new CartDTO(savedCart);
+        return CartDTO.from(savedCart);
     }
 
     public CartResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
@@ -96,8 +93,11 @@ public class CartServiceImpl implements CartService {
             Category category = cart.getProduct().getCategory();
             ProductDTO productDTO = new ProductDTO(cart.getProduct());
             categoryService.applyPromotion(productDTO, category);
-            CartDTO cartDTO = new CartDTO(cart);
-            cartDTO.setProduct(productDTO);
+            CartDTO cartDTO = new CartDTO(
+                    new UserDTO(cart.getUser()),
+                    productDTO,
+                    cart.getQuantity()
+            );
             cartDTOs.add(cartDTO);
         }
         CartResponse cartResponse = new CartResponse(cartDTOs);
@@ -133,7 +133,7 @@ public class CartServiceImpl implements CartService {
         updateNewProductQuantityOrThrow(cart, cartUpdateRequest.getQuantity());
 
         Cart updatedCart = cartRepository.save(cart);
-        return new CartDTO(updatedCart);
+        return CartDTO.from(updatedCart);
     }
 
     public CartDTO deleteProductFromCart(String phone, Long productId) {
@@ -142,7 +142,7 @@ public class CartServiceImpl implements CartService {
         Cart cart = findCartOrThrow(user, product);
 
         cartRepository.delete(cart);
-        return new CartDTO(cart);
+        return CartDTO.from(cart);
     }
 
     public void deleteAllProductFromCart(String phone) {

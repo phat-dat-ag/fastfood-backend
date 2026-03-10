@@ -20,10 +20,10 @@ public class CartResponse {
 
     public CartResponse(ArrayList<CartDTO> cartDTOs) {
         for (CartDTO cartDTO : cartDTOs) {
-            ProductDTO productDTO = cartDTO.getProduct();
+            ProductDTO productDTO = cartDTO.product();
             this.carts.add(cartDTO);
-            this.originalPrice += (cartDTO.getQuantity() * productDTO.getPrice());
-            this.subtotalPrice += (cartDTO.getQuantity() * productDTO.getDiscountedPrice());
+            this.originalPrice += (cartDTO.quantity() * productDTO.getPrice());
+            this.subtotalPrice += (cartDTO.quantity() * productDTO.getDiscountedPrice());
         }
         this.totalPrice = this.subtotalPrice;
     }
