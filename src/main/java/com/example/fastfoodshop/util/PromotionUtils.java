@@ -9,14 +9,14 @@ public class PromotionUtils {
 
         double discounted = originalPrice;
 
-        if (promotion.getType() == PromotionType.PERCENTAGE) {
-            discounted = originalPrice * (1 - promotion.getValue() / 100.0);
-        } else if (promotion.getType() == PromotionType.FIXED_AMOUNT) {
-            discounted = originalPrice - promotion.getValue();
+        if (promotion.type() == PromotionType.PERCENTAGE) {
+            discounted = originalPrice * (1 - promotion.value() / 100.0);
+        } else if (promotion.type() == PromotionType.FIXED_AMOUNT) {
+            discounted = originalPrice - promotion.value();
         }
 
-        if (promotion.getMaxDiscountAmount() > 0) {
-            double maxDiscount = promotion.getMaxDiscountAmount();
+        if (promotion.maxDiscountAmount() > 0) {
+            double maxDiscount = promotion.maxDiscountAmount();
             discounted = Math.max(originalPrice - maxDiscount, discounted);
         }
 

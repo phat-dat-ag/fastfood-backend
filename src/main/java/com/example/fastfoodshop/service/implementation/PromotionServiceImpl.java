@@ -107,7 +107,7 @@ public class PromotionServiceImpl implements PromotionService {
         if (promotion.getMinSpendAmount() > orderPrice)
             return PromotionCodeCheckResultDTO.error("Tổng đơn hàng chưa đủ điều kiện khuyến mãi!");
 
-        return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", new PromotionDTO(promotion));
+        return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", PromotionDTO.from(promotion));
     }
 
     public PromotionDTO createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
@@ -119,7 +119,7 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setCategory(category);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return new PromotionDTO(savedPromotion);
+        return PromotionDTO.from(savedPromotion);
     }
 
     public PromotionDTO createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
@@ -131,7 +131,7 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setProduct(product);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return new PromotionDTO(savedPromotion);
+        return PromotionDTO.from(savedPromotion);
     }
 
     public PromotionDTO createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
@@ -141,7 +141,7 @@ public class PromotionServiceImpl implements PromotionService {
 
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return new PromotionDTO(savedPromotion);
+        return PromotionDTO.from(savedPromotion);
     }
 
     public PromotionResponse getPromotionCategory(int page, int size) {
@@ -168,7 +168,7 @@ public class PromotionServiceImpl implements PromotionService {
         ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
 
         for (Promotion promotion : orderPromotions) {
-            validOrderPromotions.add(new PromotionDTO(promotion));
+            validOrderPromotions.add(PromotionDTO.from(promotion));
         }
         return validOrderPromotions;
     }
@@ -200,7 +200,7 @@ public class PromotionServiceImpl implements PromotionService {
         }
         promotion.setDeleted(true);
         Promotion deletedPromotion = promotionRepository.save(promotion);
-        return new PromotionDTO(deletedPromotion);
+        return PromotionDTO.from(deletedPromotion);
     }
 
     private String generatePromotionCode(Long userId, Long quizId, LocalDateTime completedAt) {

@@ -18,7 +18,7 @@ public class PromotionResponse {
 
     public PromotionResponse(Page<Promotion> page) {
         for (Promotion promotion : page.getContent()) {
-            this.promotions.add(new PromotionDTO(promotion));
+            this.promotions.add(PromotionDTO.from(promotion));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();

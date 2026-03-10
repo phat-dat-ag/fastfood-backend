@@ -49,7 +49,7 @@ public class QuizResponse {
         this.expiredAt = this.startedAt.plusSeconds(quiz.getTopicDifficulty().getDuration());
         this.user = new UserDTO(quiz.getUser());
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
-        this.promotion = quiz.getPromotion() != null ? new PromotionDTO(quiz.getPromotion()) : null;
+        this.promotion = quiz.getPromotion() != null ? PromotionDTO.from(quiz.getPromotion()) : null;
         this.questions = questionDTOs;
         this.feedback = quiz.getFeedback();
         this.feedbackAt = quiz.getFeedbackAt() != null

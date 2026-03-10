@@ -65,7 +65,7 @@ public record OrderDTO(
                 orderNotes,
                 orderDetails,
                 reviews,
-                order.getPromotion() != null ? new PromotionDTO(order.getPromotion()) : null,
+                order.getPromotion() != null ? PromotionDTO.from(order.getPromotion()) : null,
                 clientSecret
         );
     }

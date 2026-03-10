@@ -101,19 +101,19 @@ public class CategoryServiceImpl implements CategoryService {
 
     private boolean isValidPromotion(PromotionDTO promotionDTO) {
         LocalDateTime now = LocalDateTime.now();
-        return promotionDTO.isActivated()
-                && !promotionDTO.isDeleted()
-                && !promotionDTO.isGlobal()
-                && promotionDTO.getStartAt().isBefore(now)
-                && promotionDTO.getEndAt().isAfter(now)
-                && promotionDTO.getQuantity() > promotionDTO.getUsedQuantity();
+        return promotionDTO.activated()
+                && !promotionDTO.deleted()
+                && !promotionDTO.global()
+                && promotionDTO.startAt().isBefore(now)
+                && promotionDTO.endAt().isAfter(now)
+                && promotionDTO.quantity() > promotionDTO.usedQuantity();
     }
 
     public PromotionResult applyPromotion(Product product, Category category) {
         PromotionDTO chosenPromotion = null;
 
         for (Promotion promotion : product.getPromotions()) {
-            PromotionDTO promotionDTO = new PromotionDTO(promotion);
+            PromotionDTO promotionDTO = PromotionDTO.from(promotion);
             if (isValidPromotion(promotionDTO)) {
                 chosenPromotion = promotionDTO;
                 break;
@@ -122,7 +122,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         if (chosenPromotion == null) {
             for (Promotion promotion : category.getPromotions()) {
-                PromotionDTO promotionDTO = new PromotionDTO(promotion);
+                PromotionDTO promotionDTO = PromotionDTO.from(promotion);
                 if (isValidPromotion(promotionDTO)) {
                     chosenPromotion = promotionDTO;
                     break;
@@ -136,7 +136,7 @@ public class CategoryServiceImpl implements CategoryService {
 
         if (chosenPromotion != null) {
             discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, chosenPromotion);
-            promotionId = chosenPromotion.getId();
+            promotionId = chosenPromotion.id();
         }
         return new PromotionResult(discountedPrice, promotionId);
     }

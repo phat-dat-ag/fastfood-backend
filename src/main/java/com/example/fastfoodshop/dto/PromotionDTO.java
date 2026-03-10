@@ -2,57 +2,58 @@ package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.enums.PromotionType;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Data
-public class PromotionDTO {
-    private Long id;
-    private PromotionType type;
-    private int value;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
-    private int quantity;
-    private int usedQuantity;
-    private int maxDiscountAmount;
-    private int minSpendAmount;
-    private String code;
-    private boolean isGlobal;
-    private boolean isActivated;
-    private boolean isDeleted;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String name;
-
-    public PromotionDTO(Promotion promotion) {
-        this.id = promotion.getId();
-        this.type = promotion.getType();
-        this.value = promotion.getValue();
-        this.startAt = promotion.getStartAt();
-        this.endAt = promotion.getEndAt();
-        this.quantity = promotion.getQuantity();
-        this.usedQuantity = promotion.getUsedQuantity();
-        this.maxDiscountAmount = promotion.getMaxDiscountAmount();
-        ;
-        this.minSpendAmount = promotion.getMinSpendAmount();
-        this.code = promotion.getCode();
-        this.isGlobal = promotion.isGlobal();
-        this.isActivated = promotion.isActivated();
-        this.isDeleted = promotion.isDeleted();
-        this.createdAt = promotion.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        this.updatedAt = promotion.getUpdatedAt()
-                .atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
+public record PromotionDTO(
+        Long id,
+        PromotionType type,
+        int value,
+        LocalDateTime startAt,
+        LocalDateTime endAt,
+        int quantity,
+        int usedQuantity,
+        int maxDiscountAmount,
+        int minSpendAmount,
+        String code,
+        boolean global,
+        boolean activated,
+        boolean deleted,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        String name
+) {
+    public static PromotionDTO from(Promotion promotion) {
+        String name = "";
         if (promotion.getCategory() != null)
-            this.name = promotion.getCategory().getName();
+            name = promotion.getCategory().getName();
         else if (promotion.getProduct() != null)
-            this.name = promotion.getProduct().getName();
+            name = promotion.getProduct().getName();
         else if (promotion.getUser() != null)
-            this.name = promotion.getUser().getName();
-        else this.name = "";
+            name = promotion.getUser().getName();
+
+        return new PromotionDTO(
+                promotion.getId(),
+                promotion.getType(),
+                promotion.getValue(),
+                promotion.getStartAt(),
+                promotion.getEndAt(),
+                promotion.getQuantity(),
+                promotion.getUsedQuantity(),
+                promotion.getMaxDiscountAmount(),
+                promotion.getMinSpendAmount(),
+                promotion.getCode(),
+                promotion.isGlobal(),
+                promotion.isActivated(),
+                promotion.isDeleted(),
+                promotion.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                promotion.getUpdatedAt()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                name
+        );
     }
 }

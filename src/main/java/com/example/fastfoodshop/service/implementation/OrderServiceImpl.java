@@ -130,8 +130,8 @@ public class OrderServiceImpl implements OrderService {
 
     private void applyOrderPromotion(Order order, CartResponse cartResponse) {
         if (cartResponse.getApplyPromotionResult() != null && cartResponse.getApplyPromotionResult().promotion() != null) {
-            promotionService.increasePromotionUsageCount(cartResponse.getApplyPromotionResult().promotion().getId());
-            Promotion promotion = promotionService.findPromotionOrThrow(cartResponse.getApplyPromotionResult().promotion().getId());
+            promotionService.increasePromotionUsageCount(cartResponse.getApplyPromotionResult().promotion().id());
+            Promotion promotion = promotionService.findPromotionOrThrow(cartResponse.getApplyPromotionResult().promotion().id());
             order.setPromotion(promotion);
         }
     }

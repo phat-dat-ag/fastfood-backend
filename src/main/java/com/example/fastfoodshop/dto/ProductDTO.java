@@ -34,7 +34,7 @@ public record ProductDTO(
             int discountedPrice, Long promotionId, double averageRating, long reviewCount, long soldCount
     ) {
         List<PromotionDTO> promotions = product.getPromotions()
-                .stream().map(PromotionDTO::new).toList();
+                .stream().map(PromotionDTO::from).toList();
 
         return new ProductDTO(
                 product.getCategory().getId(),
