@@ -11,6 +11,6 @@ public class SignInResponse {
 
     public SignInResponse(String token, User user) {
         this.token = token;
-        this.user = new UserDTO(user);
+        this.user = UserDTO.from(user);
     }
 }

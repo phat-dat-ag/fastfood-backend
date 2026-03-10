@@ -94,7 +94,7 @@ public class CartServiceImpl implements CartService {
             Product product = cart.getProduct();
             categoryService.applyPromotion(product, category);
             CartDTO cartDTO = new CartDTO(
-                    new UserDTO(cart.getUser()),
+                    UserDTO.from(cart.getUser()),
                     ProductDTO.from(product),
                     cart.getQuantity()
             );

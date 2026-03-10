@@ -18,7 +18,7 @@ public class UserResponse {
 
     public UserResponse(Page<User> page) {
         for (User user : page.getContent()) {
-            this.users.add(new UserDTO(user));
+            this.users.add(UserDTO.from(user));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();

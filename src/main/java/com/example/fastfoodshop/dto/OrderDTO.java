@@ -61,7 +61,7 @@ public record OrderDTO(
                 order.getDeliveryFee(),
                 order.getTotalPrice(),
                 order.getAddress() != null ? AddressDTO.from(order.getAddress()) : null,
-                order.getUser() != null ? new UserDTO(order.getUser()) : null,
+                order.getUser() != null ? UserDTO.from(order.getUser()) : null,
                 orderNotes,
                 orderDetails,
                 reviews,

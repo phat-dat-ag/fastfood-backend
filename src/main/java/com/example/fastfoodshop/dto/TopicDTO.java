@@ -10,7 +10,7 @@ public record TopicDTO(
         String name,
         String slug,
         String description,
-        boolean isActivated,
+        boolean activated,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {

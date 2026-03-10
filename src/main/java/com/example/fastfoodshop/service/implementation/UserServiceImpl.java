@@ -114,7 +114,7 @@ public class UserServiceImpl implements UserService {
         user.setBirthday(birthday);
 
         User updatedUser = userRepository.save(user);
-        return new UserDTO(updatedUser);
+        return UserDTO.from(updatedUser);
     }
 
     public UserDTO changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
@@ -125,7 +125,7 @@ public class UserServiceImpl implements UserService {
 
         user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
         User updatedUser = userRepository.save(user);
-        return new UserDTO(updatedUser);
+        return UserDTO.from(updatedUser);
     }
 
     public void handleAvatarImage(User user, MultipartFile file) {
@@ -154,7 +154,7 @@ public class UserServiceImpl implements UserService {
         User user = findUserOrThrow(phone);
         handleAvatarImage(user, file);
         User updatedUser = userRepository.save(user);
-        return new UserDTO(updatedUser);
+        return UserDTO.from(updatedUser);
     }
 
     public String activateAccount(Long userId) {
@@ -184,6 +184,6 @@ public class UserServiceImpl implements UserService {
         }
         user.setDeleted(true);
         User deletedUser = userRepository.save(user);
-        return new UserDTO(deletedUser);
+        return UserDTO.from(deletedUser);
     }
 }

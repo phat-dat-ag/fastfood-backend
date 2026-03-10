@@ -47,7 +47,7 @@ public class QuizResponse {
                 : null;
 
         this.expiredAt = this.startedAt.plusSeconds(quiz.getTopicDifficulty().getDuration());
-        this.user = new UserDTO(quiz.getUser());
+        this.user = UserDTO.from(quiz.getUser());
         this.topicDifficulty = new TopicDifficultyDTO(quiz.getTopicDifficulty());
         this.promotion = quiz.getPromotion() != null ? PromotionDTO.from(quiz.getPromotion()) : null;
         this.questions = questionDTOs;

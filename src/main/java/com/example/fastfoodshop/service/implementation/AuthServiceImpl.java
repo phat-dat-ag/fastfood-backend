@@ -77,7 +77,7 @@ public class AuthServiceImpl implements AuthService {
                 user.setActivated(true);
                 User dbUser = userService.updateUser(user);
                 otpCodeService.updateOTPCode(otpCode, true);
-                return new UserDTO(dbUser);
+                return UserDTO.from(dbUser);
             }
         }
         throw new InvalidOTPCodeException();
@@ -128,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
             if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.getOtp().equals(otpCode.getCode())) {
                 User dbUser = userService.updateUser(user, verifyForgetPasswordRequest.getNewPassword());
                 otpCodeService.updateOTPCode(otpCode, true);
-                return new UserDTO(dbUser);
+                return UserDTO.from(dbUser);
             }
         }
         throw new InvalidOTPCodeException();
