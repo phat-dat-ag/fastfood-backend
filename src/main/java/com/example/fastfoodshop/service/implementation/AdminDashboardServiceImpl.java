@@ -90,7 +90,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<TopicStatsProjection> statsProjections = topicRepository.getStats();
         List<TopicStatsDTO> topicStatsDTOs = new ArrayList<>();
         for (TopicStatsProjection statsProjection : statsProjections) {
-            topicStatsDTOs.add(new TopicStatsDTO(statsProjection));
+            topicStatsDTOs.add(TopicStatsDTO.from(statsProjection));
         }
         return topicStatsDTOs;
     }
