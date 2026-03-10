@@ -17,11 +17,11 @@ public class AboutUsImageResponse {
     public AboutUsImageResponse(List<Image> images) {
         for (Image image : images) {
             if (image.getSectionType() == SectionType.CAROUSEL) {
-                this.carouselImages.add(new ImageDTO(image));
+                this.carouselImages.add(ImageDTO.from(image));
             } else if (image.getSectionType() == SectionType.SHOWCASE) {
-                this.showcaseImages.add(new ImageDTO(image));
+                this.showcaseImages.add(ImageDTO.from(image));
             } else if (image.getSectionType() == SectionType.MISSION) {
-                this.missionImages.add(new ImageDTO(image));
+                this.missionImages.add(ImageDTO.from(image));
             }
         }
     }

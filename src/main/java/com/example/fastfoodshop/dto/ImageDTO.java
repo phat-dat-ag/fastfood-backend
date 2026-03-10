@@ -1,30 +1,28 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Image;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Data
-public class ImageDTO {
-    private Long id;
-    private String url;
-    private String alternativeText;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    public ImageDTO(Image image) {
-        this.id = image.getId();
-        this.url = image.getUrl();
-        this.alternativeText = image.getAlternativeText();
-        this.createdAt = image.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
-        this.updatedAt = image.getUpdatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
+public record ImageDTO(
+        Long id,
+        String url,
+        String alternativeText,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
+    public static ImageDTO from(Image image) {
+        return new ImageDTO(
+                image.getId(),
+                image.getUrl(),
+                image.getAlternativeText(),
+                image.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                image.getUpdatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+        );
     }
 }

@@ -15,7 +15,7 @@ public class ChallengeIntroductionImageResponse {
     public ChallengeIntroductionImageResponse(List<Image> images) {
         for (Image image : images) {
             if (image.getSectionType() == SectionType.CAROUSEL) {
-                this.carouselImages.add(new ImageDTO(image));
+                this.carouselImages.add(ImageDTO.from(image));
             }
         }
     }
