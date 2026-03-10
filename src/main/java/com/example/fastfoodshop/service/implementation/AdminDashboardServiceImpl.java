@@ -99,7 +99,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         List<TopicDifficultyStatsProjection> statsProjections = topicDifficultyRepository.getStats();
         List<TopicDifficultyStatsDTO> topicDifficultyStatsDTOs = new ArrayList<>();
         for (TopicDifficultyStatsProjection statsProjection : statsProjections) {
-            topicDifficultyStatsDTOs.add(new TopicDifficultyStatsDTO(statsProjection));
+            topicDifficultyStatsDTOs.add(TopicDifficultyStatsDTO.from(statsProjection));
         }
         return topicDifficultyStatsDTOs;
     }
