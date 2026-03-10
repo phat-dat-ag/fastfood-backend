@@ -74,7 +74,7 @@ public class AwardServiceImpl implements AwardService {
         buildAward(award, request);
 
         Award savedAward = awardRepository.save(award);
-        return new AwardDTO(savedAward);
+        return AwardDTO.from(savedAward);
     }
 
     public AwardResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest request) {
@@ -109,7 +109,6 @@ public class AwardServiceImpl implements AwardService {
         award.setDeleted(true);
 
         Award deletedAward = awardRepository.save(award);
-        return new AwardDTO(deletedAward);
+        return AwardDTO.from(deletedAward);
     }
 }
-

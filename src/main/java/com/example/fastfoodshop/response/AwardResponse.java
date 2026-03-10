@@ -18,7 +18,7 @@ public class AwardResponse {
 
     public AwardResponse(Page<Award> page) {
         for (Award award : page.getContent()) {
-            this.awards.add(new AwardDTO(award));
+            this.awards.add(AwardDTO.from(award));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();
