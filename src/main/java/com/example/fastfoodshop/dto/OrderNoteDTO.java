@@ -3,24 +3,24 @@ package com.example.fastfoodshop.dto;
 import com.example.fastfoodshop.entity.OrderNote;
 import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.enums.NoteType;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Data
-public class OrderNoteDTO {
-    private AuthorType authorType;
-    private NoteType noteType;
-    private String message;
-    private LocalDateTime createdAt;
-
-    public OrderNoteDTO(OrderNote orderNote) {
-        this.authorType = orderNote.getAuthorType();
-        this.noteType = orderNote.getNoteType();
-        this.message = orderNote.getMessage();
-        this.createdAt = orderNote.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
+public record OrderNoteDTO(
+        AuthorType authorType,
+        NoteType noteType,
+        String message,
+        LocalDateTime createdAt
+) {
+    public static OrderNoteDTO from(OrderNote orderNote) {
+        return new OrderNoteDTO(
+                orderNote.getAuthorType(),
+                orderNote.getNoteType(),
+                orderNote.getMessage(),
+                orderNote.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+        );
     }
 }

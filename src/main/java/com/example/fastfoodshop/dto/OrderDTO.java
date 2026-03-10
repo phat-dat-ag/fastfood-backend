@@ -33,7 +33,7 @@ public record OrderDTO(
     private static OrderDTO create(Order order, String clientSecret) {
         List<OrderNoteDTO> orderNotes =
                 order.getOrderNotes().stream()
-                        .map(OrderNoteDTO::new)
+                        .map(OrderNoteDTO::from)
                         .toList();
 
         List<OrderDetailDTO> orderDetails =
