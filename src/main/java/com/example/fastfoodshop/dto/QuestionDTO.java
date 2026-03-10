@@ -2,52 +2,48 @@ package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
-import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@Data
-public class QuestionDTO {
-    private Long id;
-    private String content;
-    private String imageUrl;
-    private String audioUrl;
-    private boolean isActivated;
-    private List<AnswerDTO> answers;
-
-    private QuestionDTO(Question question, List<AnswerDTO> answerDTOs) {
-        this.id = question.getId();
-        this.content = question.getContent();
-        this.imageUrl = question.getImageUrl() != null ? question.getImageUrl() : "";
-        this.audioUrl = question.getAudioUrl() != null ? question.getAudioUrl() : "";
-        this.isActivated = question.isActivated();
-        this.answers = answerDTOs;
+public record QuestionDTO(
+        Long id,
+        String content,
+        String imageUrl,
+        String audioUrl,
+        boolean activated,
+        List<AnswerDTO> answers
+) {
+    private static QuestionDTO create(Question question, List<AnswerDTO> answerDTOs) {
+        return new QuestionDTO(
+                question.getId(),
+                question.getContent(),
+                question.getImageUrl() != null ? question.getImageUrl() : "",
+                question.getAudioUrl() != null ? question.getAudioUrl() : "",
+                question.isActivated(),
+                answerDTOs
+        );
     }
 
     public static QuestionDTO createAdminQuestion(Question question) {
-        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
-        for (Answer answer : question.getAnswers()) {
-            answerDTOs.add(AnswerDTO.createAdminAnswer(answer));
-        }
-        return new QuestionDTO(question, answerDTOs);
+        List<AnswerDTO> answerDTOs = question.getAnswers()
+                .stream().map(AnswerDTO::createAdminAnswer).toList();
+        return create(question, answerDTOs);
     }
 
     public static QuestionDTO createUserQuestion(Question question) {
-        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
-        for (Answer answer : question.getAnswers()) {
-            answerDTOs.add(AnswerDTO.createUserAnswer(answer));
-        }
-        return new QuestionDTO(question, answerDTOs);
+        List<AnswerDTO> answerDTOs = question.getAnswers()
+                .stream().map(AnswerDTO::createUserAnswer).toList();
+        return create(question, answerDTOs);
     }
 
     public static QuestionDTO createReviewQuestion(Question question, Answer selectedAnswer) {
-        ArrayList<AnswerDTO> answerDTOs = new ArrayList<>();
+        List<AnswerDTO> answerDTOs = new ArrayList<>();
         Long selectedId = selectedAnswer != null ? selectedAnswer.getId() : null;
         for (Answer answer : question.getAnswers()) {
             boolean isSelected = selectedId != null && selectedId.equals(answer.getId());
             answerDTOs.add(AnswerDTO.createReviewAnswer(answer, isSelected));
         }
-        return new QuestionDTO(question, answerDTOs);
+        return create(question, answerDTOs);
     }
 }
