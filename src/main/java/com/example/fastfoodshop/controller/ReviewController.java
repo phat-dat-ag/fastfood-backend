@@ -22,7 +22,7 @@ import java.util.ArrayList;
 @RestController
 @RequestMapping("/api/review")
 @RequiredArgsConstructor
-public class ReviewController {
+public class ReviewController extends BaseController {
     private final ReviewService reviewService;
 
     @PostMapping
@@ -30,28 +30,25 @@ public class ReviewController {
             @RequestParam("orderId") Long orderId,
             @Valid @ModelAttribute ReviewForm reviewsForm
     ) {
-        return reviewService.createReviews(reviewsForm.getReviews(), orderId);
+        return okResponse(reviewService.createReviews(reviewsForm.getReviews(), orderId));
     }
 
     @GetMapping
     ResponseEntity<ResponseWrapper<ArrayList<ReviewDTO>>> getAllReviewsByProduct(
             @RequestParam("productId") Long productId
     ) {
-        return reviewService.getAllReviewsByProduct(productId);
+        return okResponse(reviewService.getAllReviewsByProduct(productId));
     }
 
     @GetMapping("/manage")
     ResponseEntity<ResponseWrapper<ReviewResponse>> getAllReviewsByAdmin(
             @Valid @ModelAttribute PageRequest request
     ) {
-        return reviewService.getAllReviewsByAdmin(request.getPage(), request.getSize());
+        return okResponse(reviewService.getAllReviewsByAdmin(request.getPage(), request.getSize()));
     }
 
     @DeleteMapping("/manage")
     ResponseEntity<ResponseWrapper<String>> deleteReview(@RequestParam("reviewId") Long reviewId) {
-        return reviewService.deleteReview(reviewId);
+        return okResponse(reviewService.deleteReview(reviewId));
     }
 }
-
-
-
