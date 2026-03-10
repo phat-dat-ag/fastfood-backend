@@ -27,7 +27,7 @@ public class ReviewDTO {
         this.rating = review.getRating();
         this.comment = review.getComment();
         for (ReviewImage reviewImage : review.getReviewImages()) {
-            this.reviewImages.add(new ReviewImageDTO(reviewImage));
+            this.reviewImages.add(ReviewImageDTO.from(reviewImage));
         }
         this.createdAt = review.getCreatedAt().
                 atZone(ZoneId.systemDefault())
