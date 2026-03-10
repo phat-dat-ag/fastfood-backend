@@ -72,7 +72,7 @@ public class TopicServiceImpl implements TopicService {
         topic.setSlug(slug);
 
         Topic savedTopic = topicRepository.save(topic);
-        return new TopicDTO(savedTopic);
+        return TopicDTO.from(savedTopic);
     }
 
     public TopicDTO updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
@@ -82,12 +82,12 @@ public class TopicServiceImpl implements TopicService {
         topic.setActivated(topicCreateRequest.getIsActivated());
 
         Topic updatedTopic = topicRepository.save(topic);
-        return new TopicDTO(updatedTopic);
+        return TopicDTO.from(updatedTopic);
     }
 
     public TopicDTO getTopicBySlug(String slug) {
         Topic topic = findValidTopicOrThrow(slug);
-        return new TopicDTO(topic);
+        return TopicDTO.from(topic);
     }
 
     public TopicResponse getAllTopics(int page, int size) {
@@ -144,6 +144,6 @@ public class TopicServiceImpl implements TopicService {
         topic.setDeleted(true);
 
         Topic deletedTopic = topicRepository.save(topic);
-        return new TopicDTO(deletedTopic);
+        return TopicDTO.from(deletedTopic);
     }
 }

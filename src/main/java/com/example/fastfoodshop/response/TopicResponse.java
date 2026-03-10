@@ -18,7 +18,7 @@ public class TopicResponse {
 
     public TopicResponse(Page<Topic> page) {
         for (Topic topic : page.getContent()) {
-            this.topics.add(new TopicDTO(topic));
+            this.topics.add(TopicDTO.from(topic));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();
