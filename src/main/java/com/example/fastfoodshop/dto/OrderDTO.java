@@ -50,7 +50,7 @@ public class OrderDTO {
         this.subtotalPrice = order.getSubtotalPrice();
         this.deliveryFee = order.getDeliveryFee();
         this.totalPrice = order.getTotalPrice();
-        this.address = order.getAddress() != null ? new AddressDTO(order.getAddress()) : null;
+        this.address = order.getAddress() != null ? AddressDTO.from(order.getAddress()) : null;
         this.user = order.getUser() != null ? new UserDTO(order.getUser()) : null;
         for (OrderNote orderNote : order.getOrderNotes()) {
             this.orderNotes.add(new OrderNoteDTO(orderNote));

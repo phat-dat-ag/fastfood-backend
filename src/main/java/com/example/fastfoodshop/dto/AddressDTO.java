@@ -1,43 +1,40 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Address;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Data
-public class AddressDTO {
-    private Long id;
-    private String name;
-    private String detail;
-    private Double latitude;
-    private Double longitude;
-    private String street;
-    private String ward;
-    private String district;
-    private String province;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
-    public AddressDTO(Address address) {
-        this.id = address.getId();
-        ;
-        this.latitude = address.getLatitude();
-        this.longitude = address.getLongitude();
-        this.name = address.getName();
-        this.detail = address.getDetail();
-        this.street = address.getStreet();
-        this.ward = address.getWard();
-        this.district = address.getDistrict();
-        this.province = address.getProvince();
-        this.createdAt = address.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
-        this.updatedAt = address.getUpdatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
+public record AddressDTO(
+        Long id,
+        String name,
+        String detail,
+        Double latitude,
+        Double longitude,
+        String street,
+        String ward,
+        String district,
+        String province,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
+    public static AddressDTO from(Address address) {
+        return new AddressDTO(
+                address.getId(),
+                address.getName(),
+                address.getDetail(),
+                address.getLatitude(),
+                address.getLongitude(),
+                address.getStreet(),
+                address.getWard(),
+                address.getDistrict(),
+                address.getProvince(),
+                address.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                address.getUpdatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime()
+        );
     }
 }

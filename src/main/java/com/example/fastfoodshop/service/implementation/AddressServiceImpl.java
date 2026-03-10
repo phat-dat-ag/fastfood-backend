@@ -45,7 +45,7 @@ public class AddressServiceImpl implements AddressService {
         buildAddress(address, request);
 
         Address savedAddress = addressRepository.save(address);
-        return new AddressDTO(savedAddress);
+        return AddressDTO.from(savedAddress);
     }
 
     public AddressResponse getAddressesByUser(String phone) {
@@ -64,6 +64,6 @@ public class AddressServiceImpl implements AddressService {
         Address address = optionalAddress.get();
         address.setDeleted(true);
         Address deletedAddress = addressRepository.save(address);
-        return new AddressDTO(deletedAddress);
+        return AddressDTO.from(deletedAddress);
     }
 }

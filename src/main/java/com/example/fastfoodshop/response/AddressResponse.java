@@ -13,7 +13,7 @@ public class AddressResponse {
 
     public AddressResponse(List<Address> addressList) {
         for (Address address : addressList) {
-            this.addresses.add(new AddressDTO(address));
+            this.addresses.add(AddressDTO.from(address));
         }
     }
 }
