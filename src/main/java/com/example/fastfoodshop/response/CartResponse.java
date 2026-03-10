@@ -22,8 +22,8 @@ public class CartResponse {
         for (CartDTO cartDTO : cartDTOs) {
             ProductDTO productDTO = cartDTO.product();
             this.carts.add(cartDTO);
-            this.originalPrice += (cartDTO.quantity() * productDTO.getPrice());
-            this.subtotalPrice += (cartDTO.quantity() * productDTO.getDiscountedPrice());
+            this.originalPrice += (cartDTO.quantity() * productDTO.price());
+            this.subtotalPrice += (cartDTO.quantity() * productDTO.discountedPrice());
         }
         this.totalPrice = this.subtotalPrice;
     }

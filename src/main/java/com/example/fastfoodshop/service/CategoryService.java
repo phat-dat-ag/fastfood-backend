@@ -1,8 +1,9 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.CategoryDTO;
-import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.response.CategoryResponse;
@@ -20,7 +21,7 @@ public interface CategoryService {
 
     Category findDeactivatedCategoryOrThrow(Long categoryId);
 
-    void applyPromotion(ProductDTO productDTO, Category category);
+    PromotionResult applyPromotion(Product product, Category category);
 
     CategoryDTO createCategory(CategoryCreateRequest categoryCreateRequest);
 

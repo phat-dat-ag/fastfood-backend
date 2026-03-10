@@ -105,7 +105,7 @@ public class OrderServiceImpl implements OrderService {
 
     private void checkAllActivatedProducts(ArrayList<CartDTO> cartDTOs) {
         for (CartDTO cartDTO : cartDTOs) {
-            productService.checkActivatedCategoryAndActivatedProduct(cartDTO.product().getId());
+            productService.checkActivatedCategoryAndActivatedProduct(cartDTO.product().id());
         }
     }
 
@@ -146,8 +146,8 @@ public class OrderServiceImpl implements OrderService {
         ArrayList<CartDTO> cartDTOs = cartResponse.getCarts();
         for (CartDTO cartDTO : cartDTOs) {
             orderDetailService.createOrderDetail(cartDTO, order);
-            if (cartDTO.product().getPromotionId() != null) {
-                promotionService.increasePromotionUsageCount(cartDTO.product().getPromotionId());
+            if (cartDTO.product().promotionId() != null) {
+                promotionService.increasePromotionUsageCount(cartDTO.product().promotionId());
             }
         }
     }

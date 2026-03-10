@@ -91,11 +91,11 @@ public class CartServiceImpl implements CartService {
         ArrayList<CartDTO> cartDTOs = new ArrayList<>();
         for (Cart cart : carts) {
             Category category = cart.getProduct().getCategory();
-            ProductDTO productDTO = new ProductDTO(cart.getProduct());
-            categoryService.applyPromotion(productDTO, category);
+            Product product = cart.getProduct();
+            categoryService.applyPromotion(product, category);
             CartDTO cartDTO = new CartDTO(
                     new UserDTO(cart.getUser()),
-                    productDTO,
+                    ProductDTO.from(product),
                     cart.getQuantity()
             );
             cartDTOs.add(cartDTO);

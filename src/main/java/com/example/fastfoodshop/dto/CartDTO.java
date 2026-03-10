@@ -10,7 +10,7 @@ public record CartDTO(
     public static CartDTO from(Cart cart) {
         return new CartDTO(
                 new UserDTO(cart.getUser()),
-                new ProductDTO(cart.getProduct()),
+                ProductDTO.from(cart.getProduct()),
                 cart.getQuantity()
         );
     }

@@ -1,9 +1,10 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.CategoryDTO;
-import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
+import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
@@ -108,10 +109,11 @@ public class CategoryServiceImpl implements CategoryService {
                 && promotionDTO.getQuantity() > promotionDTO.getUsedQuantity();
     }
 
-    public void applyPromotion(ProductDTO productDTO, Category category) {
+    public PromotionResult applyPromotion(Product product, Category category) {
         PromotionDTO chosenPromotion = null;
 
-        for (PromotionDTO promotionDTO : productDTO.getPromotions()) {
+        for (Promotion promotion : product.getPromotions()) {
+            PromotionDTO promotionDTO = new PromotionDTO(promotion);
             if (isValidPromotion(promotionDTO)) {
                 chosenPromotion = promotionDTO;
                 break;
@@ -128,15 +130,15 @@ public class CategoryServiceImpl implements CategoryService {
             }
         }
 
-        int originalPrice = productDTO.getPrice();
+        int originalPrice = product.getPrice();
         int discountedPrice = originalPrice;
+        Long promotionId = null;
 
         if (chosenPromotion != null) {
             discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, chosenPromotion);
-            productDTO.setPromotionId(chosenPromotion.getId());
+            promotionId = chosenPromotion.getId();
         }
-
-        productDTO.setDiscountedPrice(discountedPrice);
+        return new PromotionResult(discountedPrice, promotionId);
     }
 
     public CategoryDTO createCategory(CategoryCreateRequest categoryCreateRequest) {

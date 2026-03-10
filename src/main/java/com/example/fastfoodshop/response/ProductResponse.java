@@ -18,7 +18,7 @@ public class ProductResponse {
 
     public ProductResponse(Page<Product> page) {
         for (Product product : page.getContent()) {
-            this.products.add(new ProductDTO(product));
+            this.products.add(ProductDTO.from(product));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();

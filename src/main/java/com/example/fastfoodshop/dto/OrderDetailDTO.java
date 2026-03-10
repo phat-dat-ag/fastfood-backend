@@ -11,7 +11,7 @@ public record OrderDetailDTO(
         return new OrderDetailDTO(
                 orderDetail.getQuantity(),
                 orderDetail.getDiscountedPrice(),
-                new ProductDTO(orderDetail.getProduct())
+                ProductDTO.from(orderDetail.getProduct())
         );
     }
 }

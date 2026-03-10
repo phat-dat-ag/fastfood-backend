@@ -1,62 +1,83 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.Product;
-import com.example.fastfoodshop.entity.Promotion;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
+import java.util.List;
 
-@Data
-public class ProductDTO {
-    private Long categoryId;
-    private String categoryName;
-    private Long id;
-    private String name;
-    private String slug;
-    private int price;
-    private String description;
-    private String imageUrl;
-    private String modelUrl;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private boolean isActivated;
-    private boolean isDeleted;
-    private ArrayList<PromotionDTO> promotions = new ArrayList<>();
-    private ArrayList<ReviewDTO> reviews = new ArrayList<>();
-    private int discountedPrice;
-    private Long promotionId;
+public record ProductDTO(
+        Long categoryId,
+        String categoryName,
+        Long id,
+        String name,
+        String slug,
+        int price,
+        String description,
+        String imageUrl,
+        String modelUrl,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        boolean activated,
+        boolean deleted,
+        List<PromotionDTO> promotions,
+        List<ReviewDTO> reviews,
+        int discountedPrice,
+        Long promotionId,
 
-    private double averageRating;
-    private long reviewCount;
-    private long soldCount;
+        double averageRating,
+        long reviewCount,
+        long soldCount
+) {
+    private static ProductDTO create(
+            Product product, List<ReviewDTO> reviews,
+            int discountedPrice, Long promotionId, double averageRating, long reviewCount, long soldCount
+    ) {
+        List<PromotionDTO> promotions = product.getPromotions()
+                .stream().map(PromotionDTO::new).toList();
 
-    public ProductDTO(Product product) {
-        this.categoryId = product.getCategory().getId();
-        this.categoryName = product.getCategory().getName();
-        this.id = product.getId();
-        this.name = product.getName();
-        this.slug = product.getSlug();
-        this.price = product.getPrice();
-        this.description = product.getDescription();
-        this.imageUrl = product.getImageUrl();
-        this.modelUrl = product.getModelUrl();
-        this.createdAt = product.getCreatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
-        this.updatedAt = product.getUpdatedAt().
-                atZone(ZoneId.systemDefault())
-                .toLocalDateTime();
-        ;
-        this.isActivated = product.isActivated();
-        this.isDeleted = product.isDeleted();
-        this.discountedPrice = product.getPrice();
-        this.promotionId = null;
+        return new ProductDTO(
+                product.getCategory().getId(),
+                product.getCategory().getName(),
+                product.getId(),
+                product.getName(),
+                product.getSlug(),
+                product.getPrice(),
+                product.getDescription(),
+                product.getImageUrl(),
+                product.getModelUrl(),
+                product.getCreatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                product.getUpdatedAt().
+                        atZone(ZoneId.systemDefault())
+                        .toLocalDateTime(),
+                product.isActivated(),
+                product.isDeleted(),
+                promotions,
+                reviews,
+                discountedPrice,
+                promotionId,
+                averageRating,
+                reviewCount,
+                soldCount
+        );
+    }
 
-        for (Promotion promotion : product.getPromotions()) {
-            this.promotions.add(new PromotionDTO(promotion));
-        }
+    public static ProductDTO from(Product product) {
+        return create(
+                product, List.of(), product.getPrice(), null,
+                0.0, 0, 0
+        );
+    }
+
+    public static ProductDTO from(
+            Product product, List<ReviewDTO> reviews,
+            PromotionResult promotionResult, double averageRating, long reviewCount, long soldCount
+    ) {
+        return create(
+                product, reviews, promotionResult.discountedPrice(), promotionResult.promotionId(),
+                averageRating, reviewCount, soldCount
+        );
     }
 }

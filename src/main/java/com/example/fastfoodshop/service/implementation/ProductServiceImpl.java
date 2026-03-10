@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
@@ -145,7 +146,7 @@ public class ProductServiceImpl implements ProductService {
         handleProductImage(product, productCreateRequest.getImageUrl());
         handleProductModel3D(product, productCreateRequest.getModelUrl());
         Product savedProduct = productRepository.save(product);
-        return new ProductDTO(savedProduct);
+        return ProductDTO.from(savedProduct);
     }
 
     public ProductDTO updateProduct(ProductUpdateRequest productUpdateRequest) {
@@ -158,7 +159,7 @@ public class ProductServiceImpl implements ProductService {
         handleProductModel3D(product, productUpdateRequest.getModelUrl());
 
         Product savedProduct = productRepository.save(product);
-        return new ProductDTO(savedProduct);
+        return ProductDTO.from(savedProduct);
     }
 
     public ProductResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
@@ -190,19 +191,23 @@ public class ProductServiceImpl implements ProductService {
 
         ArrayList<ProductDTO> productDTOs = new ArrayList<>();
         for (Product product : products) {
-            ProductDTO productDTO = new ProductDTO(product);
+            ProductRatingStatsProjection productRatingStatsProjection = ratingMap.get(product.getId());
 
-            ProductRatingStatsProjection r = ratingMap.get(product.getId());
-            if (r != null) {
-                productDTO.setAverageRating(r.getAvgRating() != null ? r.getAvgRating() : 0.0);
-                productDTO.setReviewCount(r.getReviewCount());
+            double averageRating = 0.0;
+            long reviewCount = 0;
+
+            if (productRatingStatsProjection != null) {
+                averageRating = productRatingStatsProjection.getAvgRating() != null
+                        ? productRatingStatsProjection.getAvgRating()
+                        : 0.0;
+                reviewCount = productRatingStatsProjection.getReviewCount();
             }
 
-            ProductSoldCountProjection s = soldMap.get(product.getId());
-            productDTO.setSoldCount(s != null ? s.getSoldCount() : 0L);
+            ProductSoldCountProjection soldCountProjection = soldMap.get(product.getId());
+            long soldCount = soldCountProjection != null ? soldCountProjection.getSoldCount() : 0L;
 
-            categoryService.applyPromotion(productDTO, category);
-            productDTOs.add(productDTO);
+            PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+            productDTOs.add(ProductDTO.from(product, List.of(), promotionResult, averageRating, reviewCount, soldCount));
         }
         return productDTOs;
     }
@@ -212,9 +217,8 @@ public class ProductServiceImpl implements ProductService {
 
         ArrayList<ProductDTO> productDTOs = new ArrayList<>();
         for (Product product : products) {
-            ProductDTO productDTO = new ProductDTO(product);
-            categoryService.applyPromotion(productDTO, product.getCategory());
-            productDTOs.add(productDTO);
+            categoryService.applyPromotion(product, product.getCategory());
+            productDTOs.add(ProductDTO.from(product));
         }
         return productDTOs;
     }
@@ -223,20 +227,24 @@ public class ProductServiceImpl implements ProductService {
         Product product = findProductOrThrow(productSlug);
         checkActivatedCategoryAndActivatedProduct(product.getId());
         Category category = product.getCategory();
-        ProductDTO productDTO = new ProductDTO(product);
 
         ProductRatingStatsProjection ratingStats = productRepository.getRatingStatsByProductIds(
                 List.of(product.getId())
         ).stream().findFirst().orElse(null);
+
+        double averageRating = 0.0;
+        long reviewCount = 0;
+
         if (ratingStats != null) {
-            productDTO.setAverageRating(ratingStats.getAvgRating() != null ? ratingStats.getAvgRating() : 0.0);
-            productDTO.setReviewCount(ratingStats.getReviewCount());
+            averageRating = ratingStats.getAvgRating() != null ? ratingStats.getAvgRating() : 0.0;
+            reviewCount = ratingStats.getReviewCount();
         }
 
         ProductSoldCountProjection soldStats = productRepository.getSoldCountByProductIds(
                 List.of(product.getId())
         ).stream().findFirst().orElse(null);
-        productDTO.setSoldCount(soldStats != null ? soldStats.getSoldCount() : 0L);
+
+        long soldCount = soldStats != null ? soldStats.getSoldCount() : 0L;
 
         Pageable top5 = PageRequest.of(0, 5);
         List<Review> topReviews = reviewRepository.findTop5ByProductIdOrderByRatingDescCreatedAtDesc(
@@ -245,10 +253,9 @@ public class ProductServiceImpl implements ProductService {
         List<ReviewDTO> reviewDTOs = topReviews.stream()
                 .map(ReviewDTO::new)
                 .toList();
-        productDTO.setReviews(new ArrayList<>(reviewDTOs));
 
-        categoryService.applyPromotion(productDTO, category);
-        return productDTO;
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+        return ProductDTO.from(product, reviewDTOs, promotionResult, averageRating, reviewCount, soldCount);
     }
 
     public String activateProduct(Long productId) {
@@ -275,6 +282,6 @@ public class ProductServiceImpl implements ProductService {
         product.setDeleted(true);
 
         Product deletedProduct = productRepository.save(product);
-        return new ProductDTO(deletedProduct);
+        return ProductDTO.from(deletedProduct);
     }
 }
