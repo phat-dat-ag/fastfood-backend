@@ -56,7 +56,7 @@ public class OrderDTO {
             this.orderNotes.add(new OrderNoteDTO(orderNote));
         }
         for (OrderDetail orderDetail : order.getOrderDetails()) {
-            this.orderDetails.add(new OrderDetailDTO(orderDetail));
+            this.orderDetails.add(OrderDetailDTO.from(orderDetail));
         }
         for (Review review : order.getReviews()) {
             this.reviews.add(new ReviewDTO(review));

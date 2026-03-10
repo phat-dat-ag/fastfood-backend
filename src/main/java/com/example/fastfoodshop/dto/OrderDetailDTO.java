@@ -1,17 +1,17 @@
 package com.example.fastfoodshop.dto;
 
 import com.example.fastfoodshop.entity.OrderDetail;
-import lombok.Data;
 
-@Data
-public class OrderDetailDTO {
-    private int quantity;
-    private int discountedPrice;
-    private ProductDTO product;
-
-    public OrderDetailDTO(OrderDetail orderDetail) {
-        this.quantity = orderDetail.getQuantity();
-        this.discountedPrice = orderDetail.getDiscountedPrice();
-        this.product = new ProductDTO(orderDetail.getProduct());
+public record OrderDetailDTO(
+        int quantity,
+        int discountedPrice,
+        ProductDTO product
+) {
+    public static OrderDetailDTO from(OrderDetail orderDetail) {
+        return new OrderDetailDTO(
+                orderDetail.getQuantity(),
+                orderDetail.getDiscountedPrice(),
+                new ProductDTO(orderDetail.getProduct())
+        );
     }
 }
