@@ -13,7 +13,7 @@ public record CategoryDTO(
         String imageUrl,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        boolean isActivated
+        boolean activated
 ) {
     public static CategoryDTO from(Category category) {
         return new CategoryDTO(
