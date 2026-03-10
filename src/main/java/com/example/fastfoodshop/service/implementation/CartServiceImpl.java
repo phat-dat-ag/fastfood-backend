@@ -114,8 +114,8 @@ public class CartServiceImpl implements CartService {
 
         DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
         cartResponse.setDeliveryInformation(deliveryInformation);
-        cartResponse.setDeliveryFee(deliveryInformation.getFee());
-        int totalPrice = cartResponse.getTotalPrice() + deliveryInformation.getFee();
+        cartResponse.setDeliveryFee(deliveryInformation.fee());
+        int totalPrice = cartResponse.getTotalPrice() + deliveryInformation.fee();
         cartResponse.setTotalPrice(totalPrice);
 
         return cartResponse;
