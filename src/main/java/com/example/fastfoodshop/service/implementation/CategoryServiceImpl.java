@@ -151,7 +151,7 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryCreateRequest.getImageUrl());
 
         Category savedCategory = categoryRepository.save(category);
-        return new CategoryDTO(savedCategory);
+        return CategoryDTO.from(savedCategory);
     }
 
     public CategoryDTO updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
@@ -163,7 +163,7 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryUpdateRequest.getImageUrl());
 
         Category savedCategory = categoryRepository.save(category);
-        return new CategoryDTO(savedCategory);
+        return CategoryDTO.from(savedCategory);
     }
 
     public CategoryResponse getCategories(int page, int size) {
@@ -197,7 +197,7 @@ public class CategoryServiceImpl implements CategoryService {
         category.setDeleted(true);
 
         Category deletedCategory = categoryRepository.save(category);
-        return new CategoryDTO(deletedCategory);
+        return CategoryDTO.from(deletedCategory);
     }
 
     public ArrayList<CategoryDTO> getDisplayableCategories() {
@@ -205,7 +205,7 @@ public class CategoryServiceImpl implements CategoryService {
         ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
 
         for (Category category : categories) {
-            categoryDTOs.add(new CategoryDTO(category));
+            categoryDTOs.add(CategoryDTO.from(category));
         }
 
         return categoryDTOs;

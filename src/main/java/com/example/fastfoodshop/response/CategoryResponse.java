@@ -18,7 +18,7 @@ public class CategoryResponse {
 
     public CategoryResponse(Page<Category> page) {
         for (Category category : page.getContent()) {
-            this.categories.add(new CategoryDTO(category));
+            this.categories.add(CategoryDTO.from(category));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();
