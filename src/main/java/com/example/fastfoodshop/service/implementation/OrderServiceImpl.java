@@ -179,7 +179,7 @@ public class OrderServiceImpl implements OrderService {
 
         clearCartForUser(phone);
 
-        return new OrderDTO(savedOrder);
+        return OrderDTO.from(savedOrder);
     }
 
     @Transactional
@@ -204,15 +204,12 @@ public class OrderServiceImpl implements OrderService {
 
         clearCartForUser(phone);
 
-        OrderDTO orderDTO = new OrderDTO(savedOrder);
-
         try {
-            orderDTO.setClientSecret(paymentService.createPaymentIntent(savedOrder.getTotalPrice(), savedOrder));
+            String setClientSecret = paymentService.createPaymentIntent(savedOrder.getTotalPrice(), savedOrder);
+            return OrderDTO.from(order, setClientSecret);
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
-
-        return orderDTO;
     }
 
     public OrderDTO getPaymentIntent(String phone, Long orderId) {
@@ -224,20 +221,19 @@ public class OrderServiceImpl implements OrderService {
         if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER || order.getPaymentStatus() == PaymentStatus.PAID) {
             throw new PaymentNotAllowedException();
         }
-        OrderDTO orderDTO = new OrderDTO(order);
+
         try {
-            orderDTO.setClientSecret(paymentService.createPaymentIntent(order.getTotalPrice(), order));
+            String setClientSecret = paymentService.createPaymentIntent(order.getTotalPrice(), order);
+            return OrderDTO.from(order, setClientSecret);
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
-
-        return orderDTO;
     }
 
     public OrderDTO getOrder(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
         Order order = findDeliveredOrderOrThrow(orderId, user);
-        return new OrderDTO(order);
+        return OrderDTO.from(order);
     }
 
     public OrderResponse getAllUnfinishedOrders(int page, int size) {
@@ -249,7 +245,7 @@ public class OrderServiceImpl implements OrderService {
 
     public OrderDTO getUnfinishedOrder(Long orderId) {
         Order order = findUnfinishedOrderOrThrow(orderId);
-        return new OrderDTO(order);
+        return OrderDTO.from(order);
     }
 
     public Order updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
@@ -271,7 +267,7 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime now = LocalDateTime.now();
         order.setConfirmedAt(now);
         Order confirmedOrder = orderRepository.save(order);
-        return new OrderDTO(confirmedOrder);
+        return OrderDTO.from(confirmedOrder);
     }
 
     public OrderDTO markAsDelivering(Long orderId) {
@@ -283,7 +279,7 @@ public class OrderServiceImpl implements OrderService {
         LocalDateTime now = LocalDateTime.now();
         order.setDeliveringAt(now);
         Order updatedOrder = orderRepository.save(order);
-        return new OrderDTO(updatedOrder);
+        return OrderDTO.from(updatedOrder);
     }
 
     public OrderDTO markAsDelivered(Long orderId) {
@@ -300,7 +296,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         Order updatedOrder = orderRepository.save(order);
-        return new OrderDTO(updatedOrder);
+        return OrderDTO.from(updatedOrder);
     }
 
     public OrderResponse getAllActiveOrders(String phone, int page, int size) {
@@ -314,7 +310,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO getActiveOrder(Long orderId, String phone) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
-        return new OrderDTO(order);
+        return OrderDTO.from(order);
     }
 
     public OrderResponse getAllOrderHistory(String phone, int page, int size) {
@@ -328,7 +324,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO getOrderHistory(Long orderId, String phone) {
         User user = userService.findUserOrThrow(phone);
         Order order = findOrderHistoryOrThrow(orderId, user);
-        return new OrderDTO(order);
+        return OrderDTO.from(order);
     }
 
     public OrderDTO cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest) {
@@ -346,7 +342,7 @@ public class OrderServiceImpl implements OrderService {
         orderNoteService.createOrderNoteByUser(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
 
         Order updatedOrder = orderRepository.save(order);
-        return new OrderDTO(updatedOrder);
+        return OrderDTO.from(updatedOrder);
     }
 
     public OrderDTO cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest) {
@@ -359,7 +355,7 @@ public class OrderServiceImpl implements OrderService {
         orderNoteService.createOrderNoteByStaff(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
 
         Order updatedOrder = orderRepository.save(order);
-        return new OrderDTO(updatedOrder);
+        return OrderDTO.from(updatedOrder);
     }
 
     public OrderResponse getAllOrdersByAdmin(int page, int size) {

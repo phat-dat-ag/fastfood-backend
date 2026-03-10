@@ -18,7 +18,7 @@ public class OrderResponse {
 
     public OrderResponse(Page<Order> page) {
         for (Order order : page.getContent()) {
-            this.orders.add(new OrderDTO(order));
+            this.orders.add(OrderDTO.from(order));
         }
         this.currentPage = page.getNumber();
         this.pageSize = page.getSize();
