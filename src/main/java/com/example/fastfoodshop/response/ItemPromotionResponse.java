@@ -15,10 +15,10 @@ public class ItemPromotionResponse {
     public ItemPromotionResponse(List<ItemPromotionProjection> categoryPromotionProjections,
                                  List<ItemPromotionProjection> productPromotionProjections) {
         for (ItemPromotionProjection categoryProjection : categoryPromotionProjections) {
-            this.categoryPromotions.add(new ItemPromotionDTO(categoryProjection));
+            this.categoryPromotions.add(ItemPromotionDTO.from(categoryProjection));
         }
         for (ItemPromotionProjection productProjection : productPromotionProjections) {
-            this.productPromotions.add(new ItemPromotionDTO(productProjection));
+            this.productPromotions.add(ItemPromotionDTO.from(productProjection));
         }
     }
 }
