@@ -1,11 +1,12 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
-import com.example.fastfoodshop.response.UserResponse;
+import com.example.fastfoodshop.response.user.UserPageResponse;
+import com.example.fastfoodshop.response.user.UserResponse;
+import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
@@ -23,19 +24,19 @@ public interface UserService {
 
     User updateUser(User user);
 
-    UserResponse getAllCustomers(int page, int size);
+    UserPageResponse getAllCustomers(int page, int size);
 
-    UserResponse getAllStaff(int page, int size);
+    UserPageResponse getAllStaff(int page, int size);
 
-    UserDTO updateUser(String phone, UserUpdateRequest userUpdateRequest);
+    UserResponse updateUser(String phone, UserUpdateRequest userUpdateRequest);
 
-    UserDTO changePassword(String phone, ChangePasswordRequest changePasswordRequest);
+    UserResponse changePassword(String phone, ChangePasswordRequest changePasswordRequest);
 
-    UserDTO updateAvatar(String phone, MultipartFile file);
+    UserResponse updateAvatar(String phone, MultipartFile file);
 
-    String activateAccount(Long userId);
+    UserUpdateResponse activateAccount(Long userId);
 
-    String deactivateAccount(Long userId);
+    UserUpdateResponse deactivateAccount(Long userId);
 
-    UserDTO deleteUser(String phone);
+    UserUpdateResponse deleteUser(String phone);
 }

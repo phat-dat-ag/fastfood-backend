@@ -3,9 +3,10 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
-import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.UserResponse;
+import com.example.fastfoodshop.response.user.UserPageResponse;
+import com.example.fastfoodshop.response.user.UserResponse;
+import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import com.example.fastfoodshop.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class UserController extends BaseController {
     private final UserService userService;
 
     @PostMapping("/update-avatar")
-    public ResponseEntity<ResponseWrapper<UserDTO>> updateAvatar(
+    public ResponseEntity<ResponseWrapper<UserResponse>> updateAvatar(
             @RequestParam("file") MultipartFile file,
             @AuthenticationPrincipal UserDetails userDetails
     ) {
@@ -38,7 +39,7 @@ public class UserController extends BaseController {
     }
 
     @PostMapping("/update-information")
-    public ResponseEntity<ResponseWrapper<UserDTO>> updateUserInformation(
+    public ResponseEntity<ResponseWrapper<UserResponse>> updateUserInformation(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody UserUpdateRequest userUpdateRequest
     ) {
@@ -46,7 +47,7 @@ public class UserController extends BaseController {
     }
 
     @PostMapping("/change-password")
-    public ResponseEntity<ResponseWrapper<UserDTO>> changePassword(
+    public ResponseEntity<ResponseWrapper<UserResponse>> changePassword(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody ChangePasswordRequest changePasswordRequest
     ) {
@@ -54,31 +55,31 @@ public class UserController extends BaseController {
     }
 
     @GetMapping("/manage/get/customers")
-    public ResponseEntity<ResponseWrapper<UserResponse>> getAllCustomer(
+    public ResponseEntity<ResponseWrapper<UserPageResponse>> getAllCustomer(
             @Valid @ModelAttribute PageRequest request
     ) {
         return okResponse(userService.getAllCustomers(request.getPage(), request.getSize()));
     }
 
     @GetMapping("/manage/get/staff")
-    public ResponseEntity<ResponseWrapper<UserResponse>> getAllStaff(
+    public ResponseEntity<ResponseWrapper<UserPageResponse>> getAllStaff(
             @Valid @ModelAttribute PageRequest request
     ) {
         return okResponse(userService.getAllStaff(request.getPage(), request.getSize()));
     }
 
     @PutMapping("/manage/activate-account")
-    public ResponseEntity<ResponseWrapper<String>> activateAccount(@RequestParam("userId") Long userId) {
+    public ResponseEntity<ResponseWrapper<UserUpdateResponse>> activateAccount(@RequestParam("userId") Long userId) {
         return okResponse(userService.activateAccount(userId));
     }
 
     @PutMapping("/manage/deactivate-account")
-    public ResponseEntity<ResponseWrapper<String>> deactivateAccount(@RequestParam("userId") Long userId) {
+    public ResponseEntity<ResponseWrapper<UserUpdateResponse>> deactivateAccount(@RequestParam("userId") Long userId) {
         return okResponse(userService.deactivateAccount(userId));
     }
 
     @DeleteMapping("/manage")
-    public ResponseEntity<ResponseWrapper<UserDTO>> deleteUser(@RequestParam("phone") String phone) {
+    public ResponseEntity<ResponseWrapper<UserUpdateResponse>> deleteUser(@RequestParam("phone") String phone) {
         return okResponse(userService.deleteUser(phone));
     }
 }

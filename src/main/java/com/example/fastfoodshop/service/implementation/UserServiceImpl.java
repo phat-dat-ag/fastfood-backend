@@ -10,7 +10,9 @@ import com.example.fastfoodshop.repository.UserRepository;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
-import com.example.fastfoodshop.response.UserResponse;
+import com.example.fastfoodshop.response.user.UserPageResponse;
+import com.example.fastfoodshop.response.user.UserResponse;
+import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -92,21 +94,21 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public UserResponse getAllCustomers(int page, int size) {
+    public UserPageResponse getAllCustomers(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER, pageable);
 
-        return new UserResponse(userPage);
+        return UserPageResponse.from(userPage);
     }
 
-    public UserResponse getAllStaff(int page, int size) {
+    public UserPageResponse getAllStaff(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
         Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF, pageable);
 
-        return new UserResponse(userPage);
+        return UserPageResponse.from(userPage);
     }
 
-    public UserDTO updateUser(String phone, UserUpdateRequest userUpdateRequest) {
+    public UserResponse updateUser(String phone, UserUpdateRequest userUpdateRequest) {
         User user = findUserOrThrow(phone);
         LocalDate birthday = LocalDate.parse(userUpdateRequest.getBirthdayString());
         user.setName(userUpdateRequest.getName());
@@ -114,10 +116,10 @@ public class UserServiceImpl implements UserService {
         user.setBirthday(birthday);
 
         User updatedUser = userRepository.save(user);
-        return UserDTO.from(updatedUser);
+        return new UserResponse(UserDTO.from(updatedUser));
     }
 
-    public UserDTO changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
+    public UserResponse changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
         User user = findUserOrThrow(phone);
         if (!passwordEncoder.matches(changePasswordRequest.getPassword(), user.getPasswordHash())) {
             throw new InvalidPasswordException();
@@ -125,7 +127,7 @@ public class UserServiceImpl implements UserService {
 
         user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
         User updatedUser = userRepository.save(user);
-        return UserDTO.from(updatedUser);
+        return new UserResponse(UserDTO.from(updatedUser));
     }
 
     public void handleAvatarImage(User user, MultipartFile file) {
@@ -150,40 +152,40 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public UserDTO updateAvatar(String phone, MultipartFile file) {
+    public UserResponse updateAvatar(String phone, MultipartFile file) {
         User user = findUserOrThrow(phone);
         handleAvatarImage(user, file);
         User updatedUser = userRepository.save(user);
-        return UserDTO.from(updatedUser);
+        return new UserResponse(UserDTO.from(updatedUser));
     }
 
-    public String activateAccount(Long userId) {
+    public UserUpdateResponse activateAccount(Long userId) {
         User user = findUndeletedUserByIdOrThrow(userId);
         if (user.isActivated()) {
             throw new InvalidUserStatusException();
         }
         user.setActivated(true);
         userRepository.save(user);
-        return "Kích hoạt tài khoản thành công";
+        return new UserUpdateResponse("Kích hoạt tài khoản thành công: " + userId);
     }
 
-    public String deactivateAccount(Long userId) {
+    public UserUpdateResponse deactivateAccount(Long userId) {
         User user = findUndeletedUserByIdOrThrow(userId);
         if (!user.isActivated()) {
             throw new InvalidUserStatusException();
         }
         user.setActivated(false);
         userRepository.save(user);
-        return "Hủy kích hoạt tài khoản thành công";
+        return new UserUpdateResponse("Hủy kích hoạt tài khoản thành công: " + userId);
     }
 
-    public UserDTO deleteUser(String phone) {
+    public UserUpdateResponse deleteUser(String phone) {
         User user = findUserOrThrow(phone);
         if (user.isDeleted()) {
             throw new InvalidUserStatusException();
         }
         user.setDeleted(true);
         User deletedUser = userRepository.save(user);
-        return UserDTO.from(deletedUser);
+        return new UserUpdateResponse("Xóa tài khoản thành công: " + phone);
     }
 }
