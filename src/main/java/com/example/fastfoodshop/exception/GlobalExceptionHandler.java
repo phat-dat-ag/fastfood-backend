@@ -17,14 +17,4 @@ public class GlobalExceptionHandler {
                         ex.getMessage()
                 ));
     }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ResponseWrapper<?>> handleUnexpectedException(Exception ex) {
-
-        return ResponseEntity.internalServerError()
-                .body(ResponseWrapper.error(
-                        "INTERNAL_SERVER_ERROR",
-                        "Unexpected server error"
-                ));
-    }
 }
