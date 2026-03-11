@@ -1,8 +1,8 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.AddressDTO;
 import com.example.fastfoodshop.request.AddressCreateRequest;
-import com.example.fastfoodshop.response.AddressResponse;
+import com.example.fastfoodshop.response.address.AddressResponse;
+import com.example.fastfoodshop.response.address.AddressesResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.AddressService;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class AddressController extends BaseController {
     private final AddressService addressService;
 
     @PostMapping
-    public ResponseEntity<ResponseWrapper<AddressDTO>> createAddress(
+    public ResponseEntity<ResponseWrapper<AddressResponse>> createAddress(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody AddressCreateRequest addressCreateRequest
     ) {
@@ -32,14 +32,14 @@ public class AddressController extends BaseController {
     }
 
     @GetMapping
-    public ResponseEntity<ResponseWrapper<AddressResponse>> getAddress(
+    public ResponseEntity<ResponseWrapper<AddressesResponse>> getAddress(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         return okResponse(addressService.getAddressesByUser(userDetails.getUsername()));
     }
 
     @DeleteMapping
-    public ResponseEntity<ResponseWrapper<AddressDTO>> deleteAddress(
+    public ResponseEntity<ResponseWrapper<AddressResponse>> deleteAddress(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("id") Long addressId
     ) {

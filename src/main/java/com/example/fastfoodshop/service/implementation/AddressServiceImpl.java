@@ -6,7 +6,8 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.exception.address.AddressNotFoundException;
 import com.example.fastfoodshop.repository.AddressRepository;
 import com.example.fastfoodshop.request.AddressCreateRequest;
-import com.example.fastfoodshop.response.AddressResponse;
+import com.example.fastfoodshop.response.address.AddressResponse;
+import com.example.fastfoodshop.response.address.AddressesResponse;
 import com.example.fastfoodshop.service.AddressService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +38,7 @@ public class AddressServiceImpl implements AddressService {
         address.setDeleted(false);
     }
 
-    public AddressDTO createAddress(String phone, AddressCreateRequest request) {
+    public AddressResponse createAddress(String phone, AddressCreateRequest request) {
         User user = userService.findUserOrThrow(phone);
 
         Address address = new Address();
@@ -45,18 +46,24 @@ public class AddressServiceImpl implements AddressService {
         buildAddress(address, request);
 
         Address savedAddress = addressRepository.save(address);
-        return AddressDTO.from(savedAddress);
+        return new AddressResponse(AddressDTO.from(savedAddress));
     }
 
-    public AddressResponse getAddressesByUser(String phone) {
+    public AddressesResponse getAddressesByUser(String phone) {
         User user = userService.findUserOrThrow(phone);
-        List<Address> addresses = addressRepository.findByUserAndIsDeletedFalse(user);
 
-        return new AddressResponse(addresses);
+        List<AddressDTO> addressDTOs = addressRepository
+                .findByUserAndIsDeletedFalse(user)
+                .stream()
+                .map(AddressDTO::from)
+                .toList();
+
+        return new AddressesResponse(addressDTOs);
     }
 
-    public AddressDTO deleteAddress(String phone, Long id) {
+    public AddressResponse deleteAddress(String phone, Long id) {
         User user = userService.findUserOrThrow(phone);
+
         Optional<Address> optionalAddress = addressRepository.findByUserAndId(user, id);
         if (optionalAddress.isEmpty()) {
             throw new AddressNotFoundException();
@@ -64,6 +71,7 @@ public class AddressServiceImpl implements AddressService {
         Address address = optionalAddress.get();
         address.setDeleted(true);
         Address deletedAddress = addressRepository.save(address);
-        return AddressDTO.from(deletedAddress);
+
+        return new AddressResponse(AddressDTO.from(deletedAddress));
     }
 }
