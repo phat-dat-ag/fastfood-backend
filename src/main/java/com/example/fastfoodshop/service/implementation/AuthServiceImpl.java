@@ -8,8 +8,9 @@ import com.example.fastfoodshop.exception.auth.InvalidOTPCodeException;
 import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
 import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
 import com.example.fastfoodshop.request.*;
-import com.example.fastfoodshop.response.OTPResponse;
-import com.example.fastfoodshop.response.SignInResponse;
+import com.example.fastfoodshop.response.auth.OTPResponse;
+import com.example.fastfoodshop.response.auth.SignInResponse;
+import com.example.fastfoodshop.response.auth.VerifyResponse;
 import com.example.fastfoodshop.security.JwtUtil;
 import com.example.fastfoodshop.service.AuthService;
 import com.example.fastfoodshop.service.OTPCodeService;
@@ -67,7 +68,7 @@ public class AuthServiceImpl implements AuthService {
         return new OTPResponse(user.getPhone(), otp.getExpiredAt());
     }
 
-    public UserDTO verifySignUpOTP(VerifySignUpRequest verifySignUpRequest) {
+    public VerifyResponse verifySignUpOTP(VerifySignUpRequest verifySignUpRequest) {
         User user = userService.findUserOrThrow(verifySignUpRequest.getPhone());
         List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
         LocalDateTime now = LocalDateTime.now();
@@ -75,9 +76,9 @@ public class AuthServiceImpl implements AuthService {
         for (OTPCode otpCode : otpCodes) {
             if (now.isBefore(otpCode.getExpiredAt()) && verifySignUpRequest.getOtp().equals(otpCode.getCode())) {
                 user.setActivated(true);
-                User dbUser = userService.updateUser(user);
+                userService.updateUser(user);
                 otpCodeService.updateOTPCode(otpCode, true);
-                return UserDTO.from(dbUser);
+                return new VerifyResponse("Xác thực OTP đăng ký thành công");
             }
         }
         throw new InvalidOTPCodeException();
@@ -95,7 +96,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         String token = jwtUtil.generateToken(dbUser);
-        return new SignInResponse(token, dbUser);
+        return new SignInResponse(token, UserDTO.from(dbUser));
     }
 
     public OTPResponse forgetPassword(ForgetPasswordRequest forgetPasswordRequest) {
@@ -119,16 +120,16 @@ public class AuthServiceImpl implements AuthService {
         return new OTPResponse(user.getPhone(), otpCode.getExpiredAt());
     }
 
-    public UserDTO verifyForgetPasswordOTP(VerifyForgetPasswordRequest verifyForgetPasswordRequest) {
+    public VerifyResponse verifyForgetPasswordOTP(VerifyForgetPasswordRequest verifyForgetPasswordRequest) {
 
         User user = userService.findUserOrThrow(verifyForgetPasswordRequest.getPhone());
         List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
         LocalDateTime now = LocalDateTime.now();
         for (OTPCode otpCode : otpCodes) {
             if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.getOtp().equals(otpCode.getCode())) {
-                User dbUser = userService.updateUser(user, verifyForgetPasswordRequest.getNewPassword());
+                userService.updateUser(user, verifyForgetPasswordRequest.getNewPassword());
                 otpCodeService.updateOTPCode(otpCode, true);
-                return UserDTO.from(dbUser);
+                return new VerifyResponse("Xác thực OTP quên mật khẩu thành công");
             }
         }
         throw new InvalidOTPCodeException();
@@ -139,6 +140,6 @@ public class AuthServiceImpl implements AuthService {
         String phone = userDetails.getUsername();
         User user = userService.findUserOrThrow(phone);
         String newToken = jwtUtil.generateToken(user);
-        return new SignInResponse(newToken, user);
+        return new SignInResponse(newToken, UserDTO.from(user));
     }
 }

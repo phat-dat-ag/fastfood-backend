@@ -1,14 +1,14 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.request.ForgetPasswordRequest;
 import com.example.fastfoodshop.request.VerifyForgetPasswordRequest;
 import com.example.fastfoodshop.request.SignInRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.VerifySignUpRequest;
-import com.example.fastfoodshop.response.OTPResponse;
+import com.example.fastfoodshop.response.auth.OTPResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.SignInResponse;
+import com.example.fastfoodshop.response.auth.SignInResponse;
+import com.example.fastfoodshop.response.auth.VerifyResponse;
 import com.example.fastfoodshop.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class AuthController extends BaseController {
     }
 
     @PostMapping("/verify-sign-up")
-    public ResponseEntity<ResponseWrapper<UserDTO>> verifyRegistrationOTP(
+    public ResponseEntity<ResponseWrapper<VerifyResponse>> verifyRegistrationOTP(
             @Valid @RequestBody VerifySignUpRequest verifySignUpRequest
     ) {
         return okResponse(authService.verifySignUpOTP(verifySignUpRequest));
@@ -56,7 +56,7 @@ public class AuthController extends BaseController {
     }
 
     @PostMapping("/verify-forget-password")
-    public ResponseEntity<ResponseWrapper<UserDTO>> verifyForgetPasswordOTP(
+    public ResponseEntity<ResponseWrapper<VerifyResponse>> verifyForgetPasswordOTP(
             @Valid @RequestBody VerifyForgetPasswordRequest verifyForgetPasswordRequest
     ) {
         return okResponse(authService.verifyForgetPasswordOTP(verifyForgetPasswordRequest));
