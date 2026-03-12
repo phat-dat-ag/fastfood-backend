@@ -1,29 +1,28 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.request.TopicCreateRequest;
-import com.example.fastfoodshop.response.TopicDisplayResponse;
-import com.example.fastfoodshop.response.TopicResponse;
-
-import java.util.List;
+import com.example.fastfoodshop.response.topic.TopicDisplayResponse;
+import com.example.fastfoodshop.response.topic.TopicPageResponse;
+import com.example.fastfoodshop.response.topic.TopicResponse;
+import com.example.fastfoodshop.response.topic.TopicUpdateResponse;
 
 public interface TopicService {
     Topic findValidTopicOrThrow(String topicSlug);
 
-    TopicDTO createTopic(TopicCreateRequest topicCreateRequest);
+    TopicResponse createTopic(TopicCreateRequest topicCreateRequest);
 
-    TopicDTO updateTopic(Long topicId, TopicCreateRequest topicCreateRequest);
+    TopicResponse updateTopic(Long topicId, TopicCreateRequest topicCreateRequest);
 
-    TopicDTO getTopicBySlug(String topicSlug);
+    TopicResponse getTopicBySlug(String topicSlug);
 
-    TopicResponse getAllTopics(int page, int size);
+    TopicPageResponse getAllTopics(int page, int size);
 
-    List<TopicDisplayResponse> getDisplayableTopics();
+    TopicDisplayResponse getDisplayableTopics();
 
-    String activateTopic(Long topicId);
+    TopicUpdateResponse activateTopic(Long topicId);
 
-    String deactivateTopic(Long topicId);
+    TopicUpdateResponse deactivateTopic(Long topicId);
 
-    TopicDTO deleteTopic(Long topicId);
+    TopicUpdateResponse deleteTopic(Long topicId);
 }

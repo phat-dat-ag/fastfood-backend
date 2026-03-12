@@ -2,14 +2,17 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
+import com.example.fastfoodshop.dto.TopicDisplayDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.exception.topic.InvalidTopicStatusException;
 import com.example.fastfoodshop.exception.topic.TopicNotFoundException;
 import com.example.fastfoodshop.repository.TopicRepository;
 import com.example.fastfoodshop.request.TopicCreateRequest;
 import com.example.fastfoodshop.response.DifficultyDisplayResponse;
-import com.example.fastfoodshop.response.TopicDisplayResponse;
-import com.example.fastfoodshop.response.TopicResponse;
+import com.example.fastfoodshop.response.topic.TopicDisplayResponse;
+import com.example.fastfoodshop.response.topic.TopicPageResponse;
+import com.example.fastfoodshop.response.topic.TopicResponse;
+import com.example.fastfoodshop.response.topic.TopicUpdateResponse;
 import com.example.fastfoodshop.service.TopicService;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +21,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,7 +64,7 @@ public class TopicServiceImpl implements TopicService {
         );
     }
 
-    public TopicDTO createTopic(TopicCreateRequest topicCreateRequest) {
+    public TopicResponse createTopic(TopicCreateRequest topicCreateRequest) {
         Topic topic = new Topic();
         topic.setName(topicCreateRequest.getName());
         topic.setDescription(topicCreateRequest.getDescription());
@@ -72,78 +75,90 @@ public class TopicServiceImpl implements TopicService {
         topic.setSlug(slug);
 
         Topic savedTopic = topicRepository.save(topic);
-        return TopicDTO.from(savedTopic);
+        return new TopicResponse(TopicDTO.from(savedTopic));
     }
 
-    public TopicDTO updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
+    public TopicResponse updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
         Topic topic = findTopicOrThrow(topicId);
         topic.setName(topicCreateRequest.getName());
         topic.setDescription(topicCreateRequest.getDescription());
         topic.setActivated(topicCreateRequest.getIsActivated());
 
         Topic updatedTopic = topicRepository.save(topic);
-        return TopicDTO.from(updatedTopic);
+        return new TopicResponse(TopicDTO.from(updatedTopic));
     }
 
-    public TopicDTO getTopicBySlug(String slug) {
+    public TopicResponse getTopicBySlug(String slug) {
         Topic topic = findValidTopicOrThrow(slug);
-        return TopicDTO.from(topic);
+        return new TopicResponse(TopicDTO.from(topic));
     }
 
-    public TopicResponse getAllTopics(int page, int size) {
+    public TopicPageResponse getAllTopics(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Topic> topicPage = topicRepository.findByIsDeletedFalse(pageable);
 
 
-        return new TopicResponse(topicPage);
+        return TopicPageResponse.from(topicPage);
     }
 
-    public List<TopicDisplayResponse> getDisplayableTopics() {
+    public TopicDisplayResponse getDisplayableTopics() {
+
         List<TopicDifficultyFullDTO> flatList = topicRepository.findDisplayableTopicsFull();
-        Map<Long, TopicDisplayResponse> grouped = new LinkedHashMap<>();
 
-        for (TopicDifficultyFullDTO dto : flatList) {
-            grouped.computeIfAbsent(dto.topicId(), id ->
-                    new TopicDisplayResponse(
-                            dto.topicId(),
-                            dto.topicName(),
-                            dto.topicSlug(),
-                            dto.topicDescription()
-                    )
-            ).getDifficulties().add(new DifficultyDisplayResponse(
-                    dto.difficultyId(),
-                    dto.difficultyName(),
-                    dto.difficultySlug(),
-                    dto.difficultyDescription(),
-                    dto.duration(),
-                    dto.questionCount(),
-                    dto.minCorrectToReward()
-            ));
-        }
-        return new ArrayList<>(grouped.values());
+        Map<Long, List<TopicDifficultyFullDTO>> grouped =
+                flatList.stream()
+                        .collect(Collectors.groupingBy(
+                                TopicDifficultyFullDTO::topicId,
+                                LinkedHashMap::new,
+                                Collectors.toList()
+                        ));
+
+        List<TopicDisplayDTO> topics = grouped.values().stream()
+                .map(list -> {
+
+                    TopicDifficultyFullDTO first = list.get(0);
+
+                    List<DifficultyDisplayResponse> difficulties =
+                            list.stream()
+                                    .map(dto -> new DifficultyDisplayResponse(
+                                            dto.difficultyId(),
+                                            dto.difficultyName(),
+                                            dto.difficultySlug(),
+                                            dto.difficultyDescription(),
+                                            dto.duration(),
+                                            dto.questionCount(),
+                                            dto.minCorrectToReward()
+                                    ))
+                                    .toList();
+
+                    return TopicDisplayDTO.from(first, difficulties);
+                })
+                .toList();
+
+        return new TopicDisplayResponse(topics);
     }
 
-    public String activateTopic(Long topicId) {
+    public TopicUpdateResponse activateTopic(Long topicId) {
         Topic topic = findDeactivatedTopic(topicId);
         topic.setActivated(true);
         topicRepository.save(topic);
 
-        return "Đã kích hoạt chủ đề";
+        return new TopicUpdateResponse("Đã kích hoạt chủ đề: " + topicId);
     }
 
-    public String deactivateTopic(Long topicId) {
+    public TopicUpdateResponse deactivateTopic(Long topicId) {
         Topic topic = findActivatedTopic(topicId);
         topic.setActivated(false);
         topicRepository.save(topic);
 
-        return "Đã hủy kích hoạt chủ đề";
+        return new TopicUpdateResponse("Đã hủy kích hoạt chủ đề: " + topicId);
     }
 
-    public TopicDTO deleteTopic(Long topicId) {
+    public TopicUpdateResponse deleteTopic(Long topicId) {
         Topic topic = findTopicOrThrow(topicId);
         topic.setDeleted(true);
 
         Topic deletedTopic = topicRepository.save(topic);
-        return TopicDTO.from(deletedTopic);
+        return new TopicUpdateResponse("Đã xóa chủ đề: " + topicId);
     }
 }
