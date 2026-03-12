@@ -1,14 +1,14 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
-import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
-import com.example.fastfoodshop.response.PromotionResponse;
-
-import java.util.ArrayList;
+import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
+import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
+import com.example.fastfoodshop.response.promotion.PromotionResponse;
+import com.example.fastfoodshop.response.promotion.PromotionUpdateResponse;
 
 public interface PromotionService {
     Promotion findPromotionOrThrow(Long promotionId);
@@ -17,25 +17,25 @@ public interface PromotionService {
 
     PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice);
 
-    PromotionDTO createPromotionCategory(PromotionCreateRequest promotionCreateRequest);
+    PromotionResponse createPromotionCategory(PromotionCreateRequest promotionCreateRequest);
 
-    PromotionDTO createPromotionProduct(PromotionCreateRequest promotionCreateRequest);
+    PromotionResponse createPromotionProduct(PromotionCreateRequest promotionCreateRequest);
 
-    PromotionDTO createPromotionOrder(PromotionCreateRequest promotionCreateRequest);
+    PromotionResponse createPromotionOrder(PromotionCreateRequest promotionCreateRequest);
 
-    PromotionResponse getPromotionCategory(int page, int size);
+    PromotionPageResponse getPromotionCategory(int page, int size);
 
-    PromotionResponse getPromotionProduct(int page, int size);
+    PromotionPageResponse getPromotionProduct(int page, int size);
 
-    PromotionResponse getPromotionOrder(int page, int size);
+    PromotionPageResponse getPromotionOrder(int page, int size);
 
-    ArrayList<PromotionDTO> getValidPromotionOrder(String phone);
+    PromotionOrdersResponse getValidPromotionOrder(String phone);
 
-    String activatePromotion(Long promotionId);
+    PromotionUpdateResponse activatePromotion(Long promotionId);
 
-    String deactivatePromotion(Long promotionId);
+    PromotionUpdateResponse deactivatePromotion(Long promotionId);
 
-    PromotionDTO deletePromotion(Long promotionId);
+    PromotionUpdateResponse deletePromotion(Long promotionId);
 
     Promotion grantPromotion(User user, Quiz quiz);
 }

@@ -14,7 +14,10 @@ import com.example.fastfoodshop.exception.promotion.*;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
-import com.example.fastfoodshop.response.PromotionResponse;
+import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
+import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
+import com.example.fastfoodshop.response.promotion.PromotionResponse;
+import com.example.fastfoodshop.response.promotion.PromotionUpdateResponse;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.service.PromotionService;
@@ -110,7 +113,7 @@ public class PromotionServiceImpl implements PromotionService {
         return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", PromotionDTO.from(promotion));
     }
 
-    public PromotionDTO createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
+    public PromotionResponse createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
         if (checkUniqueCode(promotionCreateRequest.getCode())) {
             throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
@@ -119,10 +122,10 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setCategory(category);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return PromotionDTO.from(savedPromotion);
+        return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }
 
-    public PromotionDTO createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
+    public PromotionResponse createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
         if (checkUniqueCode(promotionCreateRequest.getCode())) {
             throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
@@ -131,38 +134,38 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setProduct(product);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return PromotionDTO.from(savedPromotion);
+        return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }
 
-    public PromotionDTO createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
+    public PromotionResponse createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
         if (checkUniqueCode(promotionCreateRequest.getCode())) {
             throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
         }
 
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         Promotion savedPromotion = promotionRepository.save(promotion);
-        return PromotionDTO.from(savedPromotion);
+        return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }
 
-    public PromotionResponse getPromotionCategory(int page, int size) {
+    public PromotionPageResponse getPromotionCategory(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Promotion> categoryPromotionPage = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse(pageable);
-        return new PromotionResponse(categoryPromotionPage);
+        return PromotionPageResponse.from(categoryPromotionPage);
     }
 
-    public PromotionResponse getPromotionProduct(int page, int size) {
+    public PromotionPageResponse getPromotionProduct(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Promotion> productPromotionPage = promotionRepository.findByProductIsNotNullAndIsDeletedFalse(pageable);
-        return new PromotionResponse(productPromotionPage);
+        return PromotionPageResponse.from(productPromotionPage);
     }
 
-    public PromotionResponse getPromotionOrder(int page, int size) {
+    public PromotionPageResponse getPromotionOrder(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Promotion> orderPromotionPage = promotionRepository.findGlobalOrderPromotions(pageable);
-        return new PromotionResponse(orderPromotionPage);
+        return PromotionPageResponse.from(orderPromotionPage);
     }
 
-    public ArrayList<PromotionDTO> getValidPromotionOrder(String phone) {
+    public PromotionOrdersResponse getValidPromotionOrder(String phone) {
         User user = userService.findUserOrThrow(phone);
         List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now());
         ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
@@ -170,37 +173,37 @@ public class PromotionServiceImpl implements PromotionService {
         for (Promotion promotion : orderPromotions) {
             validOrderPromotions.add(PromotionDTO.from(promotion));
         }
-        return validOrderPromotions;
+        return new PromotionOrdersResponse(validOrderPromotions);
     }
 
-    public String activatePromotion(Long promotionId) {
+    public PromotionUpdateResponse activatePromotion(Long promotionId) {
         Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
         if (promotion.isActivated()) {
             throw new InvalidPromotionStatusException();
         }
         promotion.setActivated(true);
         promotionRepository.save(promotion);
-        return "Đã kích hoạt mã khuyến mãi";
+        return new PromotionUpdateResponse("Đã kích hoạt mã khuyến mãi: " + promotionId);
     }
 
-    public String deactivatePromotion(Long promotionId) {
+    public PromotionUpdateResponse deactivatePromotion(Long promotionId) {
         Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
         if (!promotion.isActivated()) {
             throw new InvalidPromotionStatusException();
         }
         promotion.setActivated(false);
         promotionRepository.save(promotion);
-        return "Đã hủy kích hoạt mã khuyến mãi";
+        return new PromotionUpdateResponse("Đã hủy kích hoạt mã khuyến mãi: " + promotionId);
     }
 
-    public PromotionDTO deletePromotion(Long promotionId) {
+    public PromotionUpdateResponse deletePromotion(Long promotionId) {
         Promotion promotion = findPromotionOrThrow(promotionId);
         if (promotion.isDeleted()) {
             throw new DeletedPromotionException();
         }
         promotion.setDeleted(true);
         Promotion deletedPromotion = promotionRepository.save(promotion);
-        return PromotionDTO.from(deletedPromotion);
+        return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
     }
 
     private String generatePromotionCode(Long userId, Long quizId, LocalDateTime completedAt) {
