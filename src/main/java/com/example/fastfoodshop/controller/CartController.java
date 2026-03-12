@@ -1,11 +1,12 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.CartDTO;
 import com.example.fastfoodshop.request.CartCreateRequest;
 import com.example.fastfoodshop.request.CartUpdateRequest;
 import com.example.fastfoodshop.request.DeliveryRequest;
-import com.example.fastfoodshop.response.CartResponse;
+import com.example.fastfoodshop.response.cart.CartResponse;
+import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.cart.CartUpdateResponse;
 import com.example.fastfoodshop.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,7 +27,7 @@ public class CartController extends BaseController {
     private final CartService cartService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<CartDTO>> addProductToCart(
+    public ResponseEntity<ResponseWrapper<CartResponse>> addProductToCart(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody CartCreateRequest cartCreateRequest
     ) {
@@ -34,7 +35,7 @@ public class CartController extends BaseController {
     }
 
     @PostMapping("/my-cart")
-    public ResponseEntity<ResponseWrapper<CartResponse>> getCartDetailByUser(
+    public ResponseEntity<ResponseWrapper<CartDetailResponse>> getCartDetailByUser(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("code") String code,
             @RequestBody(required = false) DeliveryRequest deliveryRequest
@@ -43,7 +44,7 @@ public class CartController extends BaseController {
     }
 
     @PutMapping()
-    public ResponseEntity<ResponseWrapper<CartDTO>> updateCart(
+    public ResponseEntity<ResponseWrapper<CartResponse>> updateCart(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody CartUpdateRequest cartUpdateRequest
     ) {
@@ -51,7 +52,7 @@ public class CartController extends BaseController {
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<CartDTO>> deleteProductFromCart(
+    public ResponseEntity<ResponseWrapper<CartUpdateResponse>> deleteProductFromCart(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("productId") Long productId
     ) {

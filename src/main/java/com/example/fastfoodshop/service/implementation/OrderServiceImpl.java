@@ -23,7 +23,7 @@ import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
-import com.example.fastfoodshop.response.CartResponse;
+import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.response.OrderResponse;
 import com.example.fastfoodshop.service.CartService;
@@ -45,7 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -103,13 +103,13 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderAmountExceededException();
     }
 
-    private void checkAllActivatedProducts(ArrayList<CartDTO> cartDTOs) {
+    private void checkAllActivatedProducts(List<CartDTO> cartDTOs) {
         for (CartDTO cartDTO : cartDTOs) {
             productService.checkActivatedCategoryAndActivatedProduct(cartDTO.product().id());
         }
     }
 
-    private void buildOrder(Order order, CartResponse cartResponse, String phone, Long addressId) {
+    private void buildOrder(Order order, CartDetailResponse cartDetailResponse, String phone, Long addressId) {
         User user = userService.findUserOrThrow(phone);
         order.setUser(user);
 
@@ -122,16 +122,16 @@ public class OrderServiceImpl implements OrderService {
         order.setPlacedAt(now);
         order.setPaymentStatus(PaymentStatus.PENDING);
 
-        order.setOriginalPrice(cartResponse.getOriginalPrice());
-        order.setSubtotalPrice(cartResponse.getSubtotalPrice());
-        order.setDeliveryFee(cartResponse.getDeliveryFee());
-        order.setTotalPrice(cartResponse.getTotalPrice());
+        order.setOriginalPrice(cartDetailResponse.originalPrice());
+        order.setSubtotalPrice(cartDetailResponse.subtotalPrice());
+        order.setDeliveryFee(cartDetailResponse.deliveryFee());
+        order.setTotalPrice(cartDetailResponse.totalPrice());
     }
 
-    private void applyOrderPromotion(Order order, CartResponse cartResponse) {
-        if (cartResponse.getApplyPromotionResult() != null && cartResponse.getApplyPromotionResult().promotion() != null) {
-            promotionService.increasePromotionUsageCount(cartResponse.getApplyPromotionResult().promotion().id());
-            Promotion promotion = promotionService.findPromotionOrThrow(cartResponse.getApplyPromotionResult().promotion().id());
+    private void applyOrderPromotion(Order order, CartDetailResponse cartDetailResponse) {
+        if (cartDetailResponse.applyPromotionResult() != null && cartDetailResponse.applyPromotionResult().promotion() != null) {
+            promotionService.increasePromotionUsageCount(cartDetailResponse.applyPromotionResult().promotion().id());
+            Promotion promotion = promotionService.findPromotionOrThrow(cartDetailResponse.applyPromotionResult().promotion().id());
             order.setPromotion(promotion);
         }
     }
@@ -142,8 +142,8 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    private void createOrderDetails(Order order, CartResponse cartResponse) {
-        ArrayList<CartDTO> cartDTOs = cartResponse.getCarts();
+    private void createOrderDetails(Order order, CartDetailResponse cartDetailResponse) {
+        List<CartDTO> cartDTOs = cartDetailResponse.carts();
         for (CartDTO cartDTO : cartDTOs) {
             orderDetailService.createOrderDetail(cartDTO, order);
             if (cartDTO.product().promotionId() != null) {
@@ -160,22 +160,22 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest) {
         DeliveryRequest deliveryRequest = new DeliveryRequest();
         deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
-        CartResponse cartResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
-        checkAllActivatedProducts(cartResponse.getCarts());
+        CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
+        checkAllActivatedProducts(cartDetailResponse.carts());
 
         Order order = new Order();
-        checkCashOnDeliveryLimitOrThrow(cartResponse.getTotalPrice());
-        checkOrderTotalAmountLimitOrThrow(cartResponse.getTotalPrice());
-        buildOrder(order, cartResponse, phone, orderCreateRequest.getAddressId());
+        checkCashOnDeliveryLimitOrThrow(cartDetailResponse.totalPrice());
+        checkOrderTotalAmountLimitOrThrow(cartDetailResponse.totalPrice());
+        buildOrder(order, cartDetailResponse, phone, orderCreateRequest.getAddressId());
         order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
 
-        applyOrderPromotion(order, cartResponse);
+        applyOrderPromotion(order, cartDetailResponse);
 
         Order savedOrder = orderRepository.save(order);
 
         addUserNoteIfPresent(savedOrder, orderCreateRequest.getUserNote());
 
-        createOrderDetails(savedOrder, cartResponse);
+        createOrderDetails(savedOrder, cartDetailResponse);
 
         clearCartForUser(phone);
 
@@ -186,21 +186,21 @@ public class OrderServiceImpl implements OrderService {
     public OrderDTO createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest) {
         DeliveryRequest deliveryRequest = new DeliveryRequest();
         deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
-        CartResponse cartResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
-        checkAllActivatedProducts(cartResponse.getCarts());
+        CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
+        checkAllActivatedProducts(cartDetailResponse.carts());
 
         Order order = new Order();
-        checkOrderTotalAmountLimitOrThrow(cartResponse.getTotalPrice());
-        buildOrder(order, cartResponse, phone, orderCreateRequest.getAddressId());
+        checkOrderTotalAmountLimitOrThrow(cartDetailResponse.totalPrice());
+        buildOrder(order, cartDetailResponse, phone, orderCreateRequest.getAddressId());
         order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
 
-        applyOrderPromotion(order, cartResponse);
+        applyOrderPromotion(order, cartDetailResponse);
 
         Order savedOrder = orderRepository.save(order);
 
         addUserNoteIfPresent(savedOrder, orderCreateRequest.getUserNote());
 
-        createOrderDetails(savedOrder, cartResponse);
+        createOrderDetails(savedOrder, cartDetailResponse);
 
         clearCartForUser(phone);
 

@@ -1,7 +1,11 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.constant.CartConstant;
-import com.example.fastfoodshop.dto.*;
+import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
+import com.example.fastfoodshop.dto.UserDTO;
+import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.entity.Cart;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
@@ -13,7 +17,9 @@ import com.example.fastfoodshop.repository.CartRepository;
 import com.example.fastfoodshop.request.CartCreateRequest;
 import com.example.fastfoodshop.request.CartUpdateRequest;
 import com.example.fastfoodshop.request.DeliveryRequest;
-import com.example.fastfoodshop.response.CartResponse;
+import com.example.fastfoodshop.response.cart.CartResponse;
+import com.example.fastfoodshop.response.cart.CartDetailResponse;
+import com.example.fastfoodshop.response.cart.CartUpdateResponse;
 import com.example.fastfoodshop.service.UserService;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.ProductService;
@@ -59,7 +65,7 @@ public class CartServiceImpl implements CartService {
         cart.setQuantity(newQuantity);
     }
 
-    public CartDTO addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
+    public CartResponse addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
         User user = userService.findUserOrThrow(userPhone);
         Product product = productService.findProductOrThrow(cartCreateRequest.getProductId());
         List<Cart> carts = cartRepository.findByUser(user);
@@ -82,10 +88,10 @@ public class CartServiceImpl implements CartService {
         setNewProductQuantityOrThrow(cart, cartCreateRequest.getQuantity());
 
         Cart savedCart = cartRepository.save(cart);
-        return CartDTO.from(savedCart);
+        return new CartResponse(CartDTO.from(savedCart));
     }
 
-    public CartResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
+    public CartDetailResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
         User user = userService.findUserOrThrow(phone);
         List<Cart> carts = cartRepository.findByUser(user);
         ArrayList<CartDTO> cartDTOs = new ArrayList<>();
@@ -100,32 +106,32 @@ public class CartServiceImpl implements CartService {
             );
             cartDTOs.add(cartDTO);
         }
-        CartResponse cartResponse = new CartResponse(cartDTOs);
+        int subtotalPrice = 0;
+        for (CartDTO cartDTO : cartDTOs) {
+            subtotalPrice += (cartDTO.quantity() * cartDTO.product().discountedPrice());
+        }
 
+        PromotionCodeCheckResultDTO promotionCodeCheckResultDTO = null;
+        int totalPrice = 0;
         if (promotionCode != null && !promotionCode.isEmpty()) {
-            PromotionCodeCheckResultDTO result = promotionService.checkPromotionCode(promotionCode, cartResponse.getSubtotalPrice());
-            if (!result.success()) {
-                throw new RuntimeException(result.message());
+            promotionCodeCheckResultDTO = promotionService.checkPromotionCode(promotionCode, subtotalPrice);
+            if (!promotionCodeCheckResultDTO.success()) {
+                throw new RuntimeException(promotionCodeCheckResultDTO.message());
             }
-            cartResponse.setApplyPromotionResult(result);
-            int totalPrice = PromotionUtils.calculateDiscountedPrice(cartResponse.getSubtotalPrice(), result.promotion());
-            cartResponse.setTotalPrice(totalPrice);
+            totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, promotionCodeCheckResultDTO.promotion());
         }
 
         DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
-        cartResponse.setDeliveryInformation(deliveryInformation);
-        cartResponse.setDeliveryFee(deliveryInformation.fee());
-        int totalPrice = cartResponse.getTotalPrice() + deliveryInformation.fee();
-        cartResponse.setTotalPrice(totalPrice);
+        totalPrice += deliveryInformation.fee();
 
-        return cartResponse;
+        return CartDetailResponse.from(cartDTOs, promotionCodeCheckResultDTO, deliveryInformation, totalPrice);
     }
 
-    public CartResponse getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
+    public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
         return getCartResponse(phone, promotionCode, deliveryRequest);
     }
 
-    public CartDTO updateCart(String userPhone, CartUpdateRequest cartUpdateRequest) {
+    public CartResponse updateCart(String userPhone, CartUpdateRequest cartUpdateRequest) {
         User user = userService.findUserOrThrow(userPhone);
         Product product = productService.findProductOrThrow(cartUpdateRequest.getProductId());
         Cart cart = findCartOrThrow(user, product);
@@ -133,16 +139,16 @@ public class CartServiceImpl implements CartService {
         updateNewProductQuantityOrThrow(cart, cartUpdateRequest.getQuantity());
 
         Cart updatedCart = cartRepository.save(cart);
-        return CartDTO.from(updatedCart);
+        return new CartResponse(CartDTO.from(updatedCart));
     }
 
-    public CartDTO deleteProductFromCart(String phone, Long productId) {
+    public CartUpdateResponse deleteProductFromCart(String phone, Long productId) {
         User user = userService.findUserOrThrow(phone);
         Product product = productService.findProductOrThrow(productId);
         Cart cart = findCartOrThrow(user, product);
 
         cartRepository.delete(cart);
-        return CartDTO.from(cart);
+        return new CartUpdateResponse("Xóa sản phẩm khỏi giỏ hàng thành công: " + product);
     }
 
     public void deleteAllProductFromCart(String phone) {
