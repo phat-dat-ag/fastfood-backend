@@ -2,8 +2,9 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.request.QuestionForm;
 import com.example.fastfoodshop.request.QuestionGetByTopicDifficultyRequest;
-import com.example.fastfoodshop.response.QuestionResponse;
+import com.example.fastfoodshop.response.question.QuestionPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
 import com.example.fastfoodshop.service.QuestionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +25,7 @@ public class QuestionController extends BaseController {
     private final QuestionService questionService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<String>> createQuestions(
+    public ResponseEntity<ResponseWrapper<QuestionUpdateResponse>> createQuestions(
             @ModelAttribute QuestionForm request,
             @RequestParam("topicDifficultySlug") String topicDifficultySlug
     ) {
@@ -32,24 +33,30 @@ public class QuestionController extends BaseController {
     }
 
     @GetMapping()
-    public ResponseEntity<ResponseWrapper<QuestionResponse>> getAllQuestionsByTopicDifficulty(
+    public ResponseEntity<ResponseWrapper<QuestionPageResponse>> getAllQuestionsByTopicDifficulty(
             @Valid @ModelAttribute QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
     ) {
         return okResponse(questionService.getAllQuestionsByTopicDifficulty(questionGetByTopicDifficultyRequest));
     }
 
     @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<String>> activateQuestion(@RequestParam("questionId") Long questionId) {
+    public ResponseEntity<ResponseWrapper<QuestionUpdateResponse>> activateQuestion(
+            @RequestParam("questionId") Long questionId
+    ) {
         return okResponse(questionService.activateQuestion(questionId));
     }
 
     @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<String>> deactivateQuestion(@RequestParam("questionId") Long questionId) {
+    public ResponseEntity<ResponseWrapper<QuestionUpdateResponse>> deactivateQuestion(
+            @RequestParam("questionId") Long questionId
+    ) {
         return okResponse(questionService.deactivateQuestion(questionId));
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<String>> deleteQuestion(@RequestParam("questionId") Long questionId) {
+    public ResponseEntity<ResponseWrapper<QuestionUpdateResponse>> deleteQuestion(
+            @RequestParam("questionId") Long questionId
+    ) {
         return okResponse(questionService.deleteQuestion(questionId));
     }
 }

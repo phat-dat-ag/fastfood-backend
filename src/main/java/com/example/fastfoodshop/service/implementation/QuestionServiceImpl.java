@@ -9,7 +9,8 @@ import com.example.fastfoodshop.exception.question.QuestionNotFoundException;
 import com.example.fastfoodshop.repository.QuestionRepository;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
 import com.example.fastfoodshop.request.QuestionGetByTopicDifficultyRequest;
-import com.example.fastfoodshop.response.QuestionResponse;
+import com.example.fastfoodshop.response.question.QuestionPageResponse;
+import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
 import com.example.fastfoodshop.service.AnswerService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.QuestionService;
@@ -100,7 +101,7 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Transactional
-    public String createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
+    public QuestionUpdateResponse createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
         TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
         for (QuestionCreateRequest questionCreateRequest : questionCreateRequests) {
@@ -117,10 +118,10 @@ public class QuestionServiceImpl implements QuestionService {
 
             List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.getAnswers(), savedQuestion);
         }
-        return "Đã lưu các câu hỏi";
+        return new QuestionUpdateResponse("Đã lưu các câu hỏi");
     }
 
-    public QuestionResponse getAllQuestionsByTopicDifficulty(
+    public QuestionPageResponse getAllQuestionsByTopicDifficulty(
             QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
     ) {
         TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(
@@ -132,26 +133,26 @@ public class QuestionServiceImpl implements QuestionService {
         );
         Page<Question> questionPage = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
-        return new QuestionResponse(questionPage);
+        return QuestionPageResponse.from(questionPage);
     }
 
-    public String activateQuestion(Long questionId) {
+    public QuestionUpdateResponse activateQuestion(Long questionId) {
         Question question = findDeactivatedQuestion(questionId);
         question.setActivated(true);
         questionRepository.save(question);
 
-        return "Kích hoạt câu hỏi thành công";
+        return new QuestionUpdateResponse("Kích hoạt câu hỏi thành công: " + questionId);
     }
 
-    public String deactivateQuestion(Long questionId) {
+    public QuestionUpdateResponse deactivateQuestion(Long questionId) {
         Question question = findActivatedQuestion(questionId);
         question.setActivated(false);
         questionRepository.save(question);
 
-        return "Hủy kích hoạt câu hỏi thành công";
+        return new QuestionUpdateResponse("Hủy kích hoạt câu hỏi thành công: " + questionId);
     }
 
-    public String deleteQuestion(Long questionId) {
+    public QuestionUpdateResponse deleteQuestion(Long questionId) {
         Question question = findUndeletedQuestion(questionId);
         if (question.isDeleted()) {
             throw new DeletedQuestionException(questionId);
@@ -159,6 +160,6 @@ public class QuestionServiceImpl implements QuestionService {
         question.setDeleted(true);
         questionRepository.save(question);
 
-        return "Xóa câu hỏi thành công";
+        return new QuestionUpdateResponse("Xóa câu hỏi thành công: " + questionId);
     }
 }
