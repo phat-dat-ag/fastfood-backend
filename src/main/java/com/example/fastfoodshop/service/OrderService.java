@@ -2,45 +2,46 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.enums.PaymentStatus;
-import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
-import com.example.fastfoodshop.response.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderPageResponse;
+import com.example.fastfoodshop.response.order.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 
 public interface OrderService {
     Order findOrderOrThrow(Long orderId);
 
-    OrderDTO createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest);
+    OrderResponse createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest);
 
-    OrderDTO createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest);
+    OrderResponse createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest);
 
-    OrderDTO getPaymentIntent(String phone, Long orderId);
+    OrderResponse getPaymentIntent(String phone, Long orderId);
 
-    OrderDTO getOrder(String phone, Long orderId);
+    OrderResponse getOrder(String phone, Long orderId);
 
-    OrderResponse getAllUnfinishedOrders(int page, int size);
+    OrderPageResponse getAllUnfinishedOrders(int page, int size);
 
-    OrderDTO getUnfinishedOrder(Long orderId);
+    OrderResponse getUnfinishedOrder(Long orderId);
 
-    Order updatePaymentStatus(Long orderId, PaymentStatus paymentStatus);
+    void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus);
 
-    OrderDTO confirmOrder(Long orderId);
+    OrderUpdateResponse confirmOrder(Long orderId);
 
-    OrderDTO markAsDelivering(Long orderId);
+    OrderUpdateResponse markAsDelivering(Long orderId);
 
-    OrderDTO markAsDelivered(Long orderId);
+    OrderUpdateResponse markAsDelivered(Long orderId);
 
-    OrderResponse getAllActiveOrders(String phone, int page, int size);
+    OrderPageResponse getAllActiveOrders(String phone, int page, int size);
 
-    OrderDTO getActiveOrder(Long orderId, String phone);
+    OrderResponse getActiveOrder(Long orderId, String phone);
 
-    OrderResponse getAllOrderHistory(String phone, int page, int size);
+    OrderPageResponse getAllOrderHistory(String phone, int page, int size);
 
-    OrderDTO getOrderHistory(Long orderId, String phone);
+    OrderResponse getOrderHistory(Long orderId, String phone);
 
-    OrderDTO cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest);
+    OrderUpdateResponse cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest);
 
-    OrderDTO cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest);
+    OrderUpdateResponse cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest);
 
-    OrderResponse getAllOrdersByAdmin(int page, int size);
+    OrderPageResponse getAllOrdersByAdmin(int page, int size);
 }

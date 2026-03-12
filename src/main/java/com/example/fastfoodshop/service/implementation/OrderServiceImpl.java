@@ -25,7 +25,9 @@ import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.dto.OrderDTO;
-import com.example.fastfoodshop.response.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderPageResponse;
+import com.example.fastfoodshop.response.order.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 import com.example.fastfoodshop.service.CartService;
 import com.example.fastfoodshop.service.OrderNoteService;
 import com.example.fastfoodshop.service.OrderDetailService;
@@ -157,7 +159,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    public OrderDTO createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest) {
+    public OrderResponse createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest) {
         DeliveryRequest deliveryRequest = new DeliveryRequest();
         deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
         CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
@@ -179,11 +181,11 @@ public class OrderServiceImpl implements OrderService {
 
         clearCartForUser(phone);
 
-        return OrderDTO.from(savedOrder);
+        return new OrderResponse(OrderDTO.from(savedOrder));
     }
 
     @Transactional
-    public OrderDTO createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest) {
+    public OrderResponse createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest) {
         DeliveryRequest deliveryRequest = new DeliveryRequest();
         deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
         CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
@@ -206,13 +208,13 @@ public class OrderServiceImpl implements OrderService {
 
         try {
             String setClientSecret = paymentService.createPaymentIntent(savedOrder.getTotalPrice(), savedOrder);
-            return OrderDTO.from(order, setClientSecret);
+            return new OrderResponse(OrderDTO.from(order, setClientSecret));
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
     }
 
-    public OrderDTO getPaymentIntent(String phone, Long orderId) {
+    public OrderResponse getPaymentIntent(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
         if (order.getOrderStatus() != OrderStatus.PENDING) {
@@ -224,38 +226,38 @@ public class OrderServiceImpl implements OrderService {
 
         try {
             String setClientSecret = paymentService.createPaymentIntent(order.getTotalPrice(), order);
-            return OrderDTO.from(order, setClientSecret);
+            return new OrderResponse(OrderDTO.from(order, setClientSecret));
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
     }
 
-    public OrderDTO getOrder(String phone, Long orderId) {
+    public OrderResponse getOrder(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
         Order order = findDeliveredOrderOrThrow(orderId, user);
-        return OrderDTO.from(order);
+        return new OrderResponse(OrderDTO.from(order));
     }
 
-    public OrderResponse getAllUnfinishedOrders(int page, int size) {
+    public OrderPageResponse getAllUnfinishedOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
         Page<Order> orderPage = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull(pageable);
 
-        return new OrderResponse(orderPage);
+        return OrderPageResponse.from(orderPage);
     }
 
-    public OrderDTO getUnfinishedOrder(Long orderId) {
+    public OrderResponse getUnfinishedOrder(Long orderId) {
         Order order = findUnfinishedOrderOrThrow(orderId);
-        return OrderDTO.from(order);
+        return new OrderResponse(OrderDTO.from(order));
     }
 
-    public Order updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
+    public void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
         Order order = findOrderForUpdate(orderId);
         order.setPaymentStatus(paymentStatus);
 
-        return orderRepository.save(order);
+        orderRepository.save(order);
     }
 
-    public OrderDTO confirmOrder(Long orderId) {
+    public OrderUpdateResponse confirmOrder(Long orderId) {
         Order order = findOrderForUpdate(orderId);
         if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && order.getPaymentStatus() != PaymentStatus.PAID) {
             throw new PaymentNotCompletedException();
@@ -266,11 +268,11 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.CONFIRMED);
         LocalDateTime now = LocalDateTime.now();
         order.setConfirmedAt(now);
-        Order confirmedOrder = orderRepository.save(order);
-        return OrderDTO.from(confirmedOrder);
+        orderRepository.save(order);
+        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đã giao: " + orderId);
     }
 
-    public OrderDTO markAsDelivering(Long orderId) {
+    public OrderUpdateResponse markAsDelivering(Long orderId) {
         Order order = findOrderForUpdate(orderId);
         if (order.getConfirmedAt() == null) {
             throw new InvalidOrderStatusException();
@@ -278,11 +280,11 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.DELIVERING);
         LocalDateTime now = LocalDateTime.now();
         order.setDeliveringAt(now);
-        Order updatedOrder = orderRepository.save(order);
-        return OrderDTO.from(updatedOrder);
+        orderRepository.save(order);
+        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đang giao: " + orderId);
     }
 
-    public OrderDTO markAsDelivered(Long orderId) {
+    public OrderUpdateResponse markAsDelivered(Long orderId) {
         Order order = findOrderForUpdate(orderId);
         if (order.getDeliveringAt() == null) {
             throw new InvalidOrderStatusException();
@@ -295,39 +297,39 @@ public class OrderServiceImpl implements OrderService {
             order.setPaymentStatus(PaymentStatus.PAID);
         }
 
-        Order updatedOrder = orderRepository.save(order);
-        return OrderDTO.from(updatedOrder);
+        orderRepository.save(order);
+        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đã giao: " + orderId);
     }
 
-    public OrderResponse getAllActiveOrders(String phone, int page, int size) {
+    public OrderPageResponse getAllActiveOrders(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
         Page<Order> orderPage = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
 
-        return new OrderResponse(orderPage);
+        return OrderPageResponse.from(orderPage);
     }
 
-    public OrderDTO getActiveOrder(Long orderId, String phone) {
+    public OrderResponse getActiveOrder(Long orderId, String phone) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
-        return OrderDTO.from(order);
+        return new OrderResponse(OrderDTO.from(order));
     }
 
-    public OrderResponse getAllOrderHistory(String phone, int page, int size) {
+    public OrderPageResponse getAllOrderHistory(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
         Page<Order> orderPage = orderRepository.findCompletedOrCancelledOrdersByUser(user, pageable);
 
-        return new OrderResponse(orderPage);
+        return OrderPageResponse.from(orderPage);
     }
 
-    public OrderDTO getOrderHistory(Long orderId, String phone) {
+    public OrderResponse getOrderHistory(Long orderId, String phone) {
         User user = userService.findUserOrThrow(phone);
         Order order = findOrderHistoryOrThrow(orderId, user);
-        return OrderDTO.from(order);
+        return new OrderResponse(OrderDTO.from(order));
     }
 
-    public OrderDTO cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest) {
+    public OrderUpdateResponse cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest) {
         Order order = findOrderForUpdate(orderId);
         if (order.getOrderStatus() == OrderStatus.DELIVERING) {
             throw new InvalidOrderStatusException();
@@ -341,11 +343,11 @@ public class OrderServiceImpl implements OrderService {
 
         orderNoteService.createOrderNoteByUser(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
 
-        Order updatedOrder = orderRepository.save(order);
-        return OrderDTO.from(updatedOrder);
+        orderRepository.save(order);
+        return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);
     }
 
-    public OrderDTO cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest) {
+    public OrderUpdateResponse cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest) {
         Order order = findOrderForUpdate(orderId);
 
         LocalDateTime now = LocalDateTime.now();
@@ -354,14 +356,14 @@ public class OrderServiceImpl implements OrderService {
 
         orderNoteService.createOrderNoteByStaff(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
 
-        Order updatedOrder = orderRepository.save(order);
-        return OrderDTO.from(updatedOrder);
+        orderRepository.save(order);
+        return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);
     }
 
-    public OrderResponse getAllOrdersByAdmin(int page, int size) {
+    public OrderPageResponse getAllOrdersByAdmin(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
         Page<Order> orderPage = orderRepository.findAll(pageable);
 
-        return new OrderResponse(orderPage);
+        return OrderPageResponse.from(orderPage);
     }
 }

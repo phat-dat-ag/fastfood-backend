@@ -2,10 +2,11 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
-import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.request.PageRequest;
-import com.example.fastfoodshop.response.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.order.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 import com.example.fastfoodshop.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class OrderController extends BaseController {
     private final OrderService orderService;
 
     @PostMapping("/cash-on-delivery")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> createCashOnDeliveryOrder(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> createCashOnDeliveryOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody OrderCreateRequest orderCreateRequest
     ) {
@@ -36,7 +37,7 @@ public class OrderController extends BaseController {
     }
 
     @PostMapping("/stripe-payment")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> createStripePaymentOrder(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> createStripePaymentOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody OrderCreateRequest orderCreateRequest
     ) {
@@ -44,7 +45,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/payment-intent")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getPaymentIntent(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getPaymentIntent(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId
     ) {
@@ -52,21 +53,21 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/by-order-id")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrder(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId) {
         return okResponse(orderService.getOrder(userDetails.getUsername(), orderId));
     }
 
     @GetMapping("/staff/unfinished-orders/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllUnfinishedOrders(
+    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllUnfinishedOrders(
             @Valid @ModelAttribute PageRequest request
     ) {
         return okResponse(orderService.getAllUnfinishedOrders(request.getPage(), request.getSize()));
     }
 
     @GetMapping("/staff/unfinished-order")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getUnfinishedOrder(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId
     ) {
@@ -74,22 +75,22 @@ public class OrderController extends BaseController {
     }
 
     @PutMapping("/confirm")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> confirmOrder(@RequestParam("orderId") Long orderId) {
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> confirmOrder(@RequestParam("orderId") Long orderId) {
         return okResponse(orderService.confirmOrder(orderId));
     }
 
     @PutMapping("/mark-delivering")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivering(@RequestParam("orderId") Long orderId) {
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> markAsDelivering(@RequestParam("orderId") Long orderId) {
         return okResponse(orderService.markAsDelivering(orderId));
     }
 
     @PutMapping("/mark-delivered")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> markAsDelivered(@RequestParam("orderId") Long orderId) {
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> markAsDelivered(@RequestParam("orderId") Long orderId) {
         return okResponse(orderService.markAsDelivered(orderId));
     }
 
     @PutMapping("/user/cancel-order")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByUser(
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> cancelOrderByUser(
             @RequestParam("orderId") Long orderId,
             @RequestBody OrderCancelRequest orderCancelRequest
     ) {
@@ -97,7 +98,7 @@ public class OrderController extends BaseController {
     }
 
     @PutMapping("/staff/cancel-order")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> cancelOrderByStaff(
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> cancelOrderByStaff(
             @RequestParam("orderId") Long orderId,
             @RequestBody OrderCancelRequest orderCancelRequest
     ) {
@@ -105,7 +106,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/active-order/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllActiveOrders(
+    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllActiveOrders(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute PageRequest request
     ) {
@@ -113,7 +114,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/active-order")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getActiveOrder(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getActiveOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId
     ) {
@@ -121,7 +122,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/order-history/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrderHistory(
+    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllOrderHistory(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute PageRequest request
     ) {
@@ -129,7 +130,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/order-history")
-    public ResponseEntity<ResponseWrapper<OrderDTO>> getOrderHistory(
+    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrderHistory(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId
     ) {
@@ -137,7 +138,7 @@ public class OrderController extends BaseController {
     }
 
     @GetMapping("/admin/all")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getAllOrdersByAdmin(
+    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllOrdersByAdmin(
             @Valid @ModelAttribute PageRequest request
     ) {
         return okResponse(orderService.getAllOrdersByAdmin(request.getPage(), request.getSize()));
