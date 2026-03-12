@@ -1,14 +1,14 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.CategoryDTO;
 import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
-import com.example.fastfoodshop.response.CategoryResponse;
-
-import java.util.ArrayList;
+import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
+import com.example.fastfoodshop.response.category.CategoryPageResponse;
+import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
 
 public interface CategoryService {
     Category findCategoryOrThrow(Long categoryId);
@@ -23,17 +23,17 @@ public interface CategoryService {
 
     PromotionResult applyPromotion(Product product, Category category);
 
-    CategoryDTO createCategory(CategoryCreateRequest categoryCreateRequest);
+    CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest);
 
-    CategoryDTO updateCategory(CategoryUpdateRequest categoryUpdateRequest);
+    CategoryResponse updateCategory(CategoryUpdateRequest categoryUpdateRequest);
 
-    CategoryResponse getCategories(int page, int size);
+    CategoryPageResponse getCategories(int page, int size);
 
-    String activateCategory(Long id);
+    CategoryUpdateResponse activateCategory(Long id);
 
-    String deactivateCategory(Long id);
+    CategoryUpdateResponse deactivateCategory(Long id);
 
-    CategoryDTO deleteCategory(Long id);
+    CategoryUpdateResponse deleteCategory(Long id);
 
-    ArrayList<CategoryDTO> getDisplayableCategories();
+    CategoryDisplayResponse getDisplayableCategories();
 }

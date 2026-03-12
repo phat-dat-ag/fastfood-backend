@@ -11,7 +11,10 @@ import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
-import com.example.fastfoodshop.response.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
+import com.example.fastfoodshop.response.category.CategoryPageResponse;
+import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.util.PromotionUtils;
@@ -26,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -141,7 +143,7 @@ public class CategoryServiceImpl implements CategoryService {
         return new PromotionResult(discountedPrice, promotionId);
     }
 
-    public CategoryDTO createCategory(CategoryCreateRequest categoryCreateRequest) {
+    public CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest) {
         String slug = generateUniqueSlug(categoryCreateRequest.getName());
 
         Category category = new Category();
@@ -153,10 +155,10 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryCreateRequest.getImageUrl());
 
         Category savedCategory = categoryRepository.save(category);
-        return CategoryDTO.from(savedCategory);
+        return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
-    public CategoryDTO updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
+    public CategoryResponse updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
         Category category = findCategoryOrThrow(categoryUpdateRequest.getId());
         category.setName(categoryUpdateRequest.getName());
         category.setDescription(categoryUpdateRequest.getDescription());
@@ -165,52 +167,51 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryUpdateRequest.getImageUrl());
 
         Category savedCategory = categoryRepository.save(category);
-        return CategoryDTO.from(savedCategory);
+        return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
-    public CategoryResponse getCategories(int page, int size) {
+    public CategoryPageResponse getCategories(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
 
-        return new CategoryResponse(categoryPage);
+        return CategoryPageResponse.from(categoryPage);
     }
 
-    public String activateCategory(Long id) {
-        Category category = findDeactivatedCategoryOrThrow(id);
+    public CategoryUpdateResponse activateCategory(Long categoryId) {
+        Category category = findDeactivatedCategoryOrThrow(categoryId);
         category.setActivated(true);
 
         categoryRepository.save(category);
-        return "Đã kích hoạt danh mục";
+        return new CategoryUpdateResponse("Đã kích hoạt danh mục: " + categoryId);
     }
 
-    public String deactivateCategory(Long id) {
-        Category category = findActivatedCategoryOrThrow(id);
+    public CategoryUpdateResponse deactivateCategory(Long categoryId) {
+        Category category = findActivatedCategoryOrThrow(categoryId);
         category.setActivated(false);
 
         categoryRepository.save(category);
-        return "Đã hủy kích hoạt danh mục";
+        return new CategoryUpdateResponse("Đã hủy kích hoạt danh mục: " + categoryId);
     }
 
-    public CategoryDTO deleteCategory(Long categoryId) {
+    public CategoryUpdateResponse deleteCategory(Long categoryId) {
         Category category = findCategoryOrThrow(categoryId);
         if (category.isDeleted()) {
             throw new DeletedCategoryException(categoryId);
         }
         category.setDeleted(true);
 
-        Category deletedCategory = categoryRepository.save(category);
-        return CategoryDTO.from(deletedCategory);
+        categoryRepository.save(category);
+        return new CategoryUpdateResponse("Đã xóa danh mục sản phẩm: " + categoryId);
     }
 
-    public ArrayList<CategoryDTO> getDisplayableCategories() {
-        List<Category> categories = categoryRepository.findByIsDeletedFalseAndIsActivatedTrue();
-        ArrayList<CategoryDTO> categoryDTOs = new ArrayList<>();
+    public CategoryDisplayResponse getDisplayableCategories() {
+        List<CategoryDTO> categoryDTOs = categoryRepository
+                .findByIsDeletedFalseAndIsActivatedTrue()
+                .stream()
+                .map(CategoryDTO::from)
+                .toList();
 
-        for (Category category : categories) {
-            categoryDTOs.add(CategoryDTO.from(category));
-        }
-
-        return categoryDTOs;
+        return new CategoryDisplayResponse(categoryDTOs);
     }
 }
 
