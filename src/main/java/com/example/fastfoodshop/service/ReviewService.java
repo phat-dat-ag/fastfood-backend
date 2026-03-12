@@ -1,18 +1,18 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
-import com.example.fastfoodshop.response.ReviewResponse;
+import com.example.fastfoodshop.response.review.ReviewPageResponse;
+import com.example.fastfoodshop.response.review.ReviewProductsResponse;
+import com.example.fastfoodshop.response.review.ReviewUpdateResponse;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public interface ReviewService {
-    String createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId);
+    ReviewUpdateResponse createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId);
 
-    ArrayList<ReviewDTO> getAllReviewsByProduct(Long productId);
+    ReviewProductsResponse getAllReviewsByProduct(Long productId);
 
-    ReviewResponse getAllReviewsByAdmin(int page, int size);
+    ReviewPageResponse getAllReviewsByAdmin(int page, int size);
 
-    String deleteReview(Long reviewId);
+    ReviewUpdateResponse deleteReview(Long reviewId);
 }

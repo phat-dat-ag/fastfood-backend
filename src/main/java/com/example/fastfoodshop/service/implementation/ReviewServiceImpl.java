@@ -15,7 +15,9 @@ import com.example.fastfoodshop.exception.review.ReviewExpiredException;
 import com.example.fastfoodshop.exception.review.ReviewNotFoundException;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
-import com.example.fastfoodshop.response.ReviewResponse;
+import com.example.fastfoodshop.response.review.ReviewPageResponse;
+import com.example.fastfoodshop.response.review.ReviewProductsResponse;
+import com.example.fastfoodshop.response.review.ReviewUpdateResponse;
 import com.example.fastfoodshop.service.OrderService;
 import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.service.ReviewImageService;
@@ -49,7 +51,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Transactional
-    public String createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId) {
+    public ReviewUpdateResponse createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId) {
         Order order = orderService.findOrderOrThrow(orderId);
         if (order.getDeliveredAt() == null) {
             throw new OrderNotDeliveredException(orderId);
@@ -88,15 +90,15 @@ public class ReviewServiceImpl implements ReviewService {
             List<ReviewImage> reviewImages = reviewImageService.createReviewImages(reviewRequest.getImages(), savedReview);
             savedReview.setReviewImages(reviewImages);
 
-            Review updatedReview = reviewRepository.save(savedReview);
+            reviewRepository.save(savedReview);
         }
         if (reviewedProductIds.size() != order.getOrderDetails().size()) {
             throw new IncompleteReviewException();
         }
-        return "Đã đánh giá";
+        return new ReviewUpdateResponse("Đánh giá sản đơn hàng thành công");
     }
 
-    public ArrayList<ReviewDTO> getAllReviewsByProduct(Long productId) {
+    public ReviewProductsResponse getAllReviewsByProduct(Long productId) {
         Product product = productService.findProductOrThrow(productId);
         List<Review> reviews = reviewRepository.findByProductAndIsDeletedFalse(product);
 
@@ -105,19 +107,19 @@ public class ReviewServiceImpl implements ReviewService {
             reviewDTOs.add(ReviewDTO.from(review));
         }
 
-        return reviewDTOs;
+        return new ReviewProductsResponse(reviewDTOs);
     }
 
-    public ReviewResponse getAllReviewsByAdmin(int page, int size) {
+    public ReviewPageResponse getAllReviewsByAdmin(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Review> reviewPage = reviewRepository.findByIsDeletedFalse(pageable);
-        return new ReviewResponse(reviewPage);
+        return ReviewPageResponse.from(reviewPage);
     }
 
-    public String deleteReview(Long reviewId) {
+    public ReviewUpdateResponse deleteReview(Long reviewId) {
         Review review = findUndeletedReviewOrThrow(reviewId);
         review.setDeleted(true);
         reviewRepository.save(review);
-        return "Đã xóa đánh giá";
+        return new ReviewUpdateResponse("Đã xóa đánh giá: " + reviewId);
     }
 }
