@@ -18,7 +18,10 @@ import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ProductCreateRequest;
 import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
 import com.example.fastfoodshop.request.ProductUpdateRequest;
-import com.example.fastfoodshop.response.ProductResponse;
+import com.example.fastfoodshop.response.product.ProductDisplayResponse;
+import com.example.fastfoodshop.response.product.ProductPageResponse;
+import com.example.fastfoodshop.response.product.ProductResponse;
+import com.example.fastfoodshop.response.product.ProductUpdateResponse;
 import com.example.fastfoodshop.service.CategoryService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ProductService;
@@ -129,7 +132,7 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    public ProductDTO createProduct(ProductCreateRequest productCreateRequest) {
+    public ProductResponse createProduct(ProductCreateRequest productCreateRequest) {
         Category category = categoryService.findCategoryOrThrow(productCreateRequest.getCategory_id());
 
         String slug = generateUniqueSlug(productCreateRequest.getName());
@@ -146,10 +149,10 @@ public class ProductServiceImpl implements ProductService {
         handleProductImage(product, productCreateRequest.getImageUrl());
         handleProductModel3D(product, productCreateRequest.getModelUrl());
         Product savedProduct = productRepository.save(product);
-        return ProductDTO.from(savedProduct);
+        return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    public ProductDTO updateProduct(ProductUpdateRequest productUpdateRequest) {
+    public ProductResponse updateProduct(ProductUpdateRequest productUpdateRequest) {
         Product product = findProductOrThrow(productUpdateRequest.getId());
         product.setName(productUpdateRequest.getName());
         product.setDescription(productUpdateRequest.getDescription());
@@ -159,10 +162,10 @@ public class ProductServiceImpl implements ProductService {
         handleProductModel3D(product, productUpdateRequest.getModelUrl());
 
         Product savedProduct = productRepository.save(product);
-        return ProductDTO.from(savedProduct);
+        return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    public ProductResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
+    public ProductPageResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
         Category category = categoryService.findUndeletedCategoryOrThrow(
                 productGetByCategoryRequest.getCategorySlug()
         );
@@ -171,10 +174,10 @@ public class ProductServiceImpl implements ProductService {
         );
         Page<Product> productPage = productRepository.findByCategoryAndIsDeletedFalse(category, pageable);
 
-        return new ProductResponse(productPage);
+        return ProductPageResponse.from(productPage);
     }
 
-    public ArrayList<ProductDTO> getAllDisplayableProductsByCategory(String categorySlug) {
+    public ProductDisplayResponse getAllDisplayableProductsByCategory(String categorySlug) {
         Category category = categoryService.findCategoryOrThrow(categorySlug);
         List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
@@ -209,10 +212,10 @@ public class ProductServiceImpl implements ProductService {
             PromotionResult promotionResult = categoryService.applyPromotion(product, category);
             productDTOs.add(ProductDTO.from(product, List.of(), promotionResult, averageRating, reviewCount, soldCount));
         }
-        return productDTOs;
+        return new ProductDisplayResponse(productDTOs);
     }
 
-    public ArrayList<ProductDTO> getAllDisplayableProducts() {
+    public ProductDisplayResponse getAllDisplayableProducts() {
         List<Product> products = productRepository.findByIsDeletedFalseAndIsActivatedTrue();
 
         ArrayList<ProductDTO> productDTOs = new ArrayList<>();
@@ -220,10 +223,11 @@ public class ProductServiceImpl implements ProductService {
             categoryService.applyPromotion(product, product.getCategory());
             productDTOs.add(ProductDTO.from(product));
         }
-        return productDTOs;
+
+        return new ProductDisplayResponse(productDTOs);
     }
 
-    public ProductDTO getProductBySlug(String productSlug) {
+    public ProductResponse getProductBySlug(String productSlug) {
         Product product = findProductOrThrow(productSlug);
         checkActivatedCategoryAndActivatedProduct(product.getId());
         Category category = product.getCategory();
@@ -255,33 +259,36 @@ public class ProductServiceImpl implements ProductService {
                 .toList();
 
         PromotionResult promotionResult = categoryService.applyPromotion(product, category);
-        return ProductDTO.from(product, reviewDTOs, promotionResult, averageRating, reviewCount, soldCount);
+        ProductDTO productDTO = ProductDTO.from(
+                product, reviewDTOs, promotionResult, averageRating, reviewCount, soldCount
+        );
+        return new ProductResponse(productDTO);
     }
 
-    public String activateProduct(Long productId) {
+    public ProductUpdateResponse activateProduct(Long productId) {
         Product product = findDeactivatedProductOrThrow(productId);
         product.setActivated(true);
 
         productRepository.save(product);
-        return "Kích hoạt sản phẩm thành công";
+        return new ProductUpdateResponse("Kích hoạt sản phẩm thành công: " + productId);
     }
 
-    public String deactivateProduct(Long productId) {
+    public ProductUpdateResponse deactivateProduct(Long productId) {
         Product product = findActivatedProductOrThrow(productId);
         product.setActivated(false);
 
         productRepository.save(product);
-        return "Hủy kích hoạt sản phẩm thành công";
+        return new ProductUpdateResponse("Hủy kích hoạt sản phẩm thành công: " + productId);
     }
 
-    public ProductDTO deleteCategory(Long productId) {
+    public ProductUpdateResponse deleteCategory(Long productId) {
         Product product = findProductOrThrow(productId);
         if (product.isDeleted()) {
             throw new DeletedProductException(productId);
         }
         product.setDeleted(true);
 
-        Product deletedProduct = productRepository.save(product);
-        return ProductDTO.from(deletedProduct);
+        productRepository.save(product);
+        return new ProductUpdateResponse("Xóa sản phẩm thành công: " + productId);
     }
 }

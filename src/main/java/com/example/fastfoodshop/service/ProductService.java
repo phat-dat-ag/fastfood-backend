@@ -1,34 +1,34 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.request.ProductCreateRequest;
 import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
 import com.example.fastfoodshop.request.ProductUpdateRequest;
-import com.example.fastfoodshop.response.ProductResponse;
-
-import java.util.ArrayList;
+import com.example.fastfoodshop.response.product.ProductDisplayResponse;
+import com.example.fastfoodshop.response.product.ProductPageResponse;
+import com.example.fastfoodshop.response.product.ProductResponse;
+import com.example.fastfoodshop.response.product.ProductUpdateResponse;
 
 public interface ProductService {
     Product findProductOrThrow(Long productId);
 
     void checkActivatedCategoryAndActivatedProduct(Long productId);
 
-    ProductDTO createProduct(ProductCreateRequest productCreateRequest);
+    ProductResponse createProduct(ProductCreateRequest productCreateRequest);
 
-    ProductDTO updateProduct(ProductUpdateRequest productUpdateRequest);
+    ProductResponse updateProduct(ProductUpdateRequest productUpdateRequest);
 
-    ProductResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest);
+    ProductPageResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest);
 
-    ArrayList<ProductDTO> getAllDisplayableProductsByCategory(String categorySlug);
+    ProductDisplayResponse getAllDisplayableProductsByCategory(String categorySlug);
 
-    ArrayList<ProductDTO> getAllDisplayableProducts();
+    ProductDisplayResponse getAllDisplayableProducts();
 
-    ProductDTO getProductBySlug(String productSlug);
+    ProductResponse getProductBySlug(String productSlug);
 
-    String activateProduct(Long productId);
+    ProductUpdateResponse activateProduct(Long productId);
 
-    String deactivateProduct(Long productId);
+    ProductUpdateResponse deactivateProduct(Long productId);
 
-    ProductDTO deleteCategory(Long productId);
+    ProductUpdateResponse deleteCategory(Long productId);
 }
