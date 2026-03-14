@@ -1,30 +1,35 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.TopicDifficultyDTO;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
 import com.example.fastfoodshop.request.TopicDifficultyGetByTopicRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
-import com.example.fastfoodshop.response.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 
 public interface TopicDifficultyService {
     TopicDifficulty findValidTopicDifficultyOrThrow(String topicDifficultySlug);
 
     TopicDifficulty findPlayableTopicDifficultyBySlug(String topicDifficultySlug);
 
-    TopicDifficultyDTO createTopicDifficulty(String topicSlug, TopicDifficultyCreateRequest topicDifficultyCreateRequest);
+    TopicDifficultyUpdateResponse createTopicDifficulty(
+            String topicSlug, TopicDifficultyCreateRequest topicDifficultyCreateRequest
+    );
 
-    TopicDifficultyDTO updateTopicDifficulty(Long topicDifficultyId, TopicDifficultyUpdateRequest topicDifficultyUpdateRequest);
+    TopicDifficultyUpdateResponse updateTopicDifficulty(
+            Long topicDifficultyId, TopicDifficultyUpdateRequest topicDifficultyUpdateRequest
+    );
 
-    TopicDifficultyDTO getTopicDifficultyBySlug(String topicDifficultySlug);
+    TopicDifficultyResponse getTopicDifficultyBySlug(String topicDifficultySlug);
 
-    TopicDifficultyResponse getAllTopicDifficultiesByTopic(
+    TopicDifficultyPageResponse getAllTopicDifficultiesByTopic(
             TopicDifficultyGetByTopicRequest topicDifficultyGetByTopicRequest
     );
 
-    String activateTopicDifficulty(Long topicDifficultyId);
+    TopicDifficultyUpdateResponse activateTopicDifficulty(Long topicDifficultyId);
 
-    String deactivateTopicDifficulty(Long topicDifficultyId);
+    TopicDifficultyUpdateResponse deactivateTopicDifficulty(Long topicDifficultyId);
 
-    TopicDifficultyDTO deleteTopicDifficulty(Long topicDifficultyId);
+    TopicDifficultyUpdateResponse deleteTopicDifficulty(Long topicDifficultyId);
 }

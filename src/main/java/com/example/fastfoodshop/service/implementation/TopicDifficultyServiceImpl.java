@@ -10,7 +10,9 @@ import com.example.fastfoodshop.repository.TopicDifficultyRepository;
 import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
 import com.example.fastfoodshop.request.TopicDifficultyGetByTopicRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
-import com.example.fastfoodshop.response.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import com.example.fastfoodshop.service.TopicService;
 import com.example.fastfoodshop.util.SlugUtils;
@@ -67,7 +69,7 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         );
     }
 
-    public TopicDifficultyDTO createTopicDifficulty(
+    public TopicDifficultyUpdateResponse createTopicDifficulty(
             String topicSlug, TopicDifficultyCreateRequest request
     ) {
         Topic topic = topicService.findValidTopicOrThrow(topicSlug);
@@ -86,10 +88,10 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setSlug(slug);
 
         TopicDifficulty savedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return TopicDifficultyDTO.from(savedTopicDifficulty);
+        return new TopicDifficultyUpdateResponse("Đã thêm độ khó: " + savedTopicDifficulty.getId());
     }
 
-    public TopicDifficultyDTO updateTopicDifficulty(
+    public TopicDifficultyUpdateResponse updateTopicDifficulty(
             Long id, TopicDifficultyUpdateRequest request
     ) {
         TopicDifficulty topicDifficulty = findTopicDifficultyOrThrow(id);
@@ -99,15 +101,15 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setActivated(request.getIsActivated());
 
         TopicDifficulty updatedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return TopicDifficultyDTO.from(updatedTopicDifficulty);
+        return new TopicDifficultyUpdateResponse("Đã cập nhật độ khó: " + updatedTopicDifficulty.getId());
     }
 
-    public TopicDifficultyDTO getTopicDifficultyBySlug(String topicDifficultySlug) {
+    public TopicDifficultyResponse getTopicDifficultyBySlug(String topicDifficultySlug) {
         TopicDifficulty topicDifficulty = findValidTopicDifficultyOrThrow(topicDifficultySlug);
-        return TopicDifficultyDTO.from(topicDifficulty);
+        return new TopicDifficultyResponse(TopicDifficultyDTO.from(topicDifficulty));
     }
 
-    public TopicDifficultyResponse getAllTopicDifficultiesByTopic(
+    public TopicDifficultyPageResponse getAllTopicDifficultiesByTopic(
             TopicDifficultyGetByTopicRequest topicDifficultyGetByTopicRequest
     ) {
         Topic topic = topicService.findValidTopicOrThrow(topicDifficultyGetByTopicRequest.getTopicSlug());
@@ -116,30 +118,30 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         );
         Page<TopicDifficulty> topicDifficultyPage = topicDifficultyRepository.findByTopicAndIsDeletedFalse(topic, pageable);
 
-        return new TopicDifficultyResponse(topicDifficultyPage);
+        return TopicDifficultyPageResponse.from(topicDifficultyPage);
     }
 
-    public String activateTopicDifficulty(Long topicDifficultyId) {
+    public TopicDifficultyUpdateResponse activateTopicDifficulty(Long topicDifficultyId) {
         TopicDifficulty topicDifficulty = findDeactivatedTopicDifficulty(topicDifficultyId);
         topicDifficulty.setActivated(true);
         topicDifficultyRepository.save(topicDifficulty);
 
-        return "Đã kích hoạt độ khó";
+        return new TopicDifficultyUpdateResponse("Đã kích hoạt độ khó: " + topicDifficultyId);
     }
 
-    public String deactivateTopicDifficulty(Long topicDifficultyId) {
+    public TopicDifficultyUpdateResponse deactivateTopicDifficulty(Long topicDifficultyId) {
         TopicDifficulty topicDifficulty = findActivatedTopicDifficulty(topicDifficultyId);
         topicDifficulty.setActivated(false);
         topicDifficultyRepository.save(topicDifficulty);
 
-        return "Đã hủy kích hoạt độ khó";
+        return new TopicDifficultyUpdateResponse("Đã hủy kích hoạt độ khó: " + topicDifficultyId);
     }
 
-    public TopicDifficultyDTO deleteTopicDifficulty(Long topicDifficultyId) {
+    public TopicDifficultyUpdateResponse deleteTopicDifficulty(Long topicDifficultyId) {
         TopicDifficulty topicDifficulty = findTopicDifficultyOrThrow(topicDifficultyId);
         topicDifficulty.setDeleted(true);
 
-        TopicDifficulty deletedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
-        return TopicDifficultyDTO.from(deletedTopicDifficulty);
+        topicDifficultyRepository.save(topicDifficulty);
+        return new TopicDifficultyUpdateResponse("Đã xóa độ khó: " + topicDifficultyId);
     }
 }
