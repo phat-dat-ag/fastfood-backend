@@ -8,7 +8,7 @@ import com.example.fastfoodshop.exception.topic.InvalidTopicStatusException;
 import com.example.fastfoodshop.exception.topic.TopicNotFoundException;
 import com.example.fastfoodshop.repository.TopicRepository;
 import com.example.fastfoodshop.request.TopicCreateRequest;
-import com.example.fastfoodshop.response.DifficultyDisplayResponse;
+import com.example.fastfoodshop.dto.TopicDifficultyDisplayDTO;
 import com.example.fastfoodshop.response.topic.TopicDisplayResponse;
 import com.example.fastfoodshop.response.topic.TopicPageResponse;
 import com.example.fastfoodshop.response.topic.TopicResponse;
@@ -118,9 +118,9 @@ public class TopicServiceImpl implements TopicService {
 
                     TopicDifficultyFullDTO first = list.get(0);
 
-                    List<DifficultyDisplayResponse> difficulties =
+                    List<TopicDifficultyDisplayDTO> difficulties =
                             list.stream()
-                                    .map(dto -> new DifficultyDisplayResponse(
+                                    .map(dto -> new TopicDifficultyDisplayDTO(
                                             dto.difficultyId(),
                                             dto.difficultyName(),
                                             dto.difficultySlug(),

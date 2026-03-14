@@ -1,7 +1,5 @@
 package com.example.fastfoodshop.dto;
 
-import com.example.fastfoodshop.response.DifficultyDisplayResponse;
-
 import java.util.List;
 
 public record TopicDisplayDTO(
@@ -9,11 +7,11 @@ public record TopicDisplayDTO(
         String name,
         String slug,
         String description,
-        List<DifficultyDisplayResponse> difficulties
+        List<TopicDifficultyDisplayDTO> difficulties
 ) {
     public static TopicDisplayDTO from(
             TopicDifficultyFullDTO first,
-            List<DifficultyDisplayResponse> difficulties
+            List<TopicDifficultyDisplayDTO> difficulties
     ) {
         return new TopicDisplayDTO(
                 first.topicId(),
