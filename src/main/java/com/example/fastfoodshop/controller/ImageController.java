@@ -1,10 +1,11 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.request.ImageCreateRequest;
-import com.example.fastfoodshop.response.AboutUsImageResponse;
-import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
-import com.example.fastfoodshop.response.ItemPromotionResponse;
+import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
+import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
+import com.example.fastfoodshop.response.image.ItemPromotionResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 import com.example.fastfoodshop.service.ImageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ public class ImageController extends BaseController {
     private final ImageService imageService;
 
     @PostMapping()
-    public ResponseEntity<ResponseWrapper<String>> uploadImage(
+    public ResponseEntity<ResponseWrapper<ImageUpdateResponse>> uploadImage(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute ImageCreateRequest imageCreateRequest
     ) {
@@ -34,12 +35,12 @@ public class ImageController extends BaseController {
     }
 
     @GetMapping("/about-us")
-    public ResponseEntity<ResponseWrapper<AboutUsImageResponse>> getAboutUsPageImage() {
+    public ResponseEntity<ResponseWrapper<ImageAboutUsResponse>> getAboutUsPageImage() {
         return okResponse(imageService.getAboutUsPageImages());
     }
 
     @GetMapping("/challenge-introduction")
-    public ResponseEntity<ResponseWrapper<ChallengeIntroductionImageResponse>> getChallengeIntroductionImage() {
+    public ResponseEntity<ResponseWrapper<ImageChallengeIntroductionResponse>> getChallengeIntroductionImage() {
         return okResponse(imageService.getChallengeIntroductionImages());
     }
 
@@ -49,7 +50,7 @@ public class ImageController extends BaseController {
     }
 
     @DeleteMapping()
-    public ResponseEntity<ResponseWrapper<String>> deleteImage(@RequestParam("imageId") Long imageId) {
+    public ResponseEntity<ResponseWrapper<ImageUpdateResponse>> deleteImage(@RequestParam("imageId") Long imageId) {
         return okResponse(imageService.deleteImage(imageId));
     }
 }

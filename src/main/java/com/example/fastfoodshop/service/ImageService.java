@@ -1,18 +1,19 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.request.ImageCreateRequest;
-import com.example.fastfoodshop.response.AboutUsImageResponse;
-import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
-import com.example.fastfoodshop.response.ItemPromotionResponse;
+import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
+import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
+import com.example.fastfoodshop.response.image.ItemPromotionResponse;
+import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 
 public interface ImageService {
-    String uploadImage(String phone, ImageCreateRequest imageCreateRequest);
+    ImageUpdateResponse uploadImage(String phone, ImageCreateRequest imageCreateRequest);
 
-    AboutUsImageResponse getAboutUsPageImages();
+    ImageAboutUsResponse getAboutUsPageImages();
 
-    ChallengeIntroductionImageResponse getChallengeIntroductionImages();
+    ImageChallengeIntroductionResponse getChallengeIntroductionImages();
 
     ItemPromotionResponse getItemPromotionImages();
 
-    String deleteImage(Long imageId);
+    ImageUpdateResponse deleteImage(Long imageId);
 }

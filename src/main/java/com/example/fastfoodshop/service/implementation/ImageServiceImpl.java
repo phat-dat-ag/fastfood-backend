@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service.implementation;
 
+import com.example.fastfoodshop.dto.ImageDTO;
 import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PageType;
@@ -8,9 +9,10 @@ import com.example.fastfoodshop.projection.ItemPromotionProjection;
 import com.example.fastfoodshop.repository.ImageRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
-import com.example.fastfoodshop.response.AboutUsImageResponse;
-import com.example.fastfoodshop.response.ChallengeIntroductionImageResponse;
-import com.example.fastfoodshop.response.ItemPromotionResponse;
+import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
+import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
+import com.example.fastfoodshop.response.image.ItemPromotionResponse;
+import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ImageService;
 import com.example.fastfoodshop.service.UserService;
@@ -45,7 +47,7 @@ public class ImageServiceImpl implements ImageService {
         image.setPublicId((String) result.get("public_id"));
     }
 
-    public String uploadImage(String phone, ImageCreateRequest imageCreateRequest) {
+    public ImageUpdateResponse uploadImage(String phone, ImageCreateRequest imageCreateRequest) {
         User user = userService.findUserOrThrow(phone);
 
         Image image = new Image();
@@ -56,17 +58,23 @@ public class ImageServiceImpl implements ImageService {
         handleUploadImage(image, imageCreateRequest.getImageFile());
 
         imageRepository.save(image);
-        return "Đã lưu ảnh thành công";
+        return new ImageUpdateResponse("Đã lưu ảnh thành công");
     }
 
-    public AboutUsImageResponse getAboutUsPageImages() {
-        List<Image> images = imageRepository.findByPageType(PageType.ABOUT_US);
-        return new AboutUsImageResponse(images);
+    public ImageAboutUsResponse getAboutUsPageImages() {
+        List<ImageDTO> imageDTOs = imageRepository
+                .findByPageType(PageType.ABOUT_US)
+                .stream().map(ImageDTO::from).toList();
+
+        return ImageAboutUsResponse.from(imageDTOs);
     }
 
-    public ChallengeIntroductionImageResponse getChallengeIntroductionImages() {
-        List<Image> images = imageRepository.findByPageType(PageType.CHALLENGE);
-        return new ChallengeIntroductionImageResponse(images);
+    public ImageChallengeIntroductionResponse getChallengeIntroductionImages() {
+        List<ImageDTO> imageDTOs = imageRepository
+                .findByPageType(PageType.CHALLENGE)
+                .stream().map(ImageDTO::from).toList();
+
+        return new ImageChallengeIntroductionResponse(imageDTOs);
     }
 
     public ItemPromotionResponse getItemPromotionImages() {
@@ -74,14 +82,14 @@ public class ImageServiceImpl implements ImageService {
         List<ItemPromotionProjection> categoryProjections = promotionRepository.getDisplayableCategoryPromotionsLimited4(now);
         List<ItemPromotionProjection> productProjections = promotionRepository.getDisplayableProductPromotionsLimited4(now);
 
-        return new ItemPromotionResponse(categoryProjections, productProjections);
+        return ItemPromotionResponse.from(categoryProjections, productProjections);
     }
 
-    public String deleteImage(Long imageId) {
+    public ImageUpdateResponse deleteImage(Long imageId) {
         Image image = findImageOrThrow(imageId);
         cloudinaryService.deleteImage(image.getPublicId());
         imageRepository.delete(image);
 
-        return "Xóa ảnh thành công";
+        return new ImageUpdateResponse("Xóa ảnh thành công: " + imageId);
     }
 }
