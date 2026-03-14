@@ -1,6 +1,5 @@
 package com.example.fastfoodshop.service.implementation;
 
-import com.example.fastfoodshop.dto.AwardDTO;
 import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.exception.award.AwardNotFoundException;
@@ -8,7 +7,8 @@ import com.example.fastfoodshop.exception.award.DeletedAwardException;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
-import com.example.fastfoodshop.response.AwardResponse;
+import com.example.fastfoodshop.response.award.AwardPageResponse;
+import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 import com.example.fastfoodshop.service.AwardService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import com.example.fastfoodshop.util.NumberUtils;
@@ -67,48 +67,48 @@ public class AwardServiceImpl implements AwardService {
         return availableAwards.get(index);
     }
 
-    public AwardDTO createAward(String topicDifficultySlug, AwardCreateRequest request) {
+    public AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest request) {
         TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
         Award award = new Award();
         award.setTopicDifficulty(topicDifficulty);
         buildAward(award, request);
 
         Award savedAward = awardRepository.save(award);
-        return AwardDTO.from(savedAward);
+        return new AwardUpdateResponse("Thêm phần thưởng thành công: " + savedAward.getId());
     }
 
-    public AwardResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest request) {
+    public AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest request) {
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
         TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(request.getTopicDifficultySlug());
         Page<Award> awardPage = awardRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
-        return new AwardResponse(awardPage);
+        return AwardPageResponse.from(awardPage);
     }
 
-    public String activateAward(Long awardId) {
+    public AwardUpdateResponse activateAward(Long awardId) {
         Award award = findDeactivatedAward(awardId);
         award.setActivated(true);
         awardRepository.save(award);
 
-        return "Kích hoạt phần thưởng thành công";
+        return new AwardUpdateResponse("Kích hoạt phần thưởng thành công: " + awardId);
     }
 
-    public String deactivateAward(Long awardId) {
+    public AwardUpdateResponse deactivateAward(Long awardId) {
         Award award = findActivatedAward(awardId);
         award.setActivated(false);
         awardRepository.save(award);
 
-        return "Hủy kích hoạt phần thưởng thành công";
+        return new AwardUpdateResponse("Hủy kích hoạt phần thưởng thành công: " + awardId);
     }
 
-    public AwardDTO deleteAward(Long awardId) {
+    public AwardUpdateResponse deleteAward(Long awardId) {
         Award award = findAwardOrThrow(awardId);
         if (award.isDeleted()) {
             throw new DeletedAwardException();
         }
         award.setDeleted(true);
 
-        Award deletedAward = awardRepository.save(award);
-        return AwardDTO.from(deletedAward);
+        awardRepository.save(award);
+        return new AwardUpdateResponse("Xóa phần thưởng thành công: " + awardId);
     }
 }

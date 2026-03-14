@@ -1,22 +1,22 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.AwardDTO;
 import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
-import com.example.fastfoodshop.response.AwardResponse;
+import com.example.fastfoodshop.response.award.AwardPageResponse;
+import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 
 public interface AwardService {
     Award getRandomAwardByTopicDifficulty(TopicDifficulty topicDifficulty);
 
-    AwardDTO createAward(String topicDifficultySlug, AwardCreateRequest request);
+    AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest request);
 
-    AwardResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest);
+    AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest);
 
-    String activateAward(Long awardId);
+    AwardUpdateResponse activateAward(Long awardId);
 
-    String deactivateAward(Long awardId);
+    AwardUpdateResponse deactivateAward(Long awardId);
 
-    AwardDTO deleteAward(Long awardId);
+    AwardUpdateResponse deleteAward(Long awardId);
 }

@@ -1,10 +1,10 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.dto.AwardDTO;
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
-import com.example.fastfoodshop.response.AwardResponse;
+import com.example.fastfoodshop.response.award.AwardPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 import com.example.fastfoodshop.service.AwardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +26,7 @@ public class AwardController extends BaseController {
     private final AwardService awardService;
 
     @PostMapping
-    public ResponseEntity<ResponseWrapper<AwardDTO>> createAward(
+    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> createAward(
             @RequestParam("topicDifficultySlug") String topicDifficultySlug,
             @RequestBody AwardCreateRequest awardCreateRequest
     ) {
@@ -34,24 +34,24 @@ public class AwardController extends BaseController {
     }
 
     @GetMapping
-    public ResponseEntity<ResponseWrapper<AwardResponse>> getAllAwardsByTopicDifficulty(
+    public ResponseEntity<ResponseWrapper<AwardPageResponse>> getAllAwardsByTopicDifficulty(
             @Valid @ModelAttribute AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest
     ) {
         return okResponse(awardService.getAllAwardsByTopicDifficulty(awardGetByTopicDifficultyRequest));
     }
 
     @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<String>> activateAward(@RequestParam("awardId") Long awardId) {
+    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> activateAward(@RequestParam("awardId") Long awardId) {
         return okResponse(awardService.activateAward(awardId));
     }
 
     @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<String>> deactivateAward(@RequestParam("awardId") Long awardId) {
+    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> deactivateAward(@RequestParam("awardId") Long awardId) {
         return okResponse(awardService.deactivateAward(awardId));
     }
 
     @DeleteMapping
-    ResponseEntity<ResponseWrapper<AwardDTO>> deleteAward(@RequestParam("awardId") Long awardId) {
+    ResponseEntity<ResponseWrapper<AwardUpdateResponse>> deleteAward(@RequestParam("awardId") Long awardId) {
         return okResponse(awardService.deleteAward(awardId));
     }
 }
