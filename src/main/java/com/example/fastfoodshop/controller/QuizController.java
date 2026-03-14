@@ -3,10 +3,11 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
 import com.example.fastfoodshop.request.QuizSubmitRequest;
-import com.example.fastfoodshop.response.QuizFeedbackResponse;
-import com.example.fastfoodshop.response.QuizHistoryResponse;
-import com.example.fastfoodshop.response.QuizResponse;
+import com.example.fastfoodshop.response.quiz.QuizFeedbackPageResponse;
+import com.example.fastfoodshop.response.quiz.QuizHistoryPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.quiz.QuizResponse;
+import com.example.fastfoodshop.response.quiz.QuizUpdateResponse;
 import com.example.fastfoodshop.service.QuizService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ public class QuizController extends BaseController {
     }
 
     @PutMapping()
-    public ResponseEntity<ResponseWrapper<String>> addFeedbackToQuiz(
+    public ResponseEntity<ResponseWrapper<QuizUpdateResponse>> addFeedbackToQuiz(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody QuizAddFeedbackRequest quizAddFeedbackRequest
     ) {
@@ -53,7 +54,7 @@ public class QuizController extends BaseController {
     }
 
     @GetMapping("/by-user")
-    public ResponseEntity<ResponseWrapper<QuizHistoryResponse>> getAllHistoryQuizzesByUser(
+    public ResponseEntity<ResponseWrapper<QuizHistoryPageResponse>> getAllHistoryQuizzesByUser(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute PageRequest request
     ) {
@@ -71,7 +72,7 @@ public class QuizController extends BaseController {
     }
 
     @GetMapping("/manage")
-    public ResponseEntity<ResponseWrapper<QuizFeedbackResponse>> getAllFeedbacksByAdmin(
+    public ResponseEntity<ResponseWrapper<QuizFeedbackPageResponse>> getAllFeedbacksByAdmin(
             @Valid @ModelAttribute PageRequest request
     ) {
         return okResponse(quizService.getAllFeedbacksByAdmin(request.getPage(), request.getSize()));

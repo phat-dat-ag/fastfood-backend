@@ -19,9 +19,11 @@ import com.example.fastfoodshop.repository.QuizRepository;
 import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
 import com.example.fastfoodshop.request.QuizQuestionSubmitRequest;
 import com.example.fastfoodshop.request.QuizSubmitRequest;
-import com.example.fastfoodshop.response.QuizFeedbackResponse;
-import com.example.fastfoodshop.response.QuizHistoryResponse;
-import com.example.fastfoodshop.response.QuizResponse;
+import com.example.fastfoodshop.response.quiz.QuizFeedbackPageResponse;
+import com.example.fastfoodshop.response.quiz.QuizHistoryPageResponse;
+import com.example.fastfoodshop.dto.QuizDTO;
+import com.example.fastfoodshop.response.quiz.QuizResponse;
+import com.example.fastfoodshop.response.quiz.QuizUpdateResponse;
 import com.example.fastfoodshop.service.QuestionService;
 import com.example.fastfoodshop.service.QuizQuestionService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
@@ -124,7 +126,7 @@ public class QuizServiceImpl implements QuizService {
         }
 
         if (existingOrPlayableQuiz.getId() != null) {
-            return QuizResponse.createUserQuizResponse(existingOrPlayableQuiz);
+            return new QuizResponse(QuizDTO.createUserQuizResponse(existingOrPlayableQuiz));
         }
 
         TopicDifficulty topicDifficulty = topicDifficultyService.findPlayableTopicDifficultyBySlug(topicDifficultySlug);
@@ -136,7 +138,7 @@ public class QuizServiceImpl implements QuizService {
 
         quizQuestionService.createQuizQuestions(savedQuiz, selectedQuestions);
 
-        return QuizResponse.createUserQuizResponse(savedQuiz, selectedQuestions);
+        return new QuizResponse(QuizDTO.createUserQuizResponse(savedQuiz, selectedQuestions));
     }
 
     private Map<Long, Long> generateSubmittedMap(List<QuizQuestionSubmitRequest> quizQuestionSubmits) {
@@ -216,10 +218,10 @@ public class QuizServiceImpl implements QuizService {
 
         Quiz checkedQuiz = quizRepository.save(quiz);
 
-        return QuizResponse.createUserQuizResponse(checkedQuiz);
+        return new QuizResponse(QuizDTO.createUserQuizResponse(checkedQuiz));
     }
 
-    public String addFeedbackToCompletedQuiz(String phone, QuizAddFeedbackRequest quizAddFeedbackRequest) {
+    public QuizUpdateResponse addFeedbackToCompletedQuiz(String phone, QuizAddFeedbackRequest quizAddFeedbackRequest) {
         User user = userService.findUserOrThrow(phone);
         Quiz quiz = findQuizHistoryOrThrow(quizAddFeedbackRequest.getQuizId(), user);
 
@@ -238,27 +240,27 @@ public class QuizServiceImpl implements QuizService {
         }
         quizRepository.save(quiz);
 
-        return "Đã thêm đánh giá cho trò chơi";
+        return new QuizUpdateResponse("Đã thêm đánh giá cho trò chơi");
     }
 
-    public QuizHistoryResponse getAllHistoryQuizzesByUser(String phone, int page, int size) {
+    public QuizHistoryPageResponse getAllHistoryQuizzesByUser(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
         Pageable pageable = PageRequest.of(page, size);
         Page<Quiz> quizPage = quizRepository.findByUserAndCompletedAtIsNotNull(user, pageable);
 
-        return new QuizHistoryResponse(quizPage);
+        return QuizHistoryPageResponse.from(quizPage);
     }
 
     public QuizResponse getQuizHistoryDetailByUser(String phone, Long quizId) {
         User user = userService.findUserOrThrow(phone);
         Quiz quiz = findQuizHistoryOrThrow(quizId, user);
-        return QuizResponse.createReviewQuizResponse(quiz);
+        return new QuizResponse(QuizDTO.createReviewQuizResponse(quiz));
     }
 
-    public QuizFeedbackResponse getAllFeedbacksByAdmin(int page, int size) {
+    public QuizFeedbackPageResponse getAllFeedbacksByAdmin(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Quiz> quizPage = quizRepository.findByFeedbackAtIsNotNull(pageable);
 
-        return new QuizFeedbackResponse(quizPage);
+        return QuizFeedbackPageResponse.from(quizPage);
     }
 }
