@@ -10,6 +10,7 @@ import com.example.fastfoodshop.enums.NoteType;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.PaymentMethod;
 import com.example.fastfoodshop.enums.PaymentStatus;
+import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.exception.order.CODPaymentLimitException;
 import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
 import com.example.fastfoodshop.exception.order.OrderAlreadyCancelledException;
@@ -139,8 +140,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void addUserNoteIfPresent(Order order, String userNote) {
-        if (userNote != null && !userNote.isEmpty()) {
-            orderNoteService.createOrderNoteByUser(order, NoteType.USER_NOTE, userNote);
+        if (userNote != null && !userNote.isBlank()) {
+            orderNoteService.createOrderNote(order, NoteType.USER_NOTE, userNote, AuthorType.USER);
         }
     }
 
@@ -341,7 +342,9 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelledAt(now);
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        orderNoteService.createOrderNoteByUser(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
+        orderNoteService.createOrderNote(
+                order, NoteType.CANCEL_REASON, orderCancelRequest.getReason(), AuthorType.USER
+        );
 
         orderRepository.save(order);
         return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);
@@ -354,7 +357,9 @@ public class OrderServiceImpl implements OrderService {
         order.setCancelledAt(now);
         order.setOrderStatus(OrderStatus.CANCELLED);
 
-        orderNoteService.createOrderNoteByStaff(order, NoteType.CANCEL_REASON, orderCancelRequest.getReason());
+        orderNoteService.createOrderNote(
+                order, NoteType.CANCEL_REASON, orderCancelRequest.getReason(), AuthorType.STAFF
+        );
 
         orderRepository.save(order);
         return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);

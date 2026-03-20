@@ -14,19 +14,9 @@ import org.springframework.stereotype.Service;
 public class OrderNoteServiceImpl implements OrderNoteService {
     private final OrderNoteRepository orderNoteRepository;
 
-    public void createOrderNoteByUser(Order order, NoteType noteType, String message) {
+    public void createOrderNote(Order order, NoteType noteType, String message, AuthorType authorType) {
         OrderNote orderNote = new OrderNote();
-        orderNote.setAuthorType(AuthorType.USER);
-        orderNote.setNoteType(noteType);
-        orderNote.setMessage(message);
-        orderNote.setOrder(order);
-
-        orderNoteRepository.save(orderNote);
-    }
-
-    public void createOrderNoteByStaff(Order order, NoteType noteType, String message) {
-        OrderNote orderNote = new OrderNote();
-        orderNote.setAuthorType(AuthorType.STAFF);
+        orderNote.setAuthorType(authorType);
         orderNote.setNoteType(noteType);
         orderNote.setMessage(message);
         orderNote.setOrder(order);
