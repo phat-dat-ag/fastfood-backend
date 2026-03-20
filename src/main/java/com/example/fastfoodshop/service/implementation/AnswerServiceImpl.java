@@ -45,7 +45,7 @@ public class AnswerServiceImpl implements AnswerService {
         }
 
         boolean hasCorrect = answerCreateRequests.stream()
-                .anyMatch(AnswerCreateRequest::getIsCorrect);
+                .anyMatch(AnswerCreateRequest::correct);
 
         if (!hasCorrect) {
             throw new IllegalArgumentException("Phải có ít nhất 1 đáp án đúng");
@@ -56,9 +56,9 @@ public class AnswerServiceImpl implements AnswerService {
         for (AnswerCreateRequest answerCreateRequest : answerCreateRequests) {
             Answer answer = new Answer();
             answer.setQuestion(question);
-            answer.setContent(answerCreateRequest.getContent());
-            answer.setCorrect(answerCreateRequest.getIsCorrect());
-            handleAnswerImage(answer, answerCreateRequest.getImageUrl());
+            answer.setContent(answerCreateRequest.content());
+            answer.setCorrect(answerCreateRequest.correct());
+            handleAnswerImage(answer, answerCreateRequest.imageUrl());
 
             Answer savedAnswer = answerRepository.save(answer);
             answers.add(savedAnswer);
