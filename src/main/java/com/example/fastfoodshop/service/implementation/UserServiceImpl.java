@@ -121,11 +121,11 @@ public class UserServiceImpl implements UserService {
 
     public UserResponse changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
         User user = findUserOrThrow(phone);
-        if (!passwordEncoder.matches(changePasswordRequest.getPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(changePasswordRequest.password(), user.getPasswordHash())) {
             throw new InvalidPasswordException();
         }
 
-        user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.newPassword()));
         User updatedUser = userRepository.save(user);
         return new UserResponse(UserDTO.from(updatedUser));
     }
