@@ -67,7 +67,7 @@ public class CartServiceImpl implements CartService {
 
     public CartResponse addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
         User user = userService.findUserOrThrow(userPhone);
-        Product product = productService.findProductOrThrow(cartCreateRequest.getProductId());
+        Product product = productService.findProductOrThrow(cartCreateRequest.productId());
         List<Cart> carts = cartRepository.findByUser(user);
         Optional<Cart> optionalCart = cartRepository.findByUserAndProduct(user, product);
 
@@ -85,7 +85,7 @@ public class CartServiceImpl implements CartService {
             return newCart;
         });
 
-        setNewProductQuantityOrThrow(cart, cartCreateRequest.getQuantity());
+        setNewProductQuantityOrThrow(cart, cartCreateRequest.quantity());
 
         Cart savedCart = cartRepository.save(cart);
         return new CartResponse(CartDTO.from(savedCart));
