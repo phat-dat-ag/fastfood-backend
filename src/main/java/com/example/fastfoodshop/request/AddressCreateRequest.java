@@ -3,28 +3,28 @@ package com.example.fastfoodshop.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.Data;
 
-@Data
-public class AddressCreateRequest {
-    @NotBlank(message = "Tên địa chỉ không được để trống")
-    @Size(min = 3, max = 40, message = "Tên địa chỉ từ 3 đến 40 ký tự")
-    private String name;
+public record AddressCreateRequest(
+        @NotBlank(message = "Tên địa chỉ không được để trống")
+        @Size(min = 3, max = 40, message = "Tên địa chỉ từ 3 đến 40 ký tự")
+        String name,
 
-    @Size(max = 100, message = "Nội dung ghi chú không quá 100 ký tự")
-    private String detail;
+        @Size(max = 100, message = "Nội dung ghi chú không quá 100 ký tự")
 
-    @NotNull(message = "Vĩ độ không được để trống")
-    private Double latitude;
+        String detail,
 
-    @NotNull(message = "Kinh độ không được để trống")
-    private Double longitude;
+        @NotNull(message = "Vĩ độ không được để trống")
+        Double latitude,
 
-    private String street;
+        @NotNull(message = "Kinh độ không được để trống")
+        Double longitude,
 
-    private String ward;
+        String street,
 
-    private String district;
+        String ward,
 
-    private String province;
+        String district,
+
+        String province
+) {
 }

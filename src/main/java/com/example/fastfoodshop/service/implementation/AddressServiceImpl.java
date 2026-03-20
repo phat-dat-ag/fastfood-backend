@@ -27,14 +27,14 @@ public class AddressServiceImpl implements AddressService {
     }
 
     private void buildAddress(Address address, AddressCreateRequest request) {
-        address.setName(request.getName());
-        address.setLatitude(request.getLatitude());
-        address.setLongitude(request.getLongitude());
-        address.setDetail(request.getDetail());
-        address.setStreet(request.getStreet());
-        address.setWard(request.getWard());
-        address.setDistrict(request.getDistrict());
-        address.setProvince(request.getProvince());
+        address.setName(request.name());
+        address.setLatitude(request.latitude());
+        address.setLongitude(request.longitude());
+        address.setDetail(request.detail());
+        address.setStreet(request.street());
+        address.setWard(request.ward());
+        address.setDistrict(request.district());
+        address.setProvince(request.province());
         address.setDeleted(false);
     }
 
