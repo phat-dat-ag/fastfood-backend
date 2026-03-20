@@ -44,14 +44,14 @@ public class AwardServiceImpl implements AwardService {
     }
 
     private void buildAward(Award award, AwardCreateRequest request) {
-        award.setType(request.getType());
-        award.setMinValue(request.getMinValue());
-        award.setMaxValue(request.getMaxValue());
+        award.setType(request.type());
+        award.setMinValue(request.minValue());
+        award.setMaxValue(request.maxValue());
         award.setUsedQuantity(0);
-        award.setQuantity(request.getQuantity());
-        award.setMaxDiscountAmount(request.getMaxDiscountAmount());
-        award.setMinSpendAmount(request.getMinSpendAmount());
-        award.setActivated(request.getIsActivated());
+        award.setQuantity(request.quantity());
+        award.setMaxDiscountAmount(request.maxDiscountAmount());
+        award.setMinSpendAmount(request.minSpendAmount());
+        award.setActivated(request.activated());
         award.setDeleted(false);
     }
 

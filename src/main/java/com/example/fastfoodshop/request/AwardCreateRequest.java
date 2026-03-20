@@ -4,36 +4,34 @@ import com.example.fastfoodshop.enums.PromotionType;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-@Data
-public class AwardCreateRequest {
-    @NotNull(message = "Loại khuyến mãi không được để trống")
-    private PromotionType type;
+public record AwardCreateRequest(
+        @NotNull(message = "Loại khuyến mãi không được để trống")
+        PromotionType type,
 
-    @NotNull(message = "Giá trị khuyến mãi nhỏ nhất không được để trống")
-    @Min(value = 1, message = "Giá trị khuyến mãi nhỏ nhất phải lớn hơn 1")
-    private Integer minValue;
+        @NotNull(message = "Giá trị khuyến mãi nhỏ nhất không được để trống")
+        @Min(value = 1, message = "Giá trị khuyến mãi nhỏ nhất phải lớn hơn 1")
+        Integer minValue,
 
-    @NotNull(message = "Giá trị khuyến mãi lớn nhất không được để trống")
-    @Min(value = 1, message = "Giá trị khuyến mãi lớn nhất phải lớn hơn 1")
-    private Integer maxValue;
+        @NotNull(message = "Giá trị khuyến mãi lớn nhất không được để trống")
+        @Min(value = 1, message = "Giá trị khuyến mãi lớn nhất phải lớn hơn 1")
+        Integer maxValue,
 
-    @NotNull(message = "Số lượng khuyến mãi không được để trống")
-    @Min(value = 1, message = "Số lượng khuyến mãi phải lớn hơn 1")
-    private Integer quantity;
+        @NotNull(message = "Số lượng khuyến mãi không được để trống")
+        @Min(value = 1, message = "Số lượng khuyến mãi phải lớn hơn 1")
+        Integer quantity,
 
-    @NotNull(message = "Giá trị giảm tối đa không được để trống")
-    @Min(value = 1, message = "Giá trị giảm tối đa phải lớn hơn 1")
-    private Integer maxDiscountAmount;
+        @NotNull(message = "Giá trị giảm tối đa không được để trống")
+        @Min(value = 1, message = "Giá trị giảm tối đa phải lớn hơn 1")
+        Integer maxDiscountAmount,
 
-    @NotNull(message = "Giá trị chi tiêu ít nhất để được khuyến mãi không được để trống")
-    @Min(value = 1, message = "Giá trị chi tiêu ít nhất để được khuyến mãi phải lớn hơn 1")
-    private Integer minSpendAmount;
+        @NotNull(message = "Giá trị chi tiêu ít nhất để được khuyến mãi không được để trống")
+        @Min(value = 1, message = "Giá trị chi tiêu ít nhất để được khuyến mãi phải lớn hơn 1")
+        Integer minSpendAmount,
 
-    @NotNull(message = "Không được để trống trạng thái của phần thưởng")
-    private Boolean isActivated;
-
+        @NotNull(message = "Không được để trống trạng thái của phần thưởng")
+        Boolean activated
+) {
     @AssertTrue(message = "Giá trị khuyến mãi không hợp lệ với loại khuyến mãi đã chọn")
     public Boolean isValueValidByType() {
         if (type == null) return true;
