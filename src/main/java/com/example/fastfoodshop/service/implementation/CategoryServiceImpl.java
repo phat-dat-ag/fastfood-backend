@@ -144,15 +144,15 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     public CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest) {
-        String slug = generateUniqueSlug(categoryCreateRequest.getName());
+        String slug = generateUniqueSlug(categoryCreateRequest.name());
 
         Category category = new Category();
         category.setSlug(slug);
-        category.setName(categoryCreateRequest.getName());
-        category.setDescription(categoryCreateRequest.getDescription());
-        category.setActivated(categoryCreateRequest.isActivated());
+        category.setName(categoryCreateRequest.name());
+        category.setDescription(categoryCreateRequest.description());
+        category.setActivated(categoryCreateRequest.activated());
 
-        handleCategoryImage(category, categoryCreateRequest.getImageUrl());
+        handleCategoryImage(category, categoryCreateRequest.imageUrl());
 
         Category savedCategory = categoryRepository.save(category);
         return new CategoryResponse(CategoryDTO.from(savedCategory));
