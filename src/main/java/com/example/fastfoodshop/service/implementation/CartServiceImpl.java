@@ -133,10 +133,10 @@ public class CartServiceImpl implements CartService {
 
     public CartResponse updateCart(String userPhone, CartUpdateRequest cartUpdateRequest) {
         User user = userService.findUserOrThrow(userPhone);
-        Product product = productService.findProductOrThrow(cartUpdateRequest.getProductId());
+        Product product = productService.findProductOrThrow(cartUpdateRequest.productId());
         Cart cart = findCartOrThrow(user, product);
 
-        updateNewProductQuantityOrThrow(cart, cartUpdateRequest.getQuantity());
+        updateNewProductQuantityOrThrow(cart, cartUpdateRequest.quantity());
 
         Cart updatedCart = cartRepository.save(cart);
         return new CartResponse(CartDTO.from(updatedCart));
