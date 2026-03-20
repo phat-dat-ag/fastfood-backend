@@ -159,12 +159,12 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     public CategoryResponse updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
-        Category category = findCategoryOrThrow(categoryUpdateRequest.getId());
-        category.setName(categoryUpdateRequest.getName());
-        category.setDescription(categoryUpdateRequest.getDescription());
-        category.setActivated(categoryUpdateRequest.isActivated());
+        Category category = findCategoryOrThrow(categoryUpdateRequest.id());
+        category.setName(categoryUpdateRequest.name());
+        category.setDescription(categoryUpdateRequest.description());
+        category.setActivated(categoryUpdateRequest.activated());
 
-        handleCategoryImage(category, categoryUpdateRequest.getImageUrl());
+        handleCategoryImage(category, categoryUpdateRequest.imageUrl());
 
         Category savedCategory = categoryRepository.save(category);
         return new CategoryResponse(CategoryDTO.from(savedCategory));
