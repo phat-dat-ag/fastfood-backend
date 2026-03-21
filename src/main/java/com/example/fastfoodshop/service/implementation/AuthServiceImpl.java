@@ -34,10 +34,10 @@ public class AuthServiceImpl implements AuthService {
     private final OTPCodeService otpCodeService;
 
     public OTPResponse signUp(SignUpRequest signUpRequest) {
-        Optional<User> optionalUser = userService.getUserByPhone(signUpRequest.getPhone());
+        Optional<User> optionalUser = userService.getUserByPhone(signUpRequest.phone());
 
         if (optionalUser.isPresent() && optionalUser.get().isActivated()) {
-            throw new PhoneAlreadyExistsException(signUpRequest.getPhone());
+            throw new PhoneAlreadyExistsException(signUpRequest.phone());
         }
 
         if (optionalUser.isPresent()) {

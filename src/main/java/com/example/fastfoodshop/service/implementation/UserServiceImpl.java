@@ -54,13 +54,13 @@ public class UserServiceImpl implements UserService {
     }
 
     public User createUser(SignUpRequest signUpRequest) {
-        LocalDate birthday = LocalDate.parse(signUpRequest.getBirthdayString());
+        LocalDate birthday = LocalDate.parse(signUpRequest.birthdayString());
 
         User user = new User();
-        user.setName(signUpRequest.getName());
-        user.setPhone(signUpRequest.getPhone());
-        user.setEmail(signUpRequest.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(signUpRequest.getPassword()));
+        user.setName(signUpRequest.name());
+        user.setPhone(signUpRequest.phone());
+        user.setEmail(signUpRequest.email());
+        user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
         user.setBirthday(birthday);
         user.setActivated(false);
         user.setDeleted(false);
@@ -70,12 +70,12 @@ public class UserServiceImpl implements UserService {
     }
 
     public User updateUser(User user, SignUpRequest signUpRequest) {
-        LocalDate birthday = LocalDate.parse(signUpRequest.getBirthdayString());
+        LocalDate birthday = LocalDate.parse(signUpRequest.birthdayString());
 
-        user.setName(signUpRequest.getName());
-        user.setPhone(signUpRequest.getPhone());
-        user.setEmail(signUpRequest.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(signUpRequest.getPassword()));
+        user.setName(signUpRequest.name());
+        user.setPhone(signUpRequest.phone());
+        user.setEmail(signUpRequest.email());
+        user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
         user.setBirthday(birthday);
         user.setActivated(false);
         user.setDeleted(false);
