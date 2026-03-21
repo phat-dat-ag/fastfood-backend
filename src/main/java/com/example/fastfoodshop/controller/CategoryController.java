@@ -48,11 +48,11 @@ public class CategoryController extends BaseController {
     }
 
     @PatchMapping("/{id}/activation")
-    public ResponseEntity<ResponseWrapper<CategoryUpdateResponse>> updateActivation(
+    public ResponseEntity<ResponseWrapper<CategoryUpdateResponse>> updateCategoryActivation(
             @PathVariable("id") Long categoryId,
             @RequestBody UpdateActivationRequest updateActivationRequest
     ) {
-        return okResponse(categoryService.updateCategoryStatus(categoryId, updateActivationRequest.activated()));
+        return okResponse(categoryService.updateCategoryActivation(categoryId, updateActivationRequest.activated()));
     }
 
     @DeleteMapping()

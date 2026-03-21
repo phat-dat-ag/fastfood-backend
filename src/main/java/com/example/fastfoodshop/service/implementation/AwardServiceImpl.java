@@ -4,6 +4,7 @@ import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.exception.award.AwardNotFoundException;
 import com.example.fastfoodshop.exception.award.DeletedAwardException;
+import com.example.fastfoodshop.exception.award.InvalidAwardStatusException;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
@@ -28,17 +29,7 @@ public class AwardServiceImpl implements AwardService {
     private final AwardRepository awardRepository;
 
     private Award findAwardOrThrow(Long awardId) {
-        throw new AwardNotFoundException(awardId);
-    }
-
-    private Award findActivatedAward(Long awardId) {
-        return awardRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(awardId).orElseThrow(
-                () -> new AwardNotFoundException(awardId)
-        );
-    }
-
-    private Award findDeactivatedAward(Long awardId) {
-        return awardRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(awardId).orElseThrow(
+        return awardRepository.findById(awardId).orElseThrow(
                 () -> new AwardNotFoundException(awardId)
         );
     }
@@ -85,20 +76,19 @@ public class AwardServiceImpl implements AwardService {
         return AwardPageResponse.from(awardPage);
     }
 
-    public AwardUpdateResponse activateAward(Long awardId) {
-        Award award = findDeactivatedAward(awardId);
-        award.setActivated(true);
+    public AwardUpdateResponse updateAwardActivation(Long awardId, boolean activated) {
+        Award award = findAwardOrThrow(awardId);
+        if (award.isActivated() == activated) {
+            throw new InvalidAwardStatusException(awardId);
+        }
+
+        award.setActivated(activated);
         awardRepository.save(award);
 
-        return new AwardUpdateResponse("Kích hoạt phần thưởng thành công: " + awardId);
-    }
+        String message = activated ? "Kích hoạt phần thưởng thành công: " + awardId
+                : "Hủy kích hoạt phần thưởng thành công: " + awardId;
 
-    public AwardUpdateResponse deactivateAward(Long awardId) {
-        Award award = findActivatedAward(awardId);
-        award.setActivated(false);
-        awardRepository.save(award);
-
-        return new AwardUpdateResponse("Hủy kích hoạt phần thưởng thành công: " + awardId);
+        return new AwardUpdateResponse(message);
     }
 
     public AwardUpdateResponse deleteAward(Long awardId) {

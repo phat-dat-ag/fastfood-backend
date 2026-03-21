@@ -2,6 +2,7 @@ package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.request.AwardCreateRequest;
 import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
+import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.award.AwardPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.award.AwardUpdateResponse;
@@ -9,15 +10,7 @@ import com.example.fastfoodshop.service.AwardService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/award")
@@ -40,14 +33,12 @@ public class AwardController extends BaseController {
         return okResponse(awardService.getAllAwardsByTopicDifficulty(awardGetByTopicDifficultyRequest));
     }
 
-    @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> activateAward(@RequestParam("awardId") Long awardId) {
-        return okResponse(awardService.activateAward(awardId));
-    }
-
-    @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> deactivateAward(@RequestParam("awardId") Long awardId) {
-        return okResponse(awardService.deactivateAward(awardId));
+    @PatchMapping("/{id}/activation")
+    public ResponseEntity<ResponseWrapper<AwardUpdateResponse>> updateAwardActivation(
+            @PathVariable("id") Long awardId,
+            @RequestBody UpdateActivationRequest updateActivationRequest
+    ) {
+        return okResponse(awardService.updateAwardActivation(awardId, updateActivationRequest.activated()));
     }
 
     @DeleteMapping

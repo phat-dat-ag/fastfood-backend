@@ -23,7 +23,7 @@ public interface CategoryService {
 
     CategoryPageResponse getCategories(int page, int size);
 
-    CategoryUpdateResponse updateCategoryStatus(Long categoryId, boolean activated);
+    CategoryUpdateResponse updateCategoryActivation(Long categoryId, boolean activated);
 
     CategoryUpdateResponse deleteCategory(Long id);
 

@@ -14,9 +14,7 @@ public interface AwardService {
 
     AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest);
 
-    AwardUpdateResponse activateAward(Long awardId);
-
-    AwardUpdateResponse deactivateAward(Long awardId);
+    AwardUpdateResponse updateAwardActivation(Long awardId, boolean activated);
 
     AwardUpdateResponse deleteAward(Long awardId);
 }

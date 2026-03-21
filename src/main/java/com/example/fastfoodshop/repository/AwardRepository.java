@@ -14,10 +14,6 @@ import java.util.Optional;
 public interface AwardRepository extends JpaRepository<Award, Long> {
     Page<Award> findByTopicDifficultyAndIsDeletedFalse(TopicDifficulty topicDifficulty, Pageable pageable);
 
-    Optional<Award> findByIdAndIsDeletedFalseAndIsActivatedTrue(Long awardId);
-
-    Optional<Award> findByIdAndIsDeletedFalseAndIsActivatedFalse(Long awardId);
-
     @Query(value = """
                 SELECT *
                 FROM awards

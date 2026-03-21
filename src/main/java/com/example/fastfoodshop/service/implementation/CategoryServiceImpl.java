@@ -160,7 +160,7 @@ public class CategoryServiceImpl implements CategoryService {
         return CategoryPageResponse.from(categoryPage);
     }
 
-    public CategoryUpdateResponse updateCategoryStatus(Long categoryId, boolean activated) {
+    public CategoryUpdateResponse updateCategoryActivation(Long categoryId, boolean activated) {
         Category category = findCategoryOrThrow(categoryId);
 
         if (category.isActivated() == activated) {
