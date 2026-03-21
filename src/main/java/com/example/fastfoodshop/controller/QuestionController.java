@@ -29,7 +29,7 @@ public class QuestionController extends BaseController {
             @ModelAttribute QuestionForm request,
             @RequestParam("topicDifficultySlug") String topicDifficultySlug
     ) {
-        return okResponse(questionService.createQuestions(request.getQuestions(), topicDifficultySlug));
+        return okResponse(questionService.createQuestions(request.questions(), topicDifficultySlug));
     }
 
     @GetMapping()
