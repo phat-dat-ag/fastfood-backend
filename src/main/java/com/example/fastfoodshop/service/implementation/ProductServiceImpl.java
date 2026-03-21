@@ -133,21 +133,21 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductResponse createProduct(ProductCreateRequest productCreateRequest) {
-        Category category = categoryService.findCategoryOrThrow(productCreateRequest.getCategory_id());
+        Category category = categoryService.findCategoryOrThrow(productCreateRequest.categoryId());
 
-        String slug = generateUniqueSlug(productCreateRequest.getName());
+        String slug = generateUniqueSlug(productCreateRequest.name());
 
         Product product = new Product();
         product.setCategory(category);
-        product.setName(productCreateRequest.getName());
+        product.setName(productCreateRequest.name());
         product.setSlug(slug);
-        product.setDescription(productCreateRequest.getDescription());
-        product.setPrice(productCreateRequest.getPrice());
-        product.setActivated(productCreateRequest.isActivated());
+        product.setDescription(productCreateRequest.description());
+        product.setPrice(productCreateRequest.price());
+        product.setActivated(productCreateRequest.activated());
         product.setDeleted(false);
 
-        handleProductImage(product, productCreateRequest.getImageUrl());
-        handleProductModel3D(product, productCreateRequest.getModelUrl());
+        handleProductImage(product, productCreateRequest.imageUrl());
+        handleProductModel3D(product, productCreateRequest.modelUrl());
         Product savedProduct = productRepository.save(product);
         return new ProductResponse(ProductDTO.from(savedProduct));
     }
