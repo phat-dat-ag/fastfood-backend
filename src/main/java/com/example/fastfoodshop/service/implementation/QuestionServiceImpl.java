@@ -108,15 +108,15 @@ public class QuestionServiceImpl implements QuestionService {
             Question question = new Question();
 
             question.setTopicDifficulty(topicDifficulty);
-            question.setContent(questionCreateRequest.getContent());
-            question.setActivated(questionCreateRequest.getIsActivated());
+            question.setContent(questionCreateRequest.content());
+            question.setActivated(questionCreateRequest.activated());
 
-            handleQuestionImage(question, questionCreateRequest.getImageUrl());
-            handleQuestionAudio(question, questionCreateRequest.getAudioUrl());
+            handleQuestionImage(question, questionCreateRequest.imageUrl());
+            handleQuestionAudio(question, questionCreateRequest.audioUrl());
 
             Question savedQuestion = questionRepository.save(question);
 
-            List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.getAnswers(), savedQuestion);
+            List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.answers(), savedQuestion);
         }
         return new QuestionUpdateResponse("Đã lưu các câu hỏi");
     }
