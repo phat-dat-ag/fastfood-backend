@@ -6,6 +6,7 @@ import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Review;
+import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
 import com.example.fastfoodshop.exception.product.DeletedProductException;
 import com.example.fastfoodshop.exception.product.InvalidStatusProductException;
@@ -166,9 +167,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductPageResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
-        Category category = categoryService.findUndeletedCategoryOrThrow(
+        Category category = categoryService.findCategoryOrThrow(
                 productGetByCategoryRequest.getCategorySlug()
         );
+        if (category.isDeleted()) {
+            throw new DeletedCategoryException(productGetByCategoryRequest.getCategorySlug());
+        }
+
         Pageable pageable = PageRequest.of(
                 productGetByCategoryRequest.getPage(), productGetByCategoryRequest.getSize()
         );

@@ -8,6 +8,7 @@ import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
+import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
@@ -60,24 +61,6 @@ public class CategoryServiceImpl implements CategoryService {
     public Category findCategoryOrThrow(String categorySlug) {
         return categoryRepository.findBySlug(categorySlug).orElseThrow(
                 () -> new CategoryNotFoundException(categorySlug)
-        );
-    }
-
-    public Category findUndeletedCategoryOrThrow(String categorySlug) {
-        return categoryRepository.findBySlug(categorySlug).orElseThrow(
-                () -> new CategoryNotFoundException(categorySlug)
-        );
-    }
-
-    public Category findActivatedCategoryOrThrow(Long categoryId) {
-        return categoryRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(categoryId).orElseThrow(
-                () -> new CategoryNotFoundException(categoryId)
-        );
-    }
-
-    public Category findDeactivatedCategoryOrThrow(Long categoryId) {
-        return categoryRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(categoryId).orElseThrow(
-                () -> new CategoryNotFoundException(categoryId)
         );
     }
 
@@ -177,20 +160,21 @@ public class CategoryServiceImpl implements CategoryService {
         return CategoryPageResponse.from(categoryPage);
     }
 
-    public CategoryUpdateResponse activateCategory(Long categoryId) {
-        Category category = findDeactivatedCategoryOrThrow(categoryId);
-        category.setActivated(true);
+    public CategoryUpdateResponse updateCategoryStatus(Long categoryId, boolean activated) {
+        Category category = findCategoryOrThrow(categoryId);
 
+        if (category.isActivated() == activated) {
+            throw new InvalidCategoryStatusException();
+        }
+
+        category.setActivated(activated);
         categoryRepository.save(category);
-        return new CategoryUpdateResponse("Đã kích hoạt danh mục: " + categoryId);
-    }
 
-    public CategoryUpdateResponse deactivateCategory(Long categoryId) {
-        Category category = findActivatedCategoryOrThrow(categoryId);
-        category.setActivated(false);
+        String message = activated
+                ? "Đã kích hoạt danh mục: " + categoryId
+                : "Đã hủy kích hoạt danh mục: " + categoryId;
 
-        categoryRepository.save(category);
-        return new CategoryUpdateResponse("Đã hủy kích hoạt danh mục: " + categoryId);
+        return new CategoryUpdateResponse(message);
     }
 
     public CategoryUpdateResponse deleteCategory(Long categoryId) {

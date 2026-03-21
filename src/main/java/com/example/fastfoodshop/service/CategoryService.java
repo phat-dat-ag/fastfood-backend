@@ -15,12 +15,6 @@ public interface CategoryService {
 
     Category findCategoryOrThrow(String categorySlug);
 
-    Category findUndeletedCategoryOrThrow(String categorySlug);
-
-    Category findActivatedCategoryOrThrow(Long categoryId);
-
-    Category findDeactivatedCategoryOrThrow(Long categoryId);
-
     PromotionResult applyPromotion(Product product, Category category);
 
     CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest);
@@ -29,9 +23,7 @@ public interface CategoryService {
 
     CategoryPageResponse getCategories(int page, int size);
 
-    CategoryUpdateResponse activateCategory(Long id);
-
-    CategoryUpdateResponse deactivateCategory(Long id);
+    CategoryUpdateResponse updateCategoryStatus(Long categoryId, boolean activated);
 
     CategoryUpdateResponse deleteCategory(Long id);
 
