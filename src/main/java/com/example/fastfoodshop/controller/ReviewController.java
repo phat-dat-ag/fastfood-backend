@@ -29,7 +29,7 @@ public class ReviewController extends BaseController {
             @RequestParam("orderId") Long orderId,
             @Valid @ModelAttribute ReviewForm reviewsForm
     ) {
-        return okResponse(reviewService.createReviews(reviewsForm.getReviews(), orderId));
+        return okResponse(reviewService.createReviews(reviewsForm.reviews(), orderId));
     }
 
     @GetMapping
