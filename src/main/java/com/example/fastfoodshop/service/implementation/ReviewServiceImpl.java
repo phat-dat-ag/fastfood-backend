@@ -70,24 +70,24 @@ public class ReviewServiceImpl implements ReviewService {
         Set<Long> reviewedProductIds = new HashSet<>();
 
         for (ReviewCreateRequest reviewRequest : reviewRequests) {
-            if (!orderProductIds.contains(reviewRequest.getProductId())) {
+            if (!orderProductIds.contains(reviewRequest.productId())) {
                 throw new ProductNotInOrderException();
             }
-            if (!reviewedProductIds.add(reviewRequest.getProductId())) {
+            if (!reviewedProductIds.add(reviewRequest.productId())) {
                 throw new DuplicateReviewProductException();
             }
 
-            Product product = productService.findProductOrThrow(reviewRequest.getProductId());
+            Product product = productService.findProductOrThrow(reviewRequest.productId());
 
             Review review = new Review();
             review.setOrder(order);
             review.setProduct(product);
-            review.setRating(reviewRequest.getRating());
-            review.setComment(reviewRequest.getComment());
+            review.setRating(reviewRequest.rating());
+            review.setComment(reviewRequest.comment());
 
             Review savedReview = reviewRepository.save(review);
 
-            List<ReviewImage> reviewImages = reviewImageService.createReviewImages(reviewRequest.getImages(), savedReview);
+            List<ReviewImage> reviewImages = reviewImageService.createReviewImages(reviewRequest.images(), savedReview);
             savedReview.setReviewImages(reviewImages);
 
             reviewRepository.save(savedReview);
