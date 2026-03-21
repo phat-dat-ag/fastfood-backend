@@ -341,7 +341,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.CANCELLED);
 
         orderNoteService.createOrderNote(
-                order, NoteType.CANCEL_REASON, orderCancelRequest.getReason(), AuthorType.USER
+                order, NoteType.CANCEL_REASON, orderCancelRequest.reason(), AuthorType.USER
         );
 
         orderRepository.save(order);
@@ -356,7 +356,7 @@ public class OrderServiceImpl implements OrderService {
         order.setOrderStatus(OrderStatus.CANCELLED);
 
         orderNoteService.createOrderNote(
-                order, NoteType.CANCEL_REASON, orderCancelRequest.getReason(), AuthorType.STAFF
+                order, NoteType.CANCEL_REASON, orderCancelRequest.reason(), AuthorType.STAFF
         );
 
         orderRepository.save(order);
