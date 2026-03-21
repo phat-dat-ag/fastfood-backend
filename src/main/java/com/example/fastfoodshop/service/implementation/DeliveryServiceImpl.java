@@ -39,7 +39,7 @@ public class DeliveryServiceImpl implements DeliveryService {
             return DeliveryDTO.reject("Hãy chọn địa chỉ hợp lệ để giao hàng nhé");
         }
 
-        Address address = addressService.findAddressOrThrow(request.getAddressId());
+        Address address = addressService.findAddressOrThrow(request.addressId());
 
         String url = UriComponentsBuilder
                 .fromUriString("https://rsapi.goong.io/DistanceMatrix")

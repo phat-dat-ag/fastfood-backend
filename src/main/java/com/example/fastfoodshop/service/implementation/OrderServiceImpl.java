@@ -161,8 +161,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     public OrderResponse createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest) {
-        DeliveryRequest deliveryRequest = new DeliveryRequest();
-        deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
+        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.getAddressId());
         CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
         checkAllActivatedProducts(cartDetailResponse.carts());
 
@@ -187,8 +186,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Transactional
     public OrderResponse createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest) {
-        DeliveryRequest deliveryRequest = new DeliveryRequest();
-        deliveryRequest.setAddressId(orderCreateRequest.getAddressId());
+        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.getAddressId());
         CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.getPromotionCode(), deliveryRequest);
         checkAllActivatedProducts(cartDetailResponse.carts());
 
