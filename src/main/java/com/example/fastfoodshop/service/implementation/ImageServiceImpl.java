@@ -52,10 +52,10 @@ public class ImageServiceImpl implements ImageService {
 
         Image image = new Image();
         image.setUser(user);
-        image.setAlternativeText(imageCreateRequest.getAlternativeText());
-        image.setPageType(imageCreateRequest.getPageType());
-        image.setSectionType(imageCreateRequest.getSectionType());
-        handleUploadImage(image, imageCreateRequest.getImageFile());
+        image.setAlternativeText(imageCreateRequest.alternativeText());
+        image.setPageType(imageCreateRequest.pageType());
+        image.setSectionType(imageCreateRequest.sectionType());
+        handleUploadImage(image, imageCreateRequest.imageFile());
 
         imageRepository.save(image);
         return new ImageUpdateResponse("Đã lưu ảnh thành công");
