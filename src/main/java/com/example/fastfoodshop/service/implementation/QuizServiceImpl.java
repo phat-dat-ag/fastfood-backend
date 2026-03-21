@@ -144,7 +144,7 @@ public class QuizServiceImpl implements QuizService {
     private Map<Long, Long> generateSubmittedMap(List<QuizQuestionSubmitRequest> quizQuestionSubmits) {
         Map<Long, Long> submittedMap = new HashMap<>();
         for (QuizQuestionSubmitRequest questionSubmitRequest : quizQuestionSubmits) {
-            submittedMap.put(questionSubmitRequest.getQuestionId(), questionSubmitRequest.getAnswerId());
+            submittedMap.put(questionSubmitRequest.questionId(), questionSubmitRequest.answerId());
         }
         return submittedMap;
     }
