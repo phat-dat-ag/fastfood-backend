@@ -96,9 +96,9 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
     ) {
         TopicDifficulty topicDifficulty = findTopicDifficultyOrThrow(id);
 
-        topicDifficulty.setName(request.getName());
-        topicDifficulty.setDescription(request.getDescription());
-        topicDifficulty.setActivated(request.getIsActivated());
+        topicDifficulty.setName(request.name());
+        topicDifficulty.setDescription(request.description());
+        topicDifficulty.setActivated(request.activated());
 
         TopicDifficulty updatedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
         return new TopicDifficultyUpdateResponse("Đã cập nhật độ khó: " + updatedTopicDifficulty.getId());
