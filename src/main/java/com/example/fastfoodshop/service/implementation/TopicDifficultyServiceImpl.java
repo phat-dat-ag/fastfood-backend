@@ -76,15 +76,15 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
 
         TopicDifficulty topicDifficulty = new TopicDifficulty();
         topicDifficulty.setTopic(topic);
-        topicDifficulty.setName(request.getName());
-        topicDifficulty.setDescription(request.getDescription());
-        topicDifficulty.setDuration(request.getDuration());
-        topicDifficulty.setQuestionCount(request.getQuestionCount());
-        topicDifficulty.setMinCorrectToReward(request.getMinCorrectToReward());
-        topicDifficulty.setActivated(request.getIsActivated());
+        topicDifficulty.setName(request.name());
+        topicDifficulty.setDescription(request.description());
+        topicDifficulty.setDuration(request.duration());
+        topicDifficulty.setQuestionCount(request.questionCount());
+        topicDifficulty.setMinCorrectToReward(request.minCorrectToReward());
+        topicDifficulty.setActivated(request.activated());
         topicDifficulty.setDeleted(false);
 
-        String slug = generateUniqueSlug(request.getName());
+        String slug = generateUniqueSlug(request.name());
         topicDifficulty.setSlug(slug);
 
         TopicDifficulty savedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
