@@ -2,51 +2,49 @@ package com.example.fastfoodshop.request;
 
 import com.example.fastfoodshop.enums.PromotionType;
 import jakarta.validation.constraints.*;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Data
-public class PromotionCreateRequest {
-    private Long categoryId;
-    private Long productId;
-    private Long userId;
+public record PromotionCreateRequest(
+        Long categoryId,
+        Long productId,
+        Long userId,
 
-    @NotNull(message = "Loại khuyến mãi không được để trống")
-    private PromotionType type;
+        @NotNull(message = "Loại khuyến mãi không được để trống")
+        PromotionType type,
 
-    @NotNull(message = "Không được để trống giá trị khuyến mãi")
-    @Min(value = 1, message = "Giá trị khuyến mãi từ 1 trở lên")
-    private Integer value;
+        @NotNull(message = "Không được để trống giá trị khuyến mãi")
+        @Min(value = 1, message = "Giá trị khuyến mãi từ 1 trở lên")
+        Integer value,
 
-    @NotNull(message = "Không được để trống ngày bắt đầu khuyến mãi")
-    private LocalDateTime startAt;
+        @NotNull(message = "Không được để trống ngày bắt đầu khuyến mãi")
+        LocalDateTime startAt,
 
-    @NotNull(message = "Không được để trống ngày kết thúc khuyến mãi")
-    private LocalDateTime endAt;
+        @NotNull(message = "Không được để trống ngày kết thúc khuyến mãi")
+        LocalDateTime endAt,
 
-    @NotNull(message = "Không được để trống số lượng mã khuyến mãi")
-    @Min(value = 1, message = "Số lượng mã khuyến mãi phải từ 1 trở lên")
-    private int quantity;
+        @NotNull(message = "Không được để trống số lượng mã khuyến mãi")
+        @Min(value = 1, message = "Số lượng mã khuyến mãi phải từ 1 trở lên")
+        int quantity,
 
-    @NotNull(message = "Không được để trống số tiền khuyến mãi tối đa")
-    @Min(value = 1, message = "Số tiền khuyến mãi tối đa từ 1 trở lên")
-    private Integer maxDiscountAmount;
+        @NotNull(message = "Không được để trống số tiền khuyến mãi tối đa")
+        @Min(value = 1, message = "Số tiền khuyến mãi tối đa từ 1 trở lên")
+        Integer maxDiscountAmount,
 
-    @NotNull(message = "Không được để trống số tiền ít nhất để được khuyến mãi")
-    @Min(value = 0, message = "Số tiền ít nhất để được khuyến mãi phải từ 0 trở lên")
-    private Integer minSpendAmount;
+        @NotNull(message = "Không được để trống số tiền ít nhất để được khuyến mãi")
+        @Min(value = 0, message = "Số tiền ít nhất để được khuyến mãi phải từ 0 trở lên")
+        Integer minSpendAmount,
 
-    @NotNull(message = "Không được để trống phạm vi mã khuyến mãi")
-    private Boolean isGlobal;
+        @NotNull(message = "Không được để trống phạm vi mã khuyến mãi")
+        Boolean global,
 
-    @NotNull(message = "Không được để trống trạng thái mã khuyến mãi")
-    private Boolean isActivated;
+        @NotNull(message = "Không được để trống trạng thái mã khuyến mãi")
+        Boolean activated,
 
-    @NotBlank(message = "Mã khuyến mãi không được để trống")
-    @Size(min = 2, max = 40, message = "Mã khuyến mãi dài từ 2 đến 40 ký tự")
-    private String code;
-
+        @NotBlank(message = "Mã khuyến mãi không được để trống")
+        @Size(min = 2, max = 40, message = "Mã khuyến mãi dài từ 2 đến 40 ký tự")
+        String code
+) {
     @AssertTrue(message = "Ngày bắt đầu khuyến mãi phải từ ngày mai trở đi")
     public boolean isStartAtValid() {
         if (startAt == null) return true;

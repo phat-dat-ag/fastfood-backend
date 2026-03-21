@@ -51,17 +51,17 @@ public class PromotionServiceImpl implements PromotionService {
 
     private Promotion buildPromotionCategoryFromRequest(PromotionCreateRequest promotionCreateRequest) {
         Promotion promotion = new Promotion();
-        promotion.setType(promotionCreateRequest.getType());
-        promotion.setValue(promotionCreateRequest.getValue());
-        promotion.setStartAt(promotionCreateRequest.getStartAt());
-        promotion.setEndAt(promotionCreateRequest.getEndAt());
-        promotion.setQuantity(promotionCreateRequest.getQuantity());
+        promotion.setType(promotionCreateRequest.type());
+        promotion.setValue(promotionCreateRequest.value());
+        promotion.setStartAt(promotionCreateRequest.startAt());
+        promotion.setEndAt(promotionCreateRequest.endAt());
+        promotion.setQuantity(promotionCreateRequest.quantity());
         promotion.setUsedQuantity(0);
-        promotion.setMaxDiscountAmount(promotionCreateRequest.getMaxDiscountAmount());
-        promotion.setMinSpendAmount(promotionCreateRequest.getMinSpendAmount());
-        promotion.setCode(promotionCreateRequest.getCode());
-        promotion.setGlobal(promotionCreateRequest.getIsGlobal());
-        promotion.setActivated(promotionCreateRequest.getIsActivated());
+        promotion.setMaxDiscountAmount(promotionCreateRequest.maxDiscountAmount());
+        promotion.setMinSpendAmount(promotionCreateRequest.minSpendAmount());
+        promotion.setCode(promotionCreateRequest.code());
+        promotion.setGlobal(promotionCreateRequest.global());
+        promotion.setActivated(promotionCreateRequest.activated());
         promotion.setDeleted(false);
         return promotion;
     }
@@ -114,10 +114,10 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public PromotionResponse createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.getCode())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
+        if (checkUniqueCode(promotionCreateRequest.code())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
         }
-        Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.getCategoryId());
+        Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId());
 
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setCategory(category);
@@ -126,10 +126,10 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public PromotionResponse createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.getCode())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
+        if (checkUniqueCode(promotionCreateRequest.code())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
         }
-        Product product = productService.findProductOrThrow(promotionCreateRequest.getProductId());
+        Product product = productService.findProductOrThrow(promotionCreateRequest.productId());
 
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
         promotion.setProduct(product);
@@ -138,8 +138,8 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public PromotionResponse createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.getCode())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.getCode());
+        if (checkUniqueCode(promotionCreateRequest.code())) {
+            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
         }
 
         Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
@@ -248,4 +248,3 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionRepository.save(promotion);
     }
 }
-
