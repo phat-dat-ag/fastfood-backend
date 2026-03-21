@@ -12,6 +12,7 @@ import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.PaymentMethod;
 import com.example.fastfoodshop.enums.PaymentStatus;
 import com.example.fastfoodshop.enums.AuthorType;
+import com.example.fastfoodshop.enums.OrderQueryType;
 import com.example.fastfoodshop.exception.order.CODPaymentLimitException;
 import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
 import com.example.fastfoodshop.exception.order.ForbiddenException;
@@ -22,6 +23,7 @@ import com.example.fastfoodshop.exception.order.PaymentFailedException;
 import com.example.fastfoodshop.exception.order.PaymentNotAllowedException;
 import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
+import com.example.fastfoodshop.exception.order.AccessDeniedException;
 import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
@@ -239,13 +241,6 @@ public class OrderServiceImpl implements OrderService {
         return new OrderResponse(OrderDTO.from(order));
     }
 
-    public OrderPageResponse getAllUnfinishedOrders(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
-        Page<Order> orderPage = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull(pageable);
-
-        return OrderPageResponse.from(orderPage);
-    }
-
     public OrderResponse getUnfinishedOrder(Long orderId) {
         Order order = findUnfinishedOrderOrThrow(orderId);
         return new OrderResponse(OrderDTO.from(order));
@@ -358,26 +353,10 @@ public class OrderServiceImpl implements OrderService {
         return new OrderUpdateResponse("Đã cập nhật trạng thái cho đơn hàng: " + order.getId());
     }
 
-    public OrderPageResponse getAllActiveOrders(String phone, int page, int size) {
-        User user = userService.findUserOrThrow(phone);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
-        Page<Order> orderPage = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
-
-        return OrderPageResponse.from(orderPage);
-    }
-
     public OrderResponse getActiveOrder(Long orderId, String phone) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
         return new OrderResponse(OrderDTO.from(order));
-    }
-
-    public OrderPageResponse getAllOrderHistory(String phone, int page, int size) {
-        User user = userService.findUserOrThrow(phone);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
-        Page<Order> orderPage = orderRepository.findCompletedOrCancelledOrdersByUser(user, pageable);
-
-        return OrderPageResponse.from(orderPage);
     }
 
     public OrderResponse getOrderHistory(Long orderId, String phone) {
@@ -386,10 +365,64 @@ public class OrderServiceImpl implements OrderService {
         return new OrderResponse(OrderDTO.from(order));
     }
 
-    public OrderPageResponse getAllOrdersByAdmin(int page, int size) {
+    private OrderPageResponse getAllActiveOrders(String phone, int page, int size) {
+        User user = userService.findUserOrThrow(phone);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+        Page<Order> orderPage = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
+
+        return OrderPageResponse.from(orderPage);
+    }
+
+    private OrderPageResponse getAllOrderHistory(String phone, int page, int size) {
+        User user = userService.findUserOrThrow(phone);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+        Page<Order> orderPage = orderRepository.findCompletedOrCancelledOrdersByUser(user, pageable);
+
+        return OrderPageResponse.from(orderPage);
+    }
+
+    private OrderPageResponse getAllUnfinishedOrders(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+        Page<Order> orderPage = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull(pageable);
+
+        return OrderPageResponse.from(orderPage);
+    }
+
+    private OrderPageResponse getAllOrdersByAdmin(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
         Page<Order> orderPage = orderRepository.findAll(pageable);
 
         return OrderPageResponse.from(orderPage);
+    }
+
+    private void validateAccess(User user, OrderQueryType type) {
+        switch (type) {
+            case UNFINISHED -> {
+                if (user.getRole() != UserRole.STAFF) {
+                    throw new AccessDeniedException("Bạn không có quyền xem các đơn hàng chưa hoàn thành");
+                }
+            }
+            case ALL -> {
+                if (user.getRole() != UserRole.ADMIN) {
+                    throw new AccessDeniedException("Chỉ quản trị viên mới được xem tất cả đơn hàng");
+                }
+            }
+            default -> {
+//                ACTIVE, HISTORY => OK
+            }
+        }
+    }
+
+    public OrderPageResponse getOrders(String phone, OrderQueryType orderQueryType, int page, int size) {
+        User user = userService.findUserOrThrow(phone);
+
+        validateAccess(user, orderQueryType);
+
+        return switch (orderQueryType) {
+            case ACTIVE -> getAllActiveOrders(phone, page, size);
+            case HISTORY -> getAllOrderHistory(phone, page, size);
+            case UNFINISHED -> getAllUnfinishedOrders(page, size);
+            case ALL -> getAllOrdersByAdmin(page, size);
+        };
     }
 }

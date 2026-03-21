@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.enums.OrderQueryType;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.request.PageRequest;
@@ -61,27 +62,12 @@ public class OrderController extends BaseController {
         return okResponse(orderService.getOrder(userDetails.getUsername(), orderId));
     }
 
-    @GetMapping("/staff/unfinished-orders/all")
-    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllUnfinishedOrders(
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(orderService.getAllUnfinishedOrders(request.getPage(), request.getSize()));
-    }
-
     @GetMapping("/staff/unfinished-order")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("orderId") Long orderId
     ) {
         return okResponse(orderService.getUnfinishedOrder(orderId));
-    }
-
-    @GetMapping("/active-order/all")
-    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllActiveOrders(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(orderService.getAllActiveOrders(userDetails.getUsername(), request.getPage(), request.getSize()));
     }
 
     @GetMapping("/active-order")
@@ -92,14 +78,6 @@ public class OrderController extends BaseController {
         return okResponse(orderService.getActiveOrder(orderId, userDetails.getUsername()));
     }
 
-    @GetMapping("/order-history/all")
-    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllOrderHistory(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(orderService.getAllOrderHistory(userDetails.getUsername(), request.getPage(), request.getSize()));
-    }
-
     @GetMapping("/order-history")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getOrderHistory(
             @AuthenticationPrincipal UserDetails userDetails,
@@ -108,10 +86,16 @@ public class OrderController extends BaseController {
         return okResponse(orderService.getOrderHistory(orderId, userDetails.getUsername()));
     }
 
-    @GetMapping("/admin/all")
-    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getAllOrdersByAdmin(
+    @GetMapping
+    public ResponseEntity<ResponseWrapper<OrderPageResponse>> getOrders(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @RequestParam(defaultValue = "ACTIVE") OrderQueryType orderQueryType,
             @Valid @ModelAttribute PageRequest request
     ) {
-        return okResponse(orderService.getAllOrdersByAdmin(request.getPage(), request.getSize()));
+        return okResponse(
+                orderService.getOrders(
+                        userDetails.getUsername(), orderQueryType, request.getPage(), request.getSize()
+                )
+        );
     }
 }

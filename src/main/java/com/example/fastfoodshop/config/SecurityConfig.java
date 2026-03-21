@@ -79,6 +79,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/quiz/manage/**").hasRole("ADMIN")
                         .requestMatchers("/api/cart/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers(HttpMethod.GET, "/api/admin/promotion/order/valid").hasAnyRole("USER", "STAFF")
+                        .requestMatchers(HttpMethod.GET, "/api/order/**").permitAll()
                         .requestMatchers("/api/order/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/review/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/address/**").hasAnyRole("USER", "STAFF")
