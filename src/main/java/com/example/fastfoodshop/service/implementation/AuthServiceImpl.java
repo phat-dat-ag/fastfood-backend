@@ -69,12 +69,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public VerifyResponse verifySignUpOTP(VerifySignUpRequest verifySignUpRequest) {
-        User user = userService.findUserOrThrow(verifySignUpRequest.getPhone());
+        User user = userService.findUserOrThrow(verifySignUpRequest.phone());
         List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
         LocalDateTime now = LocalDateTime.now();
 
         for (OTPCode otpCode : otpCodes) {
-            if (now.isBefore(otpCode.getExpiredAt()) && verifySignUpRequest.getOtp().equals(otpCode.getCode())) {
+            if (now.isBefore(otpCode.getExpiredAt()) && verifySignUpRequest.otp().equals(otpCode.getCode())) {
                 user.setActivated(true);
                 userService.updateUser(user);
                 otpCodeService.updateOTPCode(otpCode, true);
