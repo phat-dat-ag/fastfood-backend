@@ -122,12 +122,12 @@ public class AuthServiceImpl implements AuthService {
 
     public VerifyResponse verifyForgetPasswordOTP(VerifyForgetPasswordRequest verifyForgetPasswordRequest) {
 
-        User user = userService.findUserOrThrow(verifyForgetPasswordRequest.getPhone());
+        User user = userService.findUserOrThrow(verifyForgetPasswordRequest.phone());
         List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
         LocalDateTime now = LocalDateTime.now();
         for (OTPCode otpCode : otpCodes) {
-            if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.getOtp().equals(otpCode.getCode())) {
-                userService.updateUser(user, verifyForgetPasswordRequest.getNewPassword());
+            if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.otp().equals(otpCode.getCode())) {
+                userService.updateUser(user, verifyForgetPasswordRequest.newPassword());
                 otpCodeService.updateOTPCode(otpCode, true);
                 return new VerifyResponse("Xác thực OTP quên mật khẩu thành công");
             }
