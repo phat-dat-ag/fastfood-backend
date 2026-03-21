@@ -100,7 +100,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public OTPResponse forgetPassword(ForgetPasswordRequest forgetPasswordRequest) {
-        User user = userService.findUserOrThrow(forgetPasswordRequest.getPhone());
+        User user = userService.findUserOrThrow(forgetPasswordRequest.phone());
         if (!user.isActivated()) {
             throw new InvalidUserStatusException();
         }
