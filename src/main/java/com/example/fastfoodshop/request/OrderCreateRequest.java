@@ -1,14 +1,13 @@
 package com.example.fastfoodshop.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 
-@Data
-public class OrderCreateRequest {
-    private String userNote;
+public record OrderCreateRequest(
+        String userNote,
 
-    private String promotionCode;
+        String promotionCode,
 
-    @NotNull(message = "Không được để trống địa chỉ giao hàng")
-    private Long addressId;
+        @NotNull(message = "Không được để trống địa chỉ giao hàng")
+        Long addressId
+) {
 }
