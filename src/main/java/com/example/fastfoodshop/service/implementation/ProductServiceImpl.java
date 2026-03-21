@@ -153,13 +153,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductResponse updateProduct(ProductUpdateRequest productUpdateRequest) {
-        Product product = findProductOrThrow(productUpdateRequest.getId());
-        product.setName(productUpdateRequest.getName());
-        product.setDescription(productUpdateRequest.getDescription());
-        product.setActivated(productUpdateRequest.isActivated());
+        Product product = findProductOrThrow(productUpdateRequest.id());
+        product.setName(productUpdateRequest.name());
+        product.setDescription(productUpdateRequest.description());
+        product.setActivated(productUpdateRequest.activated());
 
-        handleProductImage(product, productUpdateRequest.getImageUrl());
-        handleProductModel3D(product, productUpdateRequest.getModelUrl());
+        handleProductImage(product, productUpdateRequest.imageUrl());
+        handleProductModel3D(product, productUpdateRequest.modelUrl());
 
         Product savedProduct = productRepository.save(product);
         return new ProductResponse(ProductDTO.from(savedProduct));
