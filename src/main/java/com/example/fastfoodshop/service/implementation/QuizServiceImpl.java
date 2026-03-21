@@ -223,7 +223,7 @@ public class QuizServiceImpl implements QuizService {
 
     public QuizUpdateResponse addFeedbackToCompletedQuiz(String phone, QuizAddFeedbackRequest quizAddFeedbackRequest) {
         User user = userService.findUserOrThrow(phone);
-        Quiz quiz = findQuizHistoryOrThrow(quizAddFeedbackRequest.getQuizId(), user);
+        Quiz quiz = findQuizHistoryOrThrow(quizAddFeedbackRequest.quizId(), user);
 
         if (quiz.getFeedbackAt() != null) {
             throw new QuizAlreadyFeedbackException();
@@ -235,7 +235,7 @@ public class QuizServiceImpl implements QuizService {
                 .isAfter(LocalDateTime.now());
 
         if (canGiveFeedback) {
-            quiz.setFeedback(quizAddFeedbackRequest.getFeedback());
+            quiz.setFeedback(quizAddFeedbackRequest.feedback());
             quiz.setFeedbackAt(LocalDateTime.now());
         }
         quizRepository.save(quiz);
