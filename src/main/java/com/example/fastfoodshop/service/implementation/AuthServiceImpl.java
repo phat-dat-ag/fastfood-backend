@@ -85,13 +85,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     public SignInResponse signIn(SignInRequest signInRequest) {
-        User dbUser = userService.findUserOrThrow(signInRequest.getPhone());
+        User dbUser = userService.findUserOrThrow(signInRequest.phone());
 
         if (dbUser.isDeleted() || !dbUser.isActivated()) {
             throw new InvalidUserStatusException();
         }
 
-        if (!passwordEncoder.matches(signInRequest.getPassword(), dbUser.getPasswordHash())) {
+        if (!passwordEncoder.matches(signInRequest.password(), dbUser.getPasswordHash())) {
             throw new InvalidPasswordException();
         }
 
