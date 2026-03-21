@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
+import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
@@ -13,14 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/order")
@@ -42,6 +35,15 @@ public class OrderController extends BaseController {
             @RequestBody OrderCreateRequest orderCreateRequest
     ) {
         return okResponse(orderService.createStripePaymentOrder(userDetails.getUsername(), orderCreateRequest));
+    }
+
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> updateOrderStatus(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable("id") Long orderId,
+            @RequestBody OrderStatusUpdateRequest orderStatusUpdateRequest
+    ) {
+        return okResponse(orderService.updateStatus(orderId, userDetails.getUsername(), orderStatusUpdateRequest));
     }
 
     @GetMapping("/payment-intent")
@@ -72,37 +74,6 @@ public class OrderController extends BaseController {
             @RequestParam("orderId") Long orderId
     ) {
         return okResponse(orderService.getUnfinishedOrder(orderId));
-    }
-
-    @PutMapping("/confirm")
-    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> confirmOrder(@RequestParam("orderId") Long orderId) {
-        return okResponse(orderService.confirmOrder(orderId));
-    }
-
-    @PutMapping("/mark-delivering")
-    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> markAsDelivering(@RequestParam("orderId") Long orderId) {
-        return okResponse(orderService.markAsDelivering(orderId));
-    }
-
-    @PutMapping("/mark-delivered")
-    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> markAsDelivered(@RequestParam("orderId") Long orderId) {
-        return okResponse(orderService.markAsDelivered(orderId));
-    }
-
-    @PutMapping("/user/cancel-order")
-    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> cancelOrderByUser(
-            @RequestParam("orderId") Long orderId,
-            @RequestBody OrderCancelRequest orderCancelRequest
-    ) {
-        return okResponse(orderService.cancelOrderByUser(orderId, orderCancelRequest));
-    }
-
-    @PutMapping("/staff/cancel-order")
-    public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> cancelOrderByStaff(
-            @RequestParam("orderId") Long orderId,
-            @RequestBody OrderCancelRequest orderCancelRequest
-    ) {
-        return okResponse(orderService.cancelOrderByStaff(orderId, orderCancelRequest));
     }
 
     @GetMapping("/active-order/all")

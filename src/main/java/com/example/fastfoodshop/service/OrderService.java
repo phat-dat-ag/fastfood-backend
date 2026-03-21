@@ -2,8 +2,8 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.enums.PaymentStatus;
-import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
+import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.order.OrderResponse;
 import com.example.fastfoodshop.response.order.OrderUpdateResponse;
@@ -25,11 +25,7 @@ public interface OrderService {
 
     void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus);
 
-    OrderUpdateResponse confirmOrder(Long orderId);
-
-    OrderUpdateResponse markAsDelivering(Long orderId);
-
-    OrderUpdateResponse markAsDelivered(Long orderId);
+    OrderUpdateResponse updateStatus(Long orderId, String phone, OrderStatusUpdateRequest request);
 
     OrderPageResponse getAllActiveOrders(String phone, int page, int size);
 
@@ -38,10 +34,6 @@ public interface OrderService {
     OrderPageResponse getAllOrderHistory(String phone, int page, int size);
 
     OrderResponse getOrderHistory(Long orderId, String phone);
-
-    OrderUpdateResponse cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest);
-
-    OrderUpdateResponse cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest);
 
     OrderPageResponse getAllOrdersByAdmin(int page, int size);
 }

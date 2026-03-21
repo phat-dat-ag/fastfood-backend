@@ -7,12 +7,14 @@ import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.NoteType;
+import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.PaymentMethod;
 import com.example.fastfoodshop.enums.PaymentStatus;
 import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.exception.order.CODPaymentLimitException;
 import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
+import com.example.fastfoodshop.exception.order.ForbiddenException;
 import com.example.fastfoodshop.exception.order.OrderAlreadyCancelledException;
 import com.example.fastfoodshop.exception.order.OrderAmountExceededException;
 import com.example.fastfoodshop.exception.order.OrderCannotBeCancelledException;
@@ -22,8 +24,8 @@ import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
 import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.request.DeliveryRequest;
-import com.example.fastfoodshop.request.OrderCancelRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
+import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
@@ -256,48 +258,104 @@ public class OrderServiceImpl implements OrderService {
         orderRepository.save(order);
     }
 
-    public OrderUpdateResponse confirmOrder(Long orderId) {
-        Order order = findOrderForUpdate(orderId);
+    private void validateTransition(OrderStatus currentStatus, OrderStatus nextStatus) {
+        if (currentStatus == OrderStatus.PENDING && nextStatus == OrderStatus.CONFIRMED) return;
+        if (currentStatus == OrderStatus.CONFIRMED && nextStatus == OrderStatus.DELIVERING) return;
+        if (currentStatus == OrderStatus.DELIVERING && nextStatus == OrderStatus.DELIVERED) return;
+        if (nextStatus == OrderStatus.CANCELLED) return;
+
+        throw new InvalidOrderStatusException();
+    }
+
+    private void handleConfirm(Order order) {
         if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && order.getPaymentStatus() != PaymentStatus.PAID) {
             throw new PaymentNotCompletedException();
         }
-        if (order.getPlacedAt() == null) {
+
+        if (order.getOrderStatus() != OrderStatus.PENDING) {
             throw new InvalidOrderStatusException();
         }
+
         order.setOrderStatus(OrderStatus.CONFIRMED);
-        LocalDateTime now = LocalDateTime.now();
-        order.setConfirmedAt(now);
-        orderRepository.save(order);
-        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đã giao: " + orderId);
+        order.setConfirmedAt(LocalDateTime.now());
     }
 
-    public OrderUpdateResponse markAsDelivering(Long orderId) {
-        Order order = findOrderForUpdate(orderId);
-        if (order.getConfirmedAt() == null) {
+    private void handleDelivering(Order order) {
+        if (order.getOrderStatus() != OrderStatus.CONFIRMED) {
             throw new InvalidOrderStatusException();
         }
+
         order.setOrderStatus(OrderStatus.DELIVERING);
-        LocalDateTime now = LocalDateTime.now();
-        order.setDeliveringAt(now);
-        orderRepository.save(order);
-        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đang giao: " + orderId);
+        order.setDeliveringAt(LocalDateTime.now());
     }
 
-    public OrderUpdateResponse markAsDelivered(Long orderId) {
-        Order order = findOrderForUpdate(orderId);
-        if (order.getDeliveringAt() == null) {
+    private void handleDelivered(Order order) {
+        if (order.getOrderStatus() != OrderStatus.DELIVERING) {
             throw new InvalidOrderStatusException();
         }
+
         order.setOrderStatus(OrderStatus.DELIVERED);
-        LocalDateTime now = LocalDateTime.now();
-        order.setDeliveredAt(now);
+        order.setDeliveredAt(LocalDateTime.now());
 
         if (order.getPaymentMethod() == PaymentMethod.CASH_ON_DELIVERY) {
             order.setPaymentStatus(PaymentStatus.PAID);
         }
+    }
+
+    public void validateUserCancelPermission(Order order) {
+        if (order.getOrderStatus() == OrderStatus.DELIVERING) {
+            throw new InvalidOrderStatusException();
+        }
+
+        if (order.getPaymentStatus() == PaymentStatus.PAID
+                && order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER) {
+            throw new OrderCannotBeCancelledException();
+        }
+    }
+
+    private void handleCancel(Order order, User user, String reason) {
+        if (user.getRole() == UserRole.USER) {
+            validateUserCancelPermission(order);
+            orderNoteService.createOrderNote(order, NoteType.CANCEL_REASON, reason, AuthorType.USER);
+        } else if (user.getRole() == UserRole.STAFF) {
+            orderNoteService.createOrderNote(order, NoteType.CANCEL_REASON, reason, AuthorType.STAFF);
+        } else {
+            throw new ForbiddenException();
+        }
+
+        order.setCancelledAt(LocalDateTime.now());
+        order.setOrderStatus(OrderStatus.CANCELLED);
+    }
+
+    private void validatePermission(User user, OrderStatus newStatus) {
+        if (user.getRole() == UserRole.USER && newStatus != OrderStatus.CANCELLED) {
+            throw new ForbiddenException();
+        }
+    }
+
+    @Transactional
+    public OrderUpdateResponse updateStatus(Long orderId, String phone, OrderStatusUpdateRequest request) {
+        Order order = findOrderForUpdate(orderId);
+        User user = userService.findUserOrThrow(phone);
+
+        OrderStatus newStatus = request.status();
+        validatePermission(user, newStatus);
+        validateTransition(order.getOrderStatus(), newStatus);
+
+        if (order.getOrderStatus() == newStatus) {
+            return new OrderUpdateResponse("Trạng thái đơn hàng không đổi");
+        }
+
+        switch (newStatus) {
+            case CONFIRMED -> handleConfirm(order);
+            case DELIVERING -> handleDelivering(order);
+            case DELIVERED -> handleDelivered(order);
+            case CANCELLED -> handleCancel(order, user, request.reason());
+            default -> throw new InvalidOrderStatusException();
+        }
 
         orderRepository.save(order);
-        return new OrderUpdateResponse("Đã đánh dấu đơn hàng là đã giao: " + orderId);
+        return new OrderUpdateResponse("Đã cập nhật trạng thái cho đơn hàng: " + order.getId());
     }
 
     public OrderPageResponse getAllActiveOrders(String phone, int page, int size) {
@@ -326,41 +384,6 @@ public class OrderServiceImpl implements OrderService {
         User user = userService.findUserOrThrow(phone);
         Order order = findOrderHistoryOrThrow(orderId, user);
         return new OrderResponse(OrderDTO.from(order));
-    }
-
-    public OrderUpdateResponse cancelOrderByUser(Long orderId, OrderCancelRequest orderCancelRequest) {
-        Order order = findOrderForUpdate(orderId);
-        if (order.getOrderStatus() == OrderStatus.DELIVERING) {
-            throw new InvalidOrderStatusException();
-        }
-        if (order.getPaymentStatus() == PaymentStatus.PAID && order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER) {
-            throw new OrderCannotBeCancelledException();
-        }
-        LocalDateTime now = LocalDateTime.now();
-        order.setCancelledAt(now);
-        order.setOrderStatus(OrderStatus.CANCELLED);
-
-        orderNoteService.createOrderNote(
-                order, NoteType.CANCEL_REASON, orderCancelRequest.reason(), AuthorType.USER
-        );
-
-        orderRepository.save(order);
-        return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);
-    }
-
-    public OrderUpdateResponse cancelOrderByStaff(Long orderId, OrderCancelRequest orderCancelRequest) {
-        Order order = findOrderForUpdate(orderId);
-
-        LocalDateTime now = LocalDateTime.now();
-        order.setCancelledAt(now);
-        order.setOrderStatus(OrderStatus.CANCELLED);
-
-        orderNoteService.createOrderNote(
-                order, NoteType.CANCEL_REASON, orderCancelRequest.reason(), AuthorType.STAFF
-        );
-
-        orderRepository.save(order);
-        return new OrderUpdateResponse("Đã hủy đơn hàng: " + orderId);
     }
 
     public OrderPageResponse getAllOrdersByAdmin(int page, int size) {
