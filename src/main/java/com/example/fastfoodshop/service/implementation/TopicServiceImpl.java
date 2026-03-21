@@ -66,12 +66,12 @@ public class TopicServiceImpl implements TopicService {
 
     public TopicResponse createTopic(TopicCreateRequest topicCreateRequest) {
         Topic topic = new Topic();
-        topic.setName(topicCreateRequest.getName());
-        topic.setDescription(topicCreateRequest.getDescription());
-        topic.setActivated(topicCreateRequest.getIsActivated());
+        topic.setName(topicCreateRequest.name());
+        topic.setDescription(topicCreateRequest.description());
+        topic.setActivated(topicCreateRequest.activated());
         topic.setDeleted(false);
 
-        String slug = generateUniqueSlug(topicCreateRequest.getName());
+        String slug = generateUniqueSlug(topicCreateRequest.name());
         topic.setSlug(slug);
 
         Topic savedTopic = topicRepository.save(topic);
@@ -80,9 +80,9 @@ public class TopicServiceImpl implements TopicService {
 
     public TopicResponse updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
         Topic topic = findTopicOrThrow(topicId);
-        topic.setName(topicCreateRequest.getName());
-        topic.setDescription(topicCreateRequest.getDescription());
-        topic.setActivated(topicCreateRequest.getIsActivated());
+        topic.setName(topicCreateRequest.name());
+        topic.setDescription(topicCreateRequest.description());
+        topic.setActivated(topicCreateRequest.activated());
 
         Topic updatedTopic = topicRepository.save(topic);
         return new TopicResponse(TopicDTO.from(updatedTopic));
