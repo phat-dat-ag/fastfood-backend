@@ -110,9 +110,9 @@ public class UserServiceImpl implements UserService {
 
     public UserResponse updateUser(String phone, UserUpdateRequest userUpdateRequest) {
         User user = findUserOrThrow(phone);
-        LocalDate birthday = LocalDate.parse(userUpdateRequest.getBirthdayString());
-        user.setName(userUpdateRequest.getName());
-        user.setEmail(userUpdateRequest.getEmail());
+        LocalDate birthday = LocalDate.parse(userUpdateRequest.birthdayString());
+        user.setName(userUpdateRequest.name());
+        user.setEmail(userUpdateRequest.email());
         user.setBirthday(birthday);
 
         User updatedUser = userRepository.save(user);
