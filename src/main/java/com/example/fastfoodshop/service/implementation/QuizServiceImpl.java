@@ -191,8 +191,8 @@ public class QuizServiceImpl implements QuizService {
     public QuizResponse checkQuizSubmission(String phone, QuizSubmitRequest quizSubmitRequest) {
         User user = userService.findUserOrThrow(phone);
         TopicDifficulty topicDifficulty = topicDifficultyService
-                .findValidTopicDifficultyOrThrow(quizSubmitRequest.getTopicDifficultySlug());
-        Quiz quiz = findUncompletedQuizOrThrow(quizSubmitRequest.getQuizId(), user, topicDifficulty);
+                .findValidTopicDifficultyOrThrow(quizSubmitRequest.topicDifficultySlug());
+        Quiz quiz = findUncompletedQuizOrThrow(quizSubmitRequest.quizId(), user, topicDifficulty);
 
         LocalDateTime now = LocalDateTime.now();
         long totalDuration = quiz.getTopicDifficulty().getDuration() + QuizConstants.SUBMIT_TIME_BUFFER_SECONDS;
@@ -202,7 +202,7 @@ public class QuizServiceImpl implements QuizService {
             throw new GameTimeExpiredException();
         }
 
-        Map<Long, Long> submittedMap = generateSubmittedMap(quizSubmitRequest.getQuizQuestions());
+        Map<Long, Long> submittedMap = generateSubmittedMap(quizSubmitRequest.quizQuestions());
 
         Map<Long, Answer> answerMap = generateAnswerMap(submittedMap);
 
