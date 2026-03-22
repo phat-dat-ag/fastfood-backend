@@ -18,17 +18,11 @@ public interface OrderService {
 
     OrderResponse getPaymentIntent(String phone, Long orderId);
 
-    OrderResponse getOrder(String phone, Long orderId);
-
-    OrderResponse getUnfinishedOrder(Long orderId);
-
     void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus);
 
     OrderUpdateResponse updateStatus(Long orderId, String phone, OrderStatusUpdateRequest request);
 
-    OrderResponse getActiveOrder(Long orderId, String phone);
-
-    OrderResponse getOrderHistory(Long orderId, String phone);
+    OrderResponse getOrder(String phone, Long orderId);
 
     OrderPageResponse getOrders(String phone, OrderQueryType orderQueryType, int page, int size);
 }

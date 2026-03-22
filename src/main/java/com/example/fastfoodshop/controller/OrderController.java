@@ -55,35 +55,12 @@ public class OrderController extends BaseController {
         return okResponse(orderService.getPaymentIntent(userDetails.getUsername(), orderId));
     }
 
-    @GetMapping("/by-order-id")
+    @GetMapping("/{id}")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getOrder(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("orderId") Long orderId) {
+            @PathVariable("id") Long orderId
+    ) {
         return okResponse(orderService.getOrder(userDetails.getUsername(), orderId));
-    }
-
-    @GetMapping("/staff/unfinished-order")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getUnfinishedOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("orderId") Long orderId
-    ) {
-        return okResponse(orderService.getUnfinishedOrder(orderId));
-    }
-
-    @GetMapping("/active-order")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getActiveOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("orderId") Long orderId
-    ) {
-        return okResponse(orderService.getActiveOrder(orderId, userDetails.getUsername()));
-    }
-
-    @GetMapping("/order-history")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> getOrderHistory(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("orderId") Long orderId
-    ) {
-        return okResponse(orderService.getOrderHistory(orderId, userDetails.getUsername()));
     }
 
     @GetMapping

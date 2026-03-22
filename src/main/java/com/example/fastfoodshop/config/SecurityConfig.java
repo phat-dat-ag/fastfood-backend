@@ -72,8 +72,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/category/display/**").permitAll()
                         .requestMatchers("/api/admin/product/display/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
-                        .requestMatchers("/api/order/staff/**").hasRole("STAFF")
-                        .requestMatchers("/api/order/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/manage/**").hasRole("ADMIN")
                         .requestMatchers("/api/review/manage/**").hasRole("ADMIN")
                         .requestMatchers("/api/quiz/manage/**").hasRole("ADMIN")

@@ -71,27 +71,6 @@ public class OrderServiceImpl implements OrderService {
         return orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
     }
 
-    private Order findUnfinishedOrderOrThrow(Long orderId) {
-        return orderRepository.findByIdAndDeliveredAtIsNullAndCancelledAtIsNull(orderId)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-    }
-
-    private Order findActiveOrderOrThrow(Long orderId, User user) {
-        return orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(orderId, user)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-    }
-
-    private Order findOrderHistoryOrThrow(Long orderId, User user) {
-        return orderRepository.findCompletedOrCancelledOrderByIdAndUser(orderId, user)
-                .orElseThrow(() -> new OrderNotFoundException(orderId));
-    }
-
-    private Order findDeliveredOrderOrThrow(Long orderId, User user) {
-        return orderRepository.findByIdAndUserAndDeliveredAtIsNotNull(orderId, user).orElseThrow(
-                () -> new OrderNotFoundException(orderId)
-        );
-    }
-
     private Order findOrderForUpdate(Long orderId) {
         Order order = findOrderOrThrow(orderId);
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
@@ -217,6 +196,11 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    private Order findActiveOrderOrThrow(Long orderId, User user) {
+        return orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(orderId, user)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
     public OrderResponse getPaymentIntent(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
@@ -233,17 +217,6 @@ public class OrderServiceImpl implements OrderService {
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
-    }
-
-    public OrderResponse getOrder(String phone, Long orderId) {
-        User user = userService.findUserOrThrow(phone);
-        Order order = findDeliveredOrderOrThrow(orderId, user);
-        return new OrderResponse(OrderDTO.from(order));
-    }
-
-    public OrderResponse getUnfinishedOrder(Long orderId) {
-        Order order = findUnfinishedOrderOrThrow(orderId);
-        return new OrderResponse(OrderDTO.from(order));
     }
 
     public void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
@@ -297,7 +270,7 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
-    public void validateUserCancelPermission(Order order) {
+    private void validateUserCancelPermission(Order order) {
         if (order.getOrderStatus() == OrderStatus.DELIVERING) {
             throw new InvalidOrderStatusException();
         }
@@ -353,15 +326,41 @@ public class OrderServiceImpl implements OrderService {
         return new OrderUpdateResponse("Đã cập nhật trạng thái cho đơn hàng: " + order.getId());
     }
 
-    public OrderResponse getActiveOrder(Long orderId, String phone) {
-        User user = userService.findUserOrThrow(phone);
-        Order order = findActiveOrderOrThrow(orderId, user);
-        return new OrderResponse(OrderDTO.from(order));
+    private void validateOrderAccess(User user, Order order) {
+        UserRole userRole = user.getRole();
+
+        boolean isOwner = order.getUser().getId().equals(user.getId());
+        boolean isCompleted = order.getDeliveredAt() != null || order.getCancelledAt() != null;
+
+        switch (userRole) {
+            case ADMIN -> {
+                return;
+            }
+
+            case USER -> {
+                if (!isOwner) {
+                    throw new AccessDeniedException("Không có quyền truy cập đơn hàng này");
+                }
+            }
+
+            case STAFF -> {
+                if (isOwner) {
+                    return;
+                }
+
+                if (isCompleted) {
+                    throw new AccessDeniedException("Bạn chỉ được xem đơn hàng chưa hoàn thành của người khác");
+                }
+            }
+        }
     }
 
-    public OrderResponse getOrderHistory(Long orderId, String phone) {
+    public OrderResponse getOrder(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
-        Order order = findOrderHistoryOrThrow(orderId, user);
+        Order order = findOrderOrThrow(orderId);
+
+        validateOrderAccess(user, order);
+
         return new OrderResponse(OrderDTO.from(order));
     }
 
@@ -395,8 +394,8 @@ public class OrderServiceImpl implements OrderService {
         return OrderPageResponse.from(orderPage);
     }
 
-    private void validateAccess(User user, OrderQueryType type) {
-        switch (type) {
+    private void validateOrderListAccess(User user, OrderQueryType orderQueryType) {
+        switch (orderQueryType) {
             case UNFINISHED -> {
                 if (user.getRole() != UserRole.STAFF) {
                     throw new AccessDeniedException("Bạn không có quyền xem các đơn hàng chưa hoàn thành");
@@ -408,7 +407,7 @@ public class OrderServiceImpl implements OrderService {
                 }
             }
             default -> {
-//                ACTIVE, HISTORY => OK
+                return;
             }
         }
     }
@@ -416,7 +415,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderPageResponse getOrders(String phone, OrderQueryType orderQueryType, int page, int size) {
         User user = userService.findUserOrThrow(phone);
 
-        validateAccess(user, orderQueryType);
+        validateOrderListAccess(user, orderQueryType);
 
         return switch (orderQueryType) {
             case ACTIVE -> getAllActiveOrders(phone, page, size);
