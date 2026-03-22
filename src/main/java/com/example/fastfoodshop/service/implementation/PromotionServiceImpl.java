@@ -54,12 +54,6 @@ public class PromotionServiceImpl implements PromotionService {
         return promotionRepository.findByCode(code).isPresent();
     }
 
-    private Promotion findUndeletedPromotionOrThrow(Long promotionId) {
-        return promotionRepository.findByIdAndIsDeletedFalse(promotionId).orElseThrow(
-                () -> new PromotionNotFoundException(promotionId)
-        );
-    }
-
     private Promotion findPromotionOrThrow(String promotionCode) {
         return promotionRepository.findByCode(promotionCode).orElseThrow(
                 () -> new PromotionNotFoundException(promotionCode)
@@ -174,24 +168,24 @@ public class PromotionServiceImpl implements PromotionService {
         return new PromotionOrdersResponse(validOrderPromotions);
     }
 
-    public PromotionUpdateResponse activatePromotion(Long promotionId) {
-        Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
-        if (promotion.isActivated()) {
-            throw new InvalidPromotionStatusException();
-        }
-        promotion.setActivated(true);
-        promotionRepository.save(promotion);
-        return new PromotionUpdateResponse("Đã kích hoạt mã khuyến mãi: " + promotionId);
-    }
+    public PromotionUpdateResponse updatePromotionActivation(Long promotionId, boolean activated) {
+        Promotion promotion = findPromotionOrThrow(promotionId);
 
-    public PromotionUpdateResponse deactivatePromotion(Long promotionId) {
-        Promotion promotion = findUndeletedPromotionOrThrow(promotionId);
-        if (!promotion.isActivated()) {
+        if (promotion.isDeleted()) {
+            throw new DeletedPromotionException();
+        }
+
+        if (promotion.isActivated() == activated) {
             throw new InvalidPromotionStatusException();
         }
-        promotion.setActivated(false);
+
+        promotion.setActivated(activated);
         promotionRepository.save(promotion);
-        return new PromotionUpdateResponse("Đã hủy kích hoạt mã khuyến mãi: " + promotionId);
+
+        String message = activated ? "Đã kích hoạt mã khuyến mãi: " + promotionId
+                : "Đã hủy kích hoạt mã khuyến mãi: " + promotionId;
+
+        return new PromotionUpdateResponse(message);
     }
 
     public PromotionUpdateResponse deletePromotion(Long promotionId) {
@@ -200,7 +194,7 @@ public class PromotionServiceImpl implements PromotionService {
             throw new DeletedPromotionException();
         }
         promotion.setDeleted(true);
-        Promotion deletedPromotion = promotionRepository.save(promotion);
+        promotionRepository.save(promotion);
         return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
     }
 

@@ -24,9 +24,7 @@ public interface PromotionService {
 
     PromotionOrdersResponse getValidPromotions(String phone);
 
-    PromotionUpdateResponse activatePromotion(Long promotionId);
-
-    PromotionUpdateResponse deactivatePromotion(Long promotionId);
+    PromotionUpdateResponse updatePromotionActivation(Long promotionId, boolean activated);
 
     PromotionUpdateResponse deletePromotion(Long promotionId);
 
