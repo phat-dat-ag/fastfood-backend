@@ -13,10 +13,9 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.exception.cart.CartNotFoundException;
 import com.example.fastfoodshop.exception.cart.ProductAmountExceededException;
 import com.example.fastfoodshop.exception.cart.QuantityExceededException;
+import com.example.fastfoodshop.exception.promotion.InvalidPromotionException;
 import com.example.fastfoodshop.repository.CartRepository;
 import com.example.fastfoodshop.request.CartCreateRequest;
-import com.example.fastfoodshop.request.CartUpdateRequest;
-import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.response.cart.CartResponse;
 import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.response.cart.CartUpdateResponse;
@@ -91,52 +90,89 @@ public class CartServiceImpl implements CartService {
         return new CartResponse(CartDTO.from(savedCart));
     }
 
-    public CartDetailResponse getCartResponse(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
-        User user = userService.findUserOrThrow(phone);
-        List<Cart> carts = cartRepository.findByUser(user);
-        ArrayList<CartDTO> cartDTOs = new ArrayList<>();
+    private List<CartDTO> buildCartDTOs(List<Cart> carts) {
+        List<CartDTO> cartDTOs = new ArrayList<>();
+
         for (Cart cart : carts) {
             Category category = cart.getProduct().getCategory();
             Product product = cart.getProduct();
+
             categoryService.applyPromotion(product, category);
-            CartDTO cartDTO = new CartDTO(
+
+            cartDTOs.add(new CartDTO(
                     UserDTO.from(cart.getUser()),
                     ProductDTO.from(product),
                     cart.getQuantity()
-            );
-            cartDTOs.add(cartDTO);
+            ));
         }
+
+        return cartDTOs;
+    }
+
+    private int calculateSubtotalPrice(List<CartDTO> cartDTOs) {
         int subtotalPrice = 0;
+
         for (CartDTO cartDTO : cartDTOs) {
-            subtotalPrice += (cartDTO.quantity() * cartDTO.product().discountedPrice());
+            subtotalPrice += cartDTO.quantity() * cartDTO.product().discountedPrice();
         }
 
-        PromotionCodeCheckResultDTO promotionCodeCheckResultDTO = null;
-        int totalPrice = 0;
-        if (promotionCode != null && !promotionCode.isEmpty()) {
-            promotionCodeCheckResultDTO = promotionService.checkPromotionCode(promotionCode, subtotalPrice);
-            if (!promotionCodeCheckResultDTO.success()) {
-                throw new RuntimeException(promotionCodeCheckResultDTO.message());
-            }
-            totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, promotionCodeCheckResultDTO.promotion());
+        return subtotalPrice;
+    }
+
+    private PromotionCodeCheckResultDTO applyPromotion(String promotionCode, int subtotalPrice) {
+        if (promotionCode == null || promotionCode.isBlank()) return null;
+
+        PromotionCodeCheckResultDTO result =
+                promotionService.checkPromotionCode(promotionCode, subtotalPrice);
+
+        if (!result.success()) {
+            throw new InvalidPromotionException(result.message());
         }
 
-        DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(deliveryRequest);
-        totalPrice += deliveryInformation.fee();
+        return result;
+    }
+
+    private int calculateTotalPrice(
+            int subtotalPrice,
+            PromotionCodeCheckResultDTO promotion,
+            DeliveryDTO delivery
+    ) {
+        int totalPrice = subtotalPrice;
+
+        if (promotion != null) {
+            totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, promotion.promotion());
+        }
+
+        return totalPrice + delivery.fee();
+    }
+
+    public CartDetailResponse getCartResponse(String phone, String promotionCode, Long addressId) {
+        User user = userService.findUserOrThrow(phone);
+        List<Cart> carts = cartRepository.findByUser(user);
+
+        List<CartDTO> cartDTOs = buildCartDTOs(carts);
+
+        int subtotalPrice = calculateSubtotalPrice(cartDTOs);
+
+        PromotionCodeCheckResultDTO promotionCodeCheckResultDTO = applyPromotion(promotionCode, subtotalPrice);
+
+        DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(addressId);
+
+        int totalPrice = calculateTotalPrice(subtotalPrice, promotionCodeCheckResultDTO, deliveryInformation);
 
         return CartDetailResponse.from(cartDTOs, promotionCodeCheckResultDTO, deliveryInformation, totalPrice);
     }
 
-    public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, DeliveryRequest deliveryRequest) {
-        return getCartResponse(phone, promotionCode, deliveryRequest);
+    public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId) {
+        return getCartResponse(phone, promotionCode, addressId);
     }
 
-    public CartResponse updateCart(String userPhone, CartUpdateRequest cartUpdateRequest) {
+    public CartResponse updateCartItem(String userPhone, Long productId, int quantity) {
         User user = userService.findUserOrThrow(userPhone);
-        Product product = productService.findProductOrThrow(cartUpdateRequest.productId());
+        Product product = productService.findProductOrThrow(productId);
         Cart cart = findCartOrThrow(user, product);
 
-        updateNewProductQuantityOrThrow(cart, cartUpdateRequest.quantity());
+        updateNewProductQuantityOrThrow(cart, quantity);
 
         Cart updatedCart = cartRepository.save(cart);
         return new CartResponse(CartDTO.from(updatedCart));

@@ -18,7 +18,7 @@ public record CartDetailResponse(
         int deliveryFee
 ) {
     private static CartDetailResponse create(
-            ArrayList<CartDTO> cartDTOs,
+            List<CartDTO> cartDTOs,
             PromotionCodeCheckResultDTO applyPromotionResult, DeliveryDTO deliveryInformation, int deliveryFee
     ) {
         List<CartDTO> carts = new ArrayList<>();
@@ -44,12 +44,12 @@ public record CartDetailResponse(
         );
     }
 
-    public static CartDetailResponse from(ArrayList<CartDTO> cartDTOs) {
+    public static CartDetailResponse from(List<CartDTO> cartDTOs) {
         return create(cartDTOs, null, null, 0);
     }
 
     public static CartDetailResponse from(
-            ArrayList<CartDTO> cartDTOs,
+            List<CartDTO> cartDTOs,
             PromotionCodeCheckResultDTO applyPromotionResult, DeliveryDTO deliveryInformation, int deliveryFee
     ) {
         return create(cartDTOs, applyPromotionResult, deliveryInformation, deliveryFee);

@@ -25,7 +25,6 @@ import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
 import com.example.fastfoodshop.exception.order.AccessDeniedException;
 import com.example.fastfoodshop.repository.OrderRepository;
-import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.response.cart.CartDetailResponse;
@@ -96,10 +95,8 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private CartDetailResponse prepareCart(String phone, OrderCreateRequest orderCreateRequest) {
-        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.addressId());
-
         CartDetailResponse cartDetailResponse = cartService.getCartResponse(
-                phone, orderCreateRequest.promotionCode(), deliveryRequest
+                phone, orderCreateRequest.promotionCode(), orderCreateRequest.addressId()
         );
 
         checkAllActivatedProducts(cartDetailResponse.carts());

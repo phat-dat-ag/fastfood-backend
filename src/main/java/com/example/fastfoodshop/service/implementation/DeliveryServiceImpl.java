@@ -2,7 +2,6 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.constant.StoreConstants;
 import com.example.fastfoodshop.entity.Address;
-import com.example.fastfoodshop.request.DeliveryRequest;
 import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.service.AddressService;
 import com.example.fastfoodshop.service.DeliveryService;
@@ -34,12 +33,12 @@ public class DeliveryServiceImpl implements DeliveryService {
         return durationSeconds / 60 + StoreConstants.MIN_DURATION_MINUTES;
     }
 
-    public DeliveryDTO calculateDelivery(DeliveryRequest request) {
-        if (request == null) {
+    public DeliveryDTO calculateDelivery(Long addressId) {
+        if (addressId == null) {
             return DeliveryDTO.reject("Hãy chọn địa chỉ hợp lệ để giao hàng nhé");
         }
 
-        Address address = addressService.findAddressOrThrow(request.addressId());
+        Address address = addressService.findAddressOrThrow(addressId);
 
         String url = UriComponentsBuilder
                 .fromUriString("https://rsapi.goong.io/DistanceMatrix")
