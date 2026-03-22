@@ -22,20 +22,12 @@ import org.springframework.web.bind.annotation.*;
 public class OrderController extends BaseController {
     private final OrderService orderService;
 
-    @PostMapping("/cash-on-delivery")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> createCashOnDeliveryOrder(
+    @PostMapping()
+    public ResponseEntity<ResponseWrapper<OrderResponse>> createOrder(
             @AuthenticationPrincipal UserDetails userDetails,
             @RequestBody OrderCreateRequest orderCreateRequest
     ) {
-        return okResponse(orderService.createCashOnDeliveryOrder(userDetails.getUsername(), orderCreateRequest));
-    }
-
-    @PostMapping("/stripe-payment")
-    public ResponseEntity<ResponseWrapper<OrderResponse>> createStripePaymentOrder(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody OrderCreateRequest orderCreateRequest
-    ) {
-        return okResponse(orderService.createStripePaymentOrder(userDetails.getUsername(), orderCreateRequest));
+        return okResponse(orderService.createOrder(userDetails.getUsername(), orderCreateRequest));
     }
 
     @PatchMapping("/{id}/status")

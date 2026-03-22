@@ -12,9 +12,7 @@ import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 public interface OrderService {
     Order findOrderOrThrow(Long orderId);
 
-    OrderResponse createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest);
-
-    OrderResponse createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest);
+    OrderResponse createOrder(String phone, OrderCreateRequest orderCreateRequest);
 
     OrderResponse getPaymentIntent(String phone, Long orderId);
 

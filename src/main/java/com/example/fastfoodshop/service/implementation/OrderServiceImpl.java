@@ -79,9 +79,10 @@ public class OrderServiceImpl implements OrderService {
         return order;
     }
 
-    private void checkCashOnDeliveryLimitOrThrow(int orderTotalAmount) {
-        if (orderTotalAmount > OrderConstant.CASH_ON_DELIVERY_MAX_AMOUNT)
-            throw new CODPaymentLimitException();
+    private void checkAllActivatedProducts(List<CartDTO> cartDTOs) {
+        for (CartDTO cartDTO : cartDTOs) {
+            productService.checkActivatedCategoryAndActivatedProduct(cartDTO.product().id());
+        }
     }
 
     private void checkOrderTotalAmountLimitOrThrow(int orderTotalAmount) {
@@ -89,23 +90,35 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderAmountExceededException();
     }
 
-    private void checkAllActivatedProducts(List<CartDTO> cartDTOs) {
-        for (CartDTO cartDTO : cartDTOs) {
-            productService.checkActivatedCategoryAndActivatedProduct(cartDTO.product().id());
-        }
+    private void checkCashOnDeliveryLimitOrThrow(int orderTotalAmount) {
+        if (orderTotalAmount > OrderConstant.CASH_ON_DELIVERY_MAX_AMOUNT)
+            throw new CODPaymentLimitException();
     }
 
-    private void buildOrder(Order order, CartDetailResponse cartDetailResponse, String phone, Long addressId) {
-        User user = userService.findUserOrThrow(phone);
-        order.setUser(user);
+    private CartDetailResponse prepareCart(String phone, OrderCreateRequest orderCreateRequest) {
+        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.addressId());
 
-        Address address = addressService.findAddressOrThrow(addressId);
+        CartDetailResponse cartDetailResponse = cartService.getCartResponse(
+                phone, orderCreateRequest.promotionCode(), deliveryRequest
+        );
+
+        checkAllActivatedProducts(cartDetailResponse.carts());
+
+        checkOrderTotalAmountLimitOrThrow(cartDetailResponse.totalPrice());
+
+        if (orderCreateRequest.paymentMethod() == PaymentMethod.CASH_ON_DELIVERY) {
+            checkCashOnDeliveryLimitOrThrow(cartDetailResponse.totalPrice());
+        }
+
+        return cartDetailResponse;
+    }
+
+    private void buildOrder(Order order, CartDetailResponse cartDetailResponse, User user, Address address) {
+        order.setUser(user);
         order.setAddress(address);
 
-        LocalDateTime now = LocalDateTime.now();
-
         order.setOrderStatus(OrderStatus.PENDING);
-        order.setPlacedAt(now);
+        order.setPlacedAt(LocalDateTime.now());
         order.setPaymentStatus(PaymentStatus.PENDING);
 
         order.setOriginalPrice(cartDetailResponse.originalPrice());
@@ -115,11 +128,29 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void applyOrderPromotion(Order order, CartDetailResponse cartDetailResponse) {
-        if (cartDetailResponse.applyPromotionResult() != null && cartDetailResponse.applyPromotionResult().promotion() != null) {
-            promotionService.increasePromotionUsageCount(cartDetailResponse.applyPromotionResult().promotion().id());
-            Promotion promotion = promotionService.findPromotionOrThrow(cartDetailResponse.applyPromotionResult().promotion().id());
+        if (cartDetailResponse.applyPromotionResult() != null
+                && cartDetailResponse.applyPromotionResult().promotion() != null
+        ) {
+            Promotion promotion = promotionService.findPromotionOrThrow(
+                    cartDetailResponse.applyPromotionResult().promotion().id()
+            );
+            promotionService.increasePromotionUsageCount(promotion.getId());
+
             order.setPromotion(promotion);
         }
+    }
+
+    private Order buildOrderEntity(
+            User user, Address address, OrderCreateRequest orderCreateRequest, CartDetailResponse cartDetailResponse
+    ) {
+        Order order = new Order();
+
+        buildOrder(order, cartDetailResponse, user, address);
+        order.setPaymentMethod(orderCreateRequest.paymentMethod());
+
+        applyOrderPromotion(order, cartDetailResponse);
+
+        return order;
     }
 
     private void addUserNoteIfPresent(Order order, String userNote) {
@@ -142,58 +173,47 @@ public class OrderServiceImpl implements OrderService {
         cartService.deleteAllProductFromCart(phone);
     }
 
-    @Transactional
-    public OrderResponse createCashOnDeliveryOrder(String phone, OrderCreateRequest orderCreateRequest) {
-        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.addressId());
-        CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.promotionCode(), deliveryRequest);
-        checkAllActivatedProducts(cartDetailResponse.carts());
-
-        Order order = new Order();
-        checkCashOnDeliveryLimitOrThrow(cartDetailResponse.totalPrice());
-        checkOrderTotalAmountLimitOrThrow(cartDetailResponse.totalPrice());
-        buildOrder(order, cartDetailResponse, phone, orderCreateRequest.addressId());
-        order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
-
-        applyOrderPromotion(order, cartDetailResponse);
-
+    private Order saveOrder(
+            Order order, CartDetailResponse cartDetailResponse, OrderCreateRequest orderCreateRequest
+    ) {
         Order savedOrder = orderRepository.save(order);
 
         addUserNoteIfPresent(savedOrder, orderCreateRequest.userNote());
-
         createOrderDetails(savedOrder, cartDetailResponse);
+        clearCartForUser(order.getUser().getPhone());
 
-        clearCartForUser(phone);
+        return savedOrder;
+    }
 
-        return new OrderResponse(OrderDTO.from(savedOrder));
+    private OrderResponse handlePayment(Order order, OrderCreateRequest orderCreateRequest) {
+        return switch (orderCreateRequest.paymentMethod()) {
+            case CASH_ON_DELIVERY -> new OrderResponse(OrderDTO.from(order));
+
+            case BANK_TRANSFER -> {
+                try {
+                    String clientSecret = paymentService.createPaymentIntent(
+                            order.getTotalPrice(), order
+                    );
+                    yield new OrderResponse(OrderDTO.from(order, clientSecret));
+                } catch (StripeException e) {
+                    throw new PaymentFailedException(e.getMessage());
+                }
+            }
+        };
     }
 
     @Transactional
-    public OrderResponse createStripePaymentOrder(String phone, OrderCreateRequest orderCreateRequest) {
-        DeliveryRequest deliveryRequest = new DeliveryRequest(orderCreateRequest.addressId());
-        CartDetailResponse cartDetailResponse = cartService.getCartResponse(phone, orderCreateRequest.promotionCode(), deliveryRequest);
-        checkAllActivatedProducts(cartDetailResponse.carts());
+    public OrderResponse createOrder(String phone, OrderCreateRequest orderCreateRequest) {
+        CartDetailResponse cartDetailResponse = prepareCart(phone, orderCreateRequest);
 
-        Order order = new Order();
-        checkOrderTotalAmountLimitOrThrow(cartDetailResponse.totalPrice());
-        buildOrder(order, cartDetailResponse, phone, orderCreateRequest.addressId());
-        order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        User user = userService.findUserOrThrow(phone);
+        Address address = addressService.findAddressOrThrow(orderCreateRequest.addressId());
 
-        applyOrderPromotion(order, cartDetailResponse);
+        Order order = buildOrderEntity(user, address, orderCreateRequest, cartDetailResponse);
 
-        Order savedOrder = orderRepository.save(order);
+        Order savedOrder = saveOrder(order, cartDetailResponse, orderCreateRequest);
 
-        addUserNoteIfPresent(savedOrder, orderCreateRequest.userNote());
-
-        createOrderDetails(savedOrder, cartDetailResponse);
-
-        clearCartForUser(phone);
-
-        try {
-            String setClientSecret = paymentService.createPaymentIntent(savedOrder.getTotalPrice(), savedOrder);
-            return new OrderResponse(OrderDTO.from(order, setClientSecret));
-        } catch (StripeException e) {
-            throw new PaymentFailedException(e.getMessage());
-        }
+        return handlePayment(savedOrder, orderCreateRequest);
     }
 
     private Order findActiveOrderOrThrow(Long orderId, User user) {
