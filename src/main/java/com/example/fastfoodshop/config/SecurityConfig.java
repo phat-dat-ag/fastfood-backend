@@ -84,7 +84,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/topic/display/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/topic/**").hasRole("ADMIN")
                         .requestMatchers("/api/topic-difficulty/**").hasRole("ADMIN")
-                        .requestMatchers("/api/award/**").hasRole("ADMIN")
+                        .requestMatchers("/api/awards/**").hasRole("ADMIN")
                         .requestMatchers("/api/question/**").hasRole("ADMIN")
                         .requestMatchers("/api/image/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "STAFF")

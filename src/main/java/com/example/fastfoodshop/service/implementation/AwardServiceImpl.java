@@ -58,11 +58,13 @@ public class AwardServiceImpl implements AwardService {
         return availableAwards.get(index);
     }
 
-    public AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest request) {
-        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+    public AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest awardCreateRequest) {
+        TopicDifficulty topicDifficulty = topicDifficultyService
+                .findValidTopicDifficultyOrThrow(topicDifficultySlug);
+
         Award award = new Award();
         award.setTopicDifficulty(topicDifficulty);
-        buildAward(award, request);
+        buildAward(award, awardCreateRequest);
 
         Award savedAward = awardRepository.save(award);
         return new AwardUpdateResponse("Thêm phần thưởng thành công: " + savedAward.getId());
@@ -70,8 +72,12 @@ public class AwardServiceImpl implements AwardService {
 
     public AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest request) {
         Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
-        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(request.getTopicDifficultySlug());
-        Page<Award> awardPage = awardRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
+
+        TopicDifficulty topicDifficulty = topicDifficultyService
+                .findValidTopicDifficultyOrThrow(request.getTopicDifficultySlug());
+
+        Page<Award> awardPage = awardRepository
+                .findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
         return AwardPageResponse.from(awardPage);
     }
