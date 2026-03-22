@@ -14,35 +14,43 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api/orders")
 @RequiredArgsConstructor
 public class OrderController extends BaseController {
     private final OrderService orderService;
 
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<ResponseWrapper<OrderResponse>> createOrder(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody OrderCreateRequest orderCreateRequest
+            @RequestBody @Valid OrderCreateRequest orderCreateRequest
     ) {
         return okResponse(orderService.createOrder(userDetails.getUsername(), orderCreateRequest));
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping("/{id}")
     public ResponseEntity<ResponseWrapper<OrderUpdateResponse>> updateOrderStatus(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable("id") Long orderId,
-            @RequestBody OrderStatusUpdateRequest orderStatusUpdateRequest
+            @RequestBody @Valid OrderStatusUpdateRequest orderStatusUpdateRequest
     ) {
-        return okResponse(orderService.updateStatus(orderId, userDetails.getUsername(), orderStatusUpdateRequest));
+        return okResponse(orderService.updateOrder(orderId, userDetails.getUsername(), orderStatusUpdateRequest));
     }
 
-    @GetMapping("/payment-intent")
+    @GetMapping("/{id}/payment-intent")
     public ResponseEntity<ResponseWrapper<OrderResponse>> getPaymentIntent(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("orderId") Long orderId
+            @PathVariable("id") Long orderId
     ) {
         return okResponse(orderService.getPaymentIntent(userDetails.getUsername(), orderId));
     }

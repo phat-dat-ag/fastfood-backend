@@ -224,10 +224,13 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse getPaymentIntent(String phone, Long orderId) {
         User user = userService.findUserOrThrow(phone);
         Order order = findActiveOrderOrThrow(orderId, user);
+
         if (order.getOrderStatus() != OrderStatus.PENDING) {
             throw new InvalidOrderStatusException();
         }
-        if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER || order.getPaymentStatus() == PaymentStatus.PAID) {
+        if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER
+                || order.getPaymentStatus() == PaymentStatus.PAID
+        ) {
             throw new PaymentNotAllowedException();
         }
 
@@ -322,7 +325,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Transactional
-    public OrderUpdateResponse updateStatus(Long orderId, String phone, OrderStatusUpdateRequest request) {
+    public OrderUpdateResponse updateOrder(Long orderId, String phone, OrderStatusUpdateRequest request) {
         Order order = findOrderForUpdate(orderId);
         User user = userService.findUserOrThrow(phone);
 

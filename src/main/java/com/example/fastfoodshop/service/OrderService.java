@@ -18,7 +18,7 @@ public interface OrderService {
 
     void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus);
 
-    OrderUpdateResponse updateStatus(Long orderId, String phone, OrderStatusUpdateRequest request);
+    OrderUpdateResponse updateOrder(Long orderId, String phone, OrderStatusUpdateRequest request);
 
     OrderResponse getOrder(String phone, Long orderId);
 
