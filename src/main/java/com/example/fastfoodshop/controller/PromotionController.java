@@ -29,22 +29,11 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 public class PromotionController extends BaseController {
     private final PromotionService promotionService;
 
-    @PostMapping("/category")
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> createPromotionCategory
-            (@RequestBody PromotionCreateRequest promotionCreateRequest) {
-        return okResponse(promotionService.createPromotionCategory(promotionCreateRequest));
-    }
-
-    @PostMapping("/product")
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> createPromotionProduct
-            (@RequestBody PromotionCreateRequest promotionCreateRequest) {
-        return okResponse(promotionService.createPromotionProduct(promotionCreateRequest));
-    }
-
-    @PostMapping("/order")
-    public ResponseEntity<ResponseWrapper<PromotionResponse>> createPromotionOrder
-            (@RequestBody PromotionCreateRequest promotionCreateRequest) {
-        return okResponse(promotionService.createPromotionOrder(promotionCreateRequest));
+    @PostMapping
+    public ResponseEntity<ResponseWrapper<PromotionResponse>> createPromotionOrder(
+            @RequestBody @Valid PromotionCreateRequest promotionCreateRequest
+    ) {
+        return okResponse(promotionService.createPromotion(promotionCreateRequest));
     }
 
     @GetMapping("/category")

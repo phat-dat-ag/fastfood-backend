@@ -17,11 +17,7 @@ public interface PromotionService {
 
     PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice);
 
-    PromotionResponse createPromotionCategory(PromotionCreateRequest promotionCreateRequest);
-
-    PromotionResponse createPromotionProduct(PromotionCreateRequest promotionCreateRequest);
-
-    PromotionResponse createPromotionOrder(PromotionCreateRequest promotionCreateRequest);
+    PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest);
 
     PromotionPageResponse getPromotionCategory(int page, int size);
 

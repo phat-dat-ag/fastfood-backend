@@ -10,7 +10,12 @@ import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.enums.PromotionType;
-import com.example.fastfoodshop.exception.promotion.*;
+import com.example.fastfoodshop.exception.promotion.DeletedPromotionException;
+import com.example.fastfoodshop.exception.promotion.UncompletedQuizException;
+import com.example.fastfoodshop.exception.promotion.CodeAlreadyExistsException;
+import com.example.fastfoodshop.exception.promotion.InvalidPromotionStatusException;
+import com.example.fastfoodshop.exception.promotion.PromotionNotFoundException;
+import com.example.fastfoodshop.exception.promotion.UnavailablePromotionException;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
@@ -47,23 +52,6 @@ public class PromotionServiceImpl implements PromotionService {
 
     private boolean checkUniqueCode(String code) {
         return promotionRepository.findByCode(code).isPresent();
-    }
-
-    private Promotion buildPromotionCategoryFromRequest(PromotionCreateRequest promotionCreateRequest) {
-        Promotion promotion = new Promotion();
-        promotion.setType(promotionCreateRequest.type());
-        promotion.setValue(promotionCreateRequest.value());
-        promotion.setStartAt(promotionCreateRequest.startAt());
-        promotion.setEndAt(promotionCreateRequest.endAt());
-        promotion.setQuantity(promotionCreateRequest.quantity());
-        promotion.setUsedQuantity(0);
-        promotion.setMaxDiscountAmount(promotionCreateRequest.maxDiscountAmount());
-        promotion.setMinSpendAmount(promotionCreateRequest.minSpendAmount());
-        promotion.setCode(promotionCreateRequest.code());
-        promotion.setGlobal(promotionCreateRequest.global());
-        promotion.setActivated(promotionCreateRequest.activated());
-        promotion.setDeleted(false);
-        return promotion;
     }
 
     private Promotion findUndeletedPromotionOrThrow(Long promotionId) {
@@ -113,36 +101,51 @@ public class PromotionServiceImpl implements PromotionService {
         return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", PromotionDTO.from(promotion));
     }
 
-    public PromotionResponse createPromotionCategory(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.code())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
-        }
-        Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId());
-
-        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
-        promotion.setCategory(category);
-        Promotion savedPromotion = promotionRepository.save(promotion);
-        return new PromotionResponse(PromotionDTO.from(savedPromotion));
+    private Promotion buildPromotionEntity(PromotionCreateRequest promotionCreateRequest) {
+        Promotion promotion = new Promotion();
+        promotion.setType(promotionCreateRequest.type());
+        promotion.setValue(promotionCreateRequest.value());
+        promotion.setStartAt(promotionCreateRequest.startAt());
+        promotion.setEndAt(promotionCreateRequest.endAt());
+        promotion.setQuantity(promotionCreateRequest.quantity());
+        promotion.setUsedQuantity(0);
+        promotion.setMaxDiscountAmount(promotionCreateRequest.maxDiscountAmount());
+        promotion.setMinSpendAmount(promotionCreateRequest.minSpendAmount());
+        promotion.setCode(promotionCreateRequest.code());
+        promotion.setGlobal(false);
+        promotion.setActivated(promotionCreateRequest.activated());
+        promotion.setDeleted(false);
+        return promotion;
     }
 
-    public PromotionResponse createPromotionProduct(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.code())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
-        }
-        Product product = productService.findProductOrThrow(promotionCreateRequest.productId());
+    private void assignPromotionTarget(Promotion promotion, PromotionCreateRequest promotionCreateRequest) {
+        boolean hasCategory = promotionCreateRequest.categoryId() != null;
+        boolean hasProduct = promotionCreateRequest.productId() != null;
 
-        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
-        promotion.setProduct(product);
-        Promotion savedPromotion = promotionRepository.save(promotion);
-        return new PromotionResponse(PromotionDTO.from(savedPromotion));
+        if (hasCategory) {
+            Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId());
+            promotion.setCategory(category);
+            return;
+        }
+
+        if (hasProduct) {
+            Product product = productService.findProductOrThrow(promotionCreateRequest.productId());
+            promotion.setProduct(product);
+            return;
+        }
+
+        promotion.setGlobal(true);
     }
 
-    public PromotionResponse createPromotionOrder(PromotionCreateRequest promotionCreateRequest) {
+    public PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest) {
         if (checkUniqueCode(promotionCreateRequest.code())) {
             throw new CodeAlreadyExistsException(promotionCreateRequest.code());
         }
 
-        Promotion promotion = buildPromotionCategoryFromRequest(promotionCreateRequest);
+        Promotion promotion = buildPromotionEntity(promotionCreateRequest);
+
+        assignPromotionTarget(promotion, promotionCreateRequest);
+
         Promotion savedPromotion = promotionRepository.save(promotion);
         return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }

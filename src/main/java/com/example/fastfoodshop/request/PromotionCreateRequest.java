@@ -1,7 +1,11 @@
 package com.example.fastfoodshop.request;
 
 import com.example.fastfoodshop.enums.PromotionType;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 
@@ -35,9 +39,6 @@ public record PromotionCreateRequest(
         @Min(value = 0, message = "Số tiền ít nhất để được khuyến mãi phải từ 0 trở lên")
         Integer minSpendAmount,
 
-        @NotNull(message = "Không được để trống phạm vi mã khuyến mãi")
-        Boolean global,
-
         @NotNull(message = "Không được để trống trạng thái mã khuyến mãi")
         Boolean activated,
 
@@ -64,7 +65,7 @@ public record PromotionCreateRequest(
         if (type == null) return true;
 
         if (type == PromotionType.FIXED_AMOUNT) {
-            return value != null && value % 10000 == 0;
+            return value != null && value % 1000 == 0;
         }
 
         if (type == PromotionType.PERCENTAGE) {
