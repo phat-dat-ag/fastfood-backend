@@ -5,6 +5,7 @@ import com.example.fastfoodshop.response.address.AddressResponse;
 import com.example.fastfoodshop.response.address.AddressesResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.service.AddressService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -15,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
-@RequestMapping("/api/address")
+@RequestMapping("/api/addresses")
 @RequiredArgsConstructor
 public class AddressController extends BaseController {
     private final AddressService addressService;
@@ -26,22 +27,22 @@ public class AddressController extends BaseController {
     @PostMapping
     public ResponseEntity<ResponseWrapper<AddressResponse>> createAddress(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody AddressCreateRequest addressCreateRequest
+            @RequestBody @Valid AddressCreateRequest addressCreateRequest
     ) {
         return okResponse(addressService.createAddress(userDetails.getUsername(), addressCreateRequest));
     }
 
     @GetMapping
-    public ResponseEntity<ResponseWrapper<AddressesResponse>> getAddress(
+    public ResponseEntity<ResponseWrapper<AddressesResponse>> getAddresses(
             @AuthenticationPrincipal UserDetails userDetails
     ) {
         return okResponse(addressService.getAddressesByUser(userDetails.getUsername()));
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{id}")
     public ResponseEntity<ResponseWrapper<AddressResponse>> deleteAddress(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("id") Long addressId
+            @PathVariable("id") Long addressId
     ) {
         return okResponse(addressService.deleteAddress(userDetails.getUsername(), addressId));
     }
