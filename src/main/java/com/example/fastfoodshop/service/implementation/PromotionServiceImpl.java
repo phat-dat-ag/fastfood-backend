@@ -38,7 +38,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -165,14 +164,13 @@ public class PromotionServiceImpl implements PromotionService {
         return PromotionPageResponse.from(promotionPage);
     }
 
-    public PromotionOrdersResponse getValidPromotionOrder(String phone) {
+    public PromotionOrdersResponse getValidPromotions(String phone) {
         User user = userService.findUserOrThrow(phone);
-        List<Promotion> orderPromotions = promotionRepository.findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now());
-        ArrayList<PromotionDTO> validOrderPromotions = new ArrayList<>();
 
-        for (Promotion promotion : orderPromotions) {
-            validOrderPromotions.add(PromotionDTO.from(promotion));
-        }
+        List<PromotionDTO> validOrderPromotions = promotionRepository
+                .findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now())
+                .stream().map(PromotionDTO::from).toList();
+
         return new PromotionOrdersResponse(validOrderPromotions);
     }
 

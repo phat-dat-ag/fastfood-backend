@@ -4,9 +4,11 @@ import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
+import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
 import com.example.fastfoodshop.response.user.UserPageResponse;
 import com.example.fastfoodshop.response.user.UserResponse;
 import com.example.fastfoodshop.response.user.UserUpdateResponse;
+import com.example.fastfoodshop.service.PromotionService;
 import com.example.fastfoodshop.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class UserController extends BaseController {
     private final UserService userService;
+    private final PromotionService promotionService;
 
     @PostMapping("/update-avatar")
     public ResponseEntity<ResponseWrapper<UserResponse>> updateAvatar(
@@ -81,5 +84,14 @@ public class UserController extends BaseController {
     @DeleteMapping("/manage")
     public ResponseEntity<ResponseWrapper<UserUpdateResponse>> deleteUser(@RequestParam("phone") String phone) {
         return okResponse(userService.deleteUser(phone));
+    }
+
+    @GetMapping("/me/promotions/valid")
+    public ResponseEntity<ResponseWrapper<PromotionOrdersResponse>> getValidPromotions(
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        return okResponse(
+                promotionService.getValidPromotions(userDetails.getUsername())
+        );
     }
 }

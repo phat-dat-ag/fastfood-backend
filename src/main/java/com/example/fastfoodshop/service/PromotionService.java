@@ -22,7 +22,7 @@ public interface PromotionService {
 
     PromotionPageResponse getPromotions(PromotionQueryType promotionQueryType, int page, int size);
 
-    PromotionOrdersResponse getValidPromotionOrder(String phone);
+    PromotionOrdersResponse getValidPromotions(String phone);
 
     PromotionUpdateResponse activatePromotion(Long promotionId);
 

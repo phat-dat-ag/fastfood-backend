@@ -5,15 +5,12 @@ import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
 import com.example.fastfoodshop.response.promotion.PromotionResponse;
 import com.example.fastfoodshop.response.promotion.PromotionUpdateResponse;
 import com.example.fastfoodshop.service.PromotionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,13 +42,6 @@ public class PromotionController extends BaseController {
         return okResponse(promotionService.getPromotions(
                 promotionQueryType, pageRequest.getPage(), pageRequest.getSize()
         ));
-    }
-
-    @GetMapping("/order/valid")
-    public ResponseEntity<ResponseWrapper<PromotionOrdersResponse>> getValidPromotionOrder(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        return okResponse(promotionService.getValidPromotionOrder(userDetails.getUsername()));
     }
 
     @PutMapping("/activate")
