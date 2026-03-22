@@ -9,6 +9,7 @@ import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.enums.PromotionQueryType;
 import com.example.fastfoodshop.enums.PromotionType;
 import com.example.fastfoodshop.exception.promotion.DeletedPromotionException;
 import com.example.fastfoodshop.exception.promotion.UncompletedQuizException;
@@ -150,22 +151,18 @@ public class PromotionServiceImpl implements PromotionService {
         return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }
 
-    public PromotionPageResponse getPromotionCategory(int page, int size) {
+    public PromotionPageResponse getPromotions(PromotionQueryType promotionQueryType, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<Promotion> categoryPromotionPage = promotionRepository.findByCategoryIsNotNullAndIsDeletedFalse(pageable);
-        return PromotionPageResponse.from(categoryPromotionPage);
-    }
 
-    public PromotionPageResponse getPromotionProduct(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Promotion> productPromotionPage = promotionRepository.findByProductIsNotNullAndIsDeletedFalse(pageable);
-        return PromotionPageResponse.from(productPromotionPage);
-    }
+        Page<Promotion> promotionPage = switch (promotionQueryType) {
+            case CATEGORY -> promotionRepository
+                    .findByCategoryIsNotNullAndIsDeletedFalse(pageable);
+            case PRODUCT -> promotionRepository
+                    .findByProductIsNotNullAndIsDeletedFalse(pageable);
+            case GLOBAL -> promotionRepository.findGlobalOrderPromotions(pageable);
+        };
 
-    public PromotionPageResponse getPromotionOrder(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Promotion> orderPromotionPage = promotionRepository.findGlobalOrderPromotions(pageable);
-        return PromotionPageResponse.from(orderPromotionPage);
+        return PromotionPageResponse.from(promotionPage);
     }
 
     public PromotionOrdersResponse getValidPromotionOrder(String phone) {

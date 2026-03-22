@@ -4,6 +4,7 @@ import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.enums.PromotionQueryType;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
 import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
@@ -19,11 +20,7 @@ public interface PromotionService {
 
     PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest);
 
-    PromotionPageResponse getPromotionCategory(int page, int size);
-
-    PromotionPageResponse getPromotionProduct(int page, int size);
-
-    PromotionPageResponse getPromotionOrder(int page, int size);
+    PromotionPageResponse getPromotions(PromotionQueryType promotionQueryType, int page, int size);
 
     PromotionOrdersResponse getValidPromotionOrder(String phone);
 

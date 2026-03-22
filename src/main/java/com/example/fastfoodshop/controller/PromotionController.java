@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.controller;
 
+import com.example.fastfoodshop.enums.PromotionQueryType;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
 import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
@@ -36,25 +37,14 @@ public class PromotionController extends BaseController {
         return okResponse(promotionService.createPromotion(promotionCreateRequest));
     }
 
-    @GetMapping("/category")
-    public ResponseEntity<ResponseWrapper<PromotionPageResponse>> getPromotionCategory(
-            @Valid @ModelAttribute PageRequest request
+    @GetMapping
+    public ResponseEntity<ResponseWrapper<PromotionPageResponse>> getPromotions(
+            @Valid @ModelAttribute PageRequest pageRequest,
+            @RequestParam("promotionQueryType") PromotionQueryType promotionQueryType
     ) {
-        return okResponse(promotionService.getPromotionCategory(request.getPage(), request.getSize()));
-    }
-
-    @GetMapping("/product")
-    public ResponseEntity<ResponseWrapper<PromotionPageResponse>> getPromotionProduct(
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(promotionService.getPromotionProduct(request.getPage(), request.getSize()));
-    }
-
-    @GetMapping("/order")
-    public ResponseEntity<ResponseWrapper<PromotionPageResponse>> getPromotionOrder(
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(promotionService.getPromotionOrder(request.getPage(), request.getSize()));
+        return okResponse(promotionService.getPromotions(
+                promotionQueryType, pageRequest.getPage(), pageRequest.getSize()
+        ));
     }
 
     @GetMapping("/order/valid")
