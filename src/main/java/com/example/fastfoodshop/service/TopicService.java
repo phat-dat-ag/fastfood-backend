@@ -16,13 +16,11 @@ public interface TopicService {
 
     TopicResponse getTopicBySlug(String topicSlug);
 
-    TopicPageResponse getAllTopics(int page, int size);
+    TopicPageResponse getTopics(int page, int size);
 
-    TopicDisplayResponse getDisplayableTopics();
-
-    TopicUpdateResponse activateTopic(Long topicId);
-
-    TopicUpdateResponse deactivateTopic(Long topicId);
+    TopicUpdateResponse updateTopicActivation(Long topicId, boolean activated);
 
     TopicUpdateResponse deleteTopic(Long topicId);
+
+    TopicDisplayResponse getDisplayableTopics();
 }

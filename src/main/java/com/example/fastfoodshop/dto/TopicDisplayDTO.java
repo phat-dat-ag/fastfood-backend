@@ -10,14 +10,14 @@ public record TopicDisplayDTO(
         List<TopicDifficultyDisplayDTO> difficulties
 ) {
     public static TopicDisplayDTO from(
-            TopicDifficultyFullDTO first,
+            TopicDifficultyFullDTO topicDifficultyFullDTO,
             List<TopicDifficultyDisplayDTO> difficulties
     ) {
         return new TopicDisplayDTO(
-                first.topicId(),
-                first.topicName(),
-                first.topicSlug(),
-                first.topicDescription(),
+                topicDifficultyFullDTO.topicId(),
+                topicDifficultyFullDTO.topicName(),
+                topicDifficultyFullDTO.topicSlug(),
+                topicDifficultyFullDTO.topicDescription(),
                 difficulties
         );
     }

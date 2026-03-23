@@ -1,10 +1,8 @@
 package com.example.fastfoodshop.controller;
 
-import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
-import com.example.fastfoodshop.request.TopicDifficultyGetByTopicRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
+import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 import com.example.fastfoodshop.service.TopicDifficultyService;
@@ -14,66 +12,48 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.ModelAttribute;
 
 @RestController
-@RequestMapping("/api/topic-difficulty")
+@RequestMapping("/api/admin/topic-difficulties")
 @RequiredArgsConstructor
 public class TopicDifficultyController extends BaseController {
     private final TopicDifficultyService topicDifficultyService;
 
-    @PostMapping()
-    public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> createTopicDifficulty(
-            @RequestBody TopicDifficultyCreateRequest topicDifficultyCreateRequest,
-            @RequestParam("topicSlug") String topicSlug
-    ) {
-        return okResponse(topicDifficultyService.createTopicDifficulty(topicSlug, topicDifficultyCreateRequest));
-    }
-
-    @PutMapping()
+    @PutMapping("/{id}")
     public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> updateTopicDifficulty(
-            @RequestParam("topicDifficultyId") Long topicDifficultyId,
-            @RequestBody TopicDifficultyUpdateRequest topicDifficultyUpdateRequest
+            @PathVariable("id") Long topicDifficultyId,
+            @Valid @RequestBody TopicDifficultyUpdateRequest topicDifficultyUpdateRequest
     ) {
-        return okResponse(topicDifficultyService.updateTopicDifficulty(topicDifficultyId, topicDifficultyUpdateRequest));
+        return okResponse(topicDifficultyService.updateTopicDifficulty(
+                topicDifficultyId, topicDifficultyUpdateRequest
+        ));
     }
 
-    @GetMapping("/by-slug")
+    @GetMapping("/slug/{slug}")
     public ResponseEntity<ResponseWrapper<TopicDifficultyResponse>> getTopicDifficultyBySlug(
-            @RequestParam("topicDifficultySlug") String topicDifficultySlug
+            @PathVariable("slug") String topicDifficultySlug
     ) {
         return okResponse(topicDifficultyService.getTopicDifficultyBySlug(topicDifficultySlug));
     }
 
-    @GetMapping("/by-topic-slug")
-    public ResponseEntity<ResponseWrapper<TopicDifficultyPageResponse>> getAllTopicDifficultiesByTopic(
-            @Valid @ModelAttribute TopicDifficultyGetByTopicRequest topicDifficultyGetByTopicRequest
+    @PatchMapping("/{id}")
+    public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> updateTopicDifficultyActivation(
+            @PathVariable("id") Long topicDifficultyId,
+            @Valid @RequestBody UpdateActivationRequest updateActivationRequest
     ) {
-        return okResponse(topicDifficultyService.getAllTopicDifficultiesByTopic(topicDifficultyGetByTopicRequest));
+        return okResponse(topicDifficultyService.updateTopicDifficultyActivation(
+                topicDifficultyId, updateActivationRequest.activated()
+        ));
     }
 
-    @PutMapping("/activate")
-    public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> activateTopicDifficulty(
-            @RequestParam("topicDifficultyId") Long topicDifficultyId
-    ) {
-        return okResponse(topicDifficultyService.activateTopicDifficulty(topicDifficultyId));
-    }
-
-    @PutMapping("/deactivate")
-    public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> deactivateTopicDifficulty(
-            @RequestParam("topicDifficultyId") Long topicDifficultyId
-    ) {
-        return okResponse(topicDifficultyService.deactivateTopicDifficulty(topicDifficultyId));
-    }
-
-    @DeleteMapping()
+    @DeleteMapping("/{id}")
     public ResponseEntity<ResponseWrapper<TopicDifficultyUpdateResponse>> deleteTopicDifficulty(
-            @RequestParam("topicDifficultyId") Long topicDifficultyId
+            @PathVariable("id") Long topicDifficultyId
     ) {
         return okResponse(topicDifficultyService.deleteTopicDifficulty(topicDifficultyId));
     }

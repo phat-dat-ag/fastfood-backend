@@ -4,6 +4,7 @@ import com.example.fastfoodshop.dto.TopicDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
 import com.example.fastfoodshop.dto.TopicDisplayDTO;
 import com.example.fastfoodshop.entity.Topic;
+import com.example.fastfoodshop.exception.topic.DeletedTopicException;
 import com.example.fastfoodshop.exception.topic.InvalidTopicStatusException;
 import com.example.fastfoodshop.exception.topic.TopicNotFoundException;
 import com.example.fastfoodshop.repository.TopicRepository;
@@ -52,37 +53,37 @@ public class TopicServiceImpl implements TopicService {
         );
     }
 
-    private Topic findActivatedTopic(Long topicId) {
-        return topicRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(topicId).orElseThrow(
-                () -> new InvalidTopicStatusException(topicId)
-        );
-    }
-
-    private Topic findDeactivatedTopic(Long topicId) {
-        return topicRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(topicId).orElseThrow(
-                () -> new InvalidTopicStatusException(topicId)
-        );
-    }
-
-    public TopicResponse createTopic(TopicCreateRequest topicCreateRequest) {
+    private Topic buildTopic(TopicCreateRequest topicCreateRequest) {
         Topic topic = new Topic();
+
+        String slug = generateUniqueSlug(topicCreateRequest.name());
+
         topic.setName(topicCreateRequest.name());
         topic.setDescription(topicCreateRequest.description());
         topic.setActivated(topicCreateRequest.activated());
         topic.setDeleted(false);
-
-        String slug = generateUniqueSlug(topicCreateRequest.name());
         topic.setSlug(slug);
+
+        return topic;
+    }
+
+    public TopicResponse createTopic(TopicCreateRequest topicCreateRequest) {
+        Topic topic = buildTopic(topicCreateRequest);
 
         Topic savedTopic = topicRepository.save(topic);
         return new TopicResponse(TopicDTO.from(savedTopic));
     }
 
-    public TopicResponse updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
-        Topic topic = findTopicOrThrow(topicId);
+    private void updateTopicFields(Topic topic, TopicCreateRequest topicCreateRequest) {
         topic.setName(topicCreateRequest.name());
         topic.setDescription(topicCreateRequest.description());
         topic.setActivated(topicCreateRequest.activated());
+    }
+
+    public TopicResponse updateTopic(Long topicId, TopicCreateRequest topicCreateRequest) {
+        Topic topic = findTopicOrThrow(topicId);
+
+        updateTopicFields(topic, topicCreateRequest);
 
         Topic updatedTopic = topicRepository.save(topic);
         return new TopicResponse(TopicDTO.from(updatedTopic));
@@ -93,72 +94,89 @@ public class TopicServiceImpl implements TopicService {
         return new TopicResponse(TopicDTO.from(topic));
     }
 
-    public TopicPageResponse getAllTopics(int page, int size) {
+    public TopicPageResponse getTopics(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Topic> topicPage = topicRepository.findByIsDeletedFalse(pageable);
 
-
         return TopicPageResponse.from(topicPage);
+    }
+
+    private Map<Long, List<TopicDifficultyFullDTO>> groupByTopic(List<TopicDifficultyFullDTO> flatList) {
+        return flatList.stream()
+                .collect(Collectors.groupingBy(
+                        TopicDifficultyFullDTO::topicId,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+    }
+
+    private List<TopicDifficultyDisplayDTO> mapToDifficulties(
+            List<TopicDifficultyFullDTO> topicDifficultyFullDTOs
+    ) {
+        return topicDifficultyFullDTOs
+                .stream()
+                .map(dto -> new TopicDifficultyDisplayDTO(
+                        dto.difficultyId(),
+                        dto.difficultyName(),
+                        dto.difficultySlug(),
+                        dto.difficultyDescription(),
+                        dto.duration(),
+                        dto.questionCount(),
+                        dto.minCorrectToReward()
+                ))
+                .toList();
+    }
+
+    private TopicDisplayDTO mapSingleTopic(List<TopicDifficultyFullDTO> topicDifficultyFullDTOs) {
+        TopicDifficultyFullDTO topicDifficultyFullDTO = topicDifficultyFullDTOs.get(0);
+
+        List<TopicDifficultyDisplayDTO> difficulties = mapToDifficulties(topicDifficultyFullDTOs);
+
+        return TopicDisplayDTO.from(topicDifficultyFullDTO, difficulties);
+    }
+
+    private List<TopicDisplayDTO> mapToTopicDisplay(
+            Map<Long, List<TopicDifficultyFullDTO>> grouped
+    ) {
+        return grouped.values().stream()
+                .map(this::mapSingleTopic)
+                .toList();
     }
 
     public TopicDisplayResponse getDisplayableTopics() {
 
         List<TopicDifficultyFullDTO> flatList = topicRepository.findDisplayableTopicsFull();
 
-        Map<Long, List<TopicDifficultyFullDTO>> grouped =
-                flatList.stream()
-                        .collect(Collectors.groupingBy(
-                                TopicDifficultyFullDTO::topicId,
-                                LinkedHashMap::new,
-                                Collectors.toList()
-                        ));
+        Map<Long, List<TopicDifficultyFullDTO>> grouped = groupByTopic(flatList);
 
-        List<TopicDisplayDTO> topics = grouped.values().stream()
-                .map(list -> {
-
-                    TopicDifficultyFullDTO first = list.get(0);
-
-                    List<TopicDifficultyDisplayDTO> difficulties =
-                            list.stream()
-                                    .map(dto -> new TopicDifficultyDisplayDTO(
-                                            dto.difficultyId(),
-                                            dto.difficultyName(),
-                                            dto.difficultySlug(),
-                                            dto.difficultyDescription(),
-                                            dto.duration(),
-                                            dto.questionCount(),
-                                            dto.minCorrectToReward()
-                                    ))
-                                    .toList();
-
-                    return TopicDisplayDTO.from(first, difficulties);
-                })
-                .toList();
+        List<TopicDisplayDTO> topics = mapToTopicDisplay(grouped);
 
         return new TopicDisplayResponse(topics);
     }
 
-    public TopicUpdateResponse activateTopic(Long topicId) {
-        Topic topic = findDeactivatedTopic(topicId);
-        topic.setActivated(true);
+    public TopicUpdateResponse updateTopicActivation(Long topicId, boolean activated) {
+        Topic topic = findTopicOrThrow(topicId);
+        if (topic.isActivated() == activated) {
+            throw new InvalidTopicStatusException(topicId);
+        }
+
+        topic.setActivated(activated);
         topicRepository.save(topic);
 
-        return new TopicUpdateResponse("Đã kích hoạt chủ đề: " + topicId);
-    }
+        String message = activated ? "Đã kích hoạt chủ đề: " + topicId : "Đã hủy kích hoạt chủ đề: " + topicId;
 
-    public TopicUpdateResponse deactivateTopic(Long topicId) {
-        Topic topic = findActivatedTopic(topicId);
-        topic.setActivated(false);
-        topicRepository.save(topic);
-
-        return new TopicUpdateResponse("Đã hủy kích hoạt chủ đề: " + topicId);
+        return new TopicUpdateResponse(message);
     }
 
     public TopicUpdateResponse deleteTopic(Long topicId) {
         Topic topic = findTopicOrThrow(topicId);
+        if (topic.isDeleted()) {
+            throw new DeletedTopicException();
+        }
+
         topic.setDeleted(true);
 
-        Topic deletedTopic = topicRepository.save(topic);
+        topicRepository.save(topic);
         return new TopicUpdateResponse("Đã xóa chủ đề: " + topicId);
     }
 }
