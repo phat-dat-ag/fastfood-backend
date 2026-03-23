@@ -1,6 +1,5 @@
 package com.example.fastfoodshop.service;
 
-import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
@@ -16,7 +15,7 @@ public interface PromotionService {
 
     void increasePromotionUsageCount(Long promotionId);
 
-    PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice);
+    Promotion checkPromotionCode(String promotionCode, int orderPrice);
 
     PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest);
 

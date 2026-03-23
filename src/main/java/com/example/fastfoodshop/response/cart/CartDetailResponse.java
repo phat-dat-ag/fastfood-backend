@@ -3,7 +3,7 @@ package com.example.fastfoodshop.response.cart;
 import com.example.fastfoodshop.dto.CartDTO;
 import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.dto.ProductDTO;
-import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
+import com.example.fastfoodshop.dto.PromotionDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,17 +13,19 @@ public record CartDetailResponse(
         int originalPrice,
         int subtotalPrice,
         int totalPrice,
-        PromotionCodeCheckResultDTO applyPromotionResult,
+        PromotionDTO promotion,
         DeliveryDTO deliveryInformation,
         int deliveryFee
 ) {
     private static CartDetailResponse create(
             List<CartDTO> cartDTOs,
-            PromotionCodeCheckResultDTO applyPromotionResult, DeliveryDTO deliveryInformation, int deliveryFee
+            PromotionDTO promotionDTO, DeliveryDTO deliveryInformation, int totalPrice
     ) {
         List<CartDTO> carts = new ArrayList<>();
         int originalPrice = 0;
         int subtotalPrice = 0;
+
+        int deliveryFee = deliveryInformation == null ? 0 : deliveryInformation.fee();
 
         for (CartDTO cartDTO : cartDTOs) {
             ProductDTO productDTO = cartDTO.product();
@@ -31,14 +33,13 @@ public record CartDetailResponse(
             originalPrice += (cartDTO.quantity() * productDTO.price());
             subtotalPrice += (cartDTO.quantity() * productDTO.discountedPrice());
         }
-        int totalPrice = subtotalPrice;
 
         return new CartDetailResponse(
                 carts,
                 originalPrice,
                 subtotalPrice,
-                totalPrice + deliveryFee,
-                applyPromotionResult,
+                totalPrice,
+                promotionDTO,
                 deliveryInformation,
                 deliveryFee
         );
@@ -50,8 +51,8 @@ public record CartDetailResponse(
 
     public static CartDetailResponse from(
             List<CartDTO> cartDTOs,
-            PromotionCodeCheckResultDTO applyPromotionResult, DeliveryDTO deliveryInformation, int deliveryFee
+            PromotionDTO promotionDTO, DeliveryDTO deliveryInformation, int totalPrice
     ) {
-        return create(cartDTOs, applyPromotionResult, deliveryInformation, deliveryFee);
+        return create(cartDTOs, promotionDTO, deliveryInformation, totalPrice);
     }
 }

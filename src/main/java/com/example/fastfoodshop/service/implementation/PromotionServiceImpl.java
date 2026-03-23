@@ -1,7 +1,6 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.constant.QuizConstants;
-import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.Promotion;
@@ -17,6 +16,7 @@ import com.example.fastfoodshop.exception.promotion.CodeAlreadyExistsException;
 import com.example.fastfoodshop.exception.promotion.InvalidPromotionStatusException;
 import com.example.fastfoodshop.exception.promotion.PromotionNotFoundException;
 import com.example.fastfoodshop.exception.promotion.UnavailablePromotionException;
+import com.example.fastfoodshop.factory.PromotionFactory;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
@@ -30,11 +30,13 @@ import com.example.fastfoodshop.service.PromotionService;
 import com.example.fastfoodshop.service.AwardService;
 import com.example.fastfoodshop.service.UserService;
 import com.example.fastfoodshop.util.NumberUtils;
+import com.example.fastfoodshop.validator.PromotionValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -49,10 +51,8 @@ public class PromotionServiceImpl implements PromotionService {
     private final AwardRepository awardRepository;
     private final AwardService awardService;
     private final UserService userService;
-
-    private boolean checkUniqueCode(String code) {
-        return promotionRepository.findByCode(code).isPresent();
-    }
+    private final PromotionFactory promotionFactory;
+    private final PromotionValidator promotionValidator;
 
     private Promotion findPromotionOrThrow(String promotionCode) {
         return promotionRepository.findByCode(promotionCode).orElseThrow(
@@ -66,79 +66,43 @@ public class PromotionServiceImpl implements PromotionService {
         );
     }
 
+    @Transactional
     public void increasePromotionUsageCount(Long promotionId) {
         Promotion promotion = findPromotionOrThrow(promotionId);
         if (promotion.getUsedQuantity() >= promotion.getQuantity()) {
             throw new UnavailablePromotionException(promotionId);
         }
+
         promotion.setUsedQuantity(promotion.getUsedQuantity() + 1);
         promotionRepository.save(promotion);
     }
 
-    public PromotionCodeCheckResultDTO checkPromotionCode(String promotionCode, int orderPrice) {
+    public Promotion checkPromotionCode(String promotionCode, int orderPrice) {
         Promotion promotion = findPromotionOrThrow(promotionCode);
-        if (!promotion.isGlobal())
-            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này không áp dụng cho đơn hàng được");
-        if (!promotion.isActivated())
-            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi này đã bị vô hiệu hóa");
 
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(promotion.getStartAt()))
-            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi chưa có hiệu lực!");
-        if (now.isAfter(promotion.getEndAt()))
-            return PromotionCodeCheckResultDTO.error("Mã khuyến mãi đã hết hiệu lực");
-        if (promotion.getUsedQuantity() >= promotion.getQuantity())
-            return PromotionCodeCheckResultDTO.error("Đã hết lượt khuyến mãi!");
-        if (promotion.getMinSpendAmount() > orderPrice)
-            return PromotionCodeCheckResultDTO.error("Tổng đơn hàng chưa đủ điều kiện khuyến mãi!");
+        promotionValidator.validatePromotion(promotion, orderPrice, LocalDateTime.now());
 
-        return PromotionCodeCheckResultDTO.success("Đã áp dụng khuyến mãi!", PromotionDTO.from(promotion));
-    }
-
-    private Promotion buildPromotionEntity(PromotionCreateRequest promotionCreateRequest) {
-        Promotion promotion = new Promotion();
-        promotion.setType(promotionCreateRequest.type());
-        promotion.setValue(promotionCreateRequest.value());
-        promotion.setStartAt(promotionCreateRequest.startAt());
-        promotion.setEndAt(promotionCreateRequest.endAt());
-        promotion.setQuantity(promotionCreateRequest.quantity());
-        promotion.setUsedQuantity(0);
-        promotion.setMaxDiscountAmount(promotionCreateRequest.maxDiscountAmount());
-        promotion.setMinSpendAmount(promotionCreateRequest.minSpendAmount());
-        promotion.setCode(promotionCreateRequest.code());
-        promotion.setGlobal(false);
-        promotion.setActivated(promotionCreateRequest.activated());
-        promotion.setDeleted(false);
         return promotion;
     }
 
-    private void assignPromotionTarget(Promotion promotion, PromotionCreateRequest promotionCreateRequest) {
-        boolean hasCategory = promotionCreateRequest.categoryId() != null;
-        boolean hasProduct = promotionCreateRequest.productId() != null;
-
-        if (hasCategory) {
-            Category category = categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId());
-            promotion.setCategory(category);
-            return;
+    private void validateUniqueCode(String code) {
+        if (promotionRepository.findByCode(code).isPresent()) {
+            throw new CodeAlreadyExistsException(code);
         }
-
-        if (hasProduct) {
-            Product product = productService.findProductOrThrow(promotionCreateRequest.productId());
-            promotion.setProduct(product);
-            return;
-        }
-
-        promotion.setGlobal(true);
     }
 
     public PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest) {
-        if (checkUniqueCode(promotionCreateRequest.code())) {
-            throw new CodeAlreadyExistsException(promotionCreateRequest.code());
-        }
+        validateUniqueCode(promotionCreateRequest.code());
 
-        Promotion promotion = buildPromotionEntity(promotionCreateRequest);
+        Category category = promotionCreateRequest.categoryId() != null
+                ? categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId())
+                : null;
 
-        assignPromotionTarget(promotion, promotionCreateRequest);
+        Product product = promotionCreateRequest.productId() != null
+                ? productService.findProductOrThrow(promotionCreateRequest.productId())
+                : null;
+
+        Promotion promotion = promotionFactory.buildPromotionFromRequest(promotionCreateRequest, category, product);
 
         Promotion savedPromotion = promotionRepository.save(promotion);
         return new PromotionResponse(PromotionDTO.from(savedPromotion));
@@ -193,9 +157,20 @@ public class PromotionServiceImpl implements PromotionService {
         if (promotion.isDeleted()) {
             throw new DeletedPromotionException();
         }
+
         promotion.setDeleted(true);
         promotionRepository.save(promotion);
         return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
+    }
+
+    private void validateQuizCompleted(Quiz quiz) {
+        if (quiz.getCompletedAt() == null) {
+            throw new UncompletedQuizException();
+        }
+    }
+
+    private Award getRandomAward(Quiz quiz) {
+        return awardService.getRandomAwardByTopicDifficulty(quiz.getTopicDifficulty());
     }
 
     private String generatePromotionCode(Long userId, Long quizId, LocalDateTime completedAt) {
@@ -209,34 +184,44 @@ public class PromotionServiceImpl implements PromotionService {
         return "PM-" + userId + "Q" + quizId + "-" + timePart;
     }
 
-    public Promotion grantPromotion(User user, Quiz quiz) {
-        if (quiz.getCompletedAt() == null)
-            throw new UncompletedQuizException();
-        String promotionCode = generatePromotionCode(user.getId(), quiz.getId(), quiz.getCompletedAt());
-
-        Award award = awardService.getRandomAwardByTopicDifficulty(quiz.getTopicDifficulty());
+    private int calculatePromotionValue(Award award) {
         int value = NumberUtils.randomNumber(award.getMinValue(), award.getMaxValue());
-        value = award.getType() == PromotionType.PERCENTAGE ? value : NumberUtils.roundToThousand(value);
+
+        return award.getType() == PromotionType.PERCENTAGE
+                ? value
+                : NumberUtils.roundToThousand(value);
+    }
+
+    private LocalDateTime calculateEndTime(LocalDateTime startAt) {
+        return startAt.plusDays(QuizConstants.PROMOTION_VALIDITY_DAYS);
+    }
+
+    private Promotion createPromotion(User user, Quiz quiz, Award award) {
+        String code = generatePromotionCode(user.getId(), quiz.getId(), quiz.getCompletedAt());
+
+        int value = calculatePromotionValue(award);
 
         LocalDateTime startAt = LocalDateTime.now();
-        LocalDateTime endAt = startAt.plusDays(QuizConstants.PROMOTION_VALIDITY_DAYS);
+        LocalDateTime endAt = calculateEndTime(startAt);
 
-        Promotion promotion = new Promotion();
-        promotion.setUser(user);
-        promotion.setType(award.getType());
-        promotion.setValue(value);
-        promotion.setStartAt(startAt);
-        promotion.setEndAt(endAt);
-        promotion.setUsedQuantity(0);
-        promotion.setQuantity(1);
-        promotion.setMaxDiscountAmount(award.getMaxDiscountAmount());
-        promotion.setMinSpendAmount(award.getMinSpendAmount());
-        promotion.setCode(promotionCode);
-        promotion.setGlobal(true);
-        promotion.setActivated(true);
+        return promotionFactory.buildPromotionFromAward(user, award, code, value, startAt, endAt);
+    }
 
+    private void updateAwardUsage(Award award) {
         award.setUsedQuantity(award.getUsedQuantity() + 1);
         awardRepository.save(award);
+    }
+
+    @Transactional
+    public Promotion grantPromotion(User user, Quiz quiz) {
+        validateQuizCompleted(quiz);
+
+        Award award = getRandomAward(quiz);
+
+        Promotion promotion = createPromotion(user, quiz, award);
+
+        updateAwardUsage(award);
+
         return promotionRepository.save(promotion);
     }
 }

@@ -3,17 +3,17 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.constant.CartConstant;
 import com.example.fastfoodshop.dto.CartDTO;
 import com.example.fastfoodshop.dto.ProductDTO;
-import com.example.fastfoodshop.dto.PromotionCodeCheckResultDTO;
 import com.example.fastfoodshop.dto.UserDTO;
+import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.entity.Cart;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.exception.cart.CartNotFoundException;
 import com.example.fastfoodshop.exception.cart.ProductAmountExceededException;
 import com.example.fastfoodshop.exception.cart.QuantityExceededException;
-import com.example.fastfoodshop.exception.promotion.InvalidPromotionException;
 import com.example.fastfoodshop.repository.CartRepository;
 import com.example.fastfoodshop.request.CartCreateRequest;
 import com.example.fastfoodshop.response.cart.CartResponse;
@@ -119,28 +119,21 @@ public class CartServiceImpl implements CartService {
         return subtotalPrice;
     }
 
-    private PromotionCodeCheckResultDTO applyPromotion(String promotionCode, int subtotalPrice) {
+    private Promotion applyPromotion(String promotionCode, int subtotalPrice) {
         if (promotionCode == null || promotionCode.isBlank()) return null;
 
-        PromotionCodeCheckResultDTO result =
-                promotionService.checkPromotionCode(promotionCode, subtotalPrice);
-
-        if (!result.success()) {
-            throw new InvalidPromotionException(result.message());
-        }
-
-        return result;
+        return promotionService.checkPromotionCode(promotionCode, subtotalPrice);
     }
 
     private int calculateTotalPrice(
             int subtotalPrice,
-            PromotionCodeCheckResultDTO promotion,
+            Promotion promotion,
             DeliveryDTO delivery
     ) {
         int totalPrice = subtotalPrice;
 
         if (promotion != null) {
-            totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, promotion.promotion());
+            totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, PromotionDTO.from(promotion));
         }
 
         return totalPrice + delivery.fee();
@@ -154,13 +147,15 @@ public class CartServiceImpl implements CartService {
 
         int subtotalPrice = calculateSubtotalPrice(cartDTOs);
 
-        PromotionCodeCheckResultDTO promotionCodeCheckResultDTO = applyPromotion(promotionCode, subtotalPrice);
+        Promotion promotion = applyPromotion(promotionCode, subtotalPrice);
 
         DeliveryDTO deliveryInformation = deliveryService.calculateDelivery(addressId);
 
-        int totalPrice = calculateTotalPrice(subtotalPrice, promotionCodeCheckResultDTO, deliveryInformation);
+        int totalPrice = calculateTotalPrice(subtotalPrice, promotion, deliveryInformation);
 
-        return CartDetailResponse.from(cartDTOs, promotionCodeCheckResultDTO, deliveryInformation, totalPrice);
+        PromotionDTO promotionDTO = promotion == null ? null : PromotionDTO.from(promotion);
+
+        return CartDetailResponse.from(cartDTOs, promotionDTO, deliveryInformation, totalPrice);
     }
 
     public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId) {
