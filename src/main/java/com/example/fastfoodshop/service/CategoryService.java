@@ -9,6 +9,7 @@ import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
 import com.example.fastfoodshop.response.category.CategoryPageResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
+import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 
 public interface CategoryService {
     Category findCategoryOrThrow(Long categoryId);
@@ -19,13 +20,15 @@ public interface CategoryService {
 
     CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest);
 
-    CategoryResponse updateCategory(CategoryUpdateRequest categoryUpdateRequest);
+    CategorySelectionResponse getCategorySelections();
 
-    CategoryPageResponse getCategories(int page, int size);
+    CategoryResponse updateCategory(Long categoryId, CategoryUpdateRequest categoryUpdateRequest);
+
+    CategoryPageResponse getCategoryPage(int page, int size);
 
     CategoryUpdateResponse updateCategoryActivation(Long categoryId, boolean activated);
 
     CategoryUpdateResponse deleteCategory(Long id);
 
-    CategoryDisplayResponse getDisplayableCategories();
+    CategoryDisplayResponse getAllDisplayableCategories();
 }

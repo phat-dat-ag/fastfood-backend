@@ -19,7 +19,7 @@ public record CategoryPageResponse(
                 categories,
                 page.getNumber(),
                 page.getSize(),
-                page.getTotalPages(),
+                page.getTotalElements(),
                 page.getTotalPages()
         );
     }

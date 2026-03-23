@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.CategoryDTO;
+import com.example.fastfoodshop.dto.CategorySelectionDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.entity.Category;
@@ -13,6 +14,7 @@ import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
+import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 import com.example.fastfoodshop.response.category.CategoryPageResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
@@ -94,46 +96,46 @@ public class CategoryServiceImpl implements CategoryService {
                 && promotionDTO.quantity() > promotionDTO.usedQuantity();
     }
 
+    private PromotionDTO findValidPromotion(List<Promotion> promotions) {
+        return promotions.stream()
+                .map(PromotionDTO::from)
+                .filter(this::isValidPromotion)
+                .findFirst()
+                .orElse(null);
+    }
+
     public PromotionResult applyPromotion(Product product, Category category) {
-        PromotionDTO chosenPromotion = null;
+        PromotionDTO promotion = findValidPromotion(product.getPromotions());
 
-        for (Promotion promotion : product.getPromotions()) {
-            PromotionDTO promotionDTO = PromotionDTO.from(promotion);
-            if (isValidPromotion(promotionDTO)) {
-                chosenPromotion = promotionDTO;
-                break;
-            }
-        }
-
-        if (chosenPromotion == null) {
-            for (Promotion promotion : category.getPromotions()) {
-                PromotionDTO promotionDTO = PromotionDTO.from(promotion);
-                if (isValidPromotion(promotionDTO)) {
-                    chosenPromotion = promotionDTO;
-                    break;
-                }
-            }
+        if (promotion == null) {
+            promotion = findValidPromotion(category.getPromotions());
         }
 
         int originalPrice = product.getPrice();
-        int discountedPrice = originalPrice;
-        Long promotionId = null;
 
-        if (chosenPromotion != null) {
-            discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, chosenPromotion);
-            promotionId = chosenPromotion.id();
+        if (promotion == null) {
+            return new PromotionResult(originalPrice, null);
         }
-        return new PromotionResult(discountedPrice, promotionId);
+
+        int discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, promotion);
+
+        return new PromotionResult(discountedPrice, promotion.id());
     }
 
-    public CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest) {
-        String slug = generateUniqueSlug(categoryCreateRequest.name());
-
+    private Category buildCategory(CategoryCreateRequest categoryCreateRequest, String slug) {
         Category category = new Category();
         category.setSlug(slug);
         category.setName(categoryCreateRequest.name());
         category.setDescription(categoryCreateRequest.description());
         category.setActivated(categoryCreateRequest.activated());
+
+        return category;
+    }
+
+    public CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest) {
+        String slug = generateUniqueSlug(categoryCreateRequest.name());
+
+        Category category = buildCategory(categoryCreateRequest, slug);
 
         handleCategoryImage(category, categoryCreateRequest.imageUrl());
 
@@ -141,11 +143,16 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
-    public CategoryResponse updateCategory(CategoryUpdateRequest categoryUpdateRequest) {
-        Category category = findCategoryOrThrow(categoryUpdateRequest.id());
+    private void updateCategoryFields(Category category, CategoryUpdateRequest categoryUpdateRequest) {
         category.setName(categoryUpdateRequest.name());
         category.setDescription(categoryUpdateRequest.description());
         category.setActivated(categoryUpdateRequest.activated());
+    }
+
+    public CategoryResponse updateCategory(Long categoryId, CategoryUpdateRequest categoryUpdateRequest) {
+        Category category = findCategoryOrThrow(categoryId);
+
+        updateCategoryFields(category, categoryUpdateRequest);
 
         handleCategoryImage(category, categoryUpdateRequest.imageUrl());
 
@@ -153,11 +160,23 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
-    public CategoryPageResponse getCategories(int page, int size) {
+    public CategoryPageResponse getCategoryPage(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
 
         return CategoryPageResponse.from(categoryPage);
+    }
+
+    public CategorySelectionResponse getCategorySelections() {
+        List<CategorySelectionDTO> categoryDTOs = categoryRepository
+                .findByIsDeletedFalseAndIsActivatedTrue()
+                .stream()
+                .map(category -> new CategorySelectionDTO(
+                        category.getId(), category.getName()
+                ))
+                .toList();
+
+        return new CategorySelectionResponse(categoryDTOs);
     }
 
     public CategoryUpdateResponse updateCategoryActivation(Long categoryId, boolean activated) {
@@ -188,7 +207,7 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryUpdateResponse("Đã xóa danh mục sản phẩm: " + categoryId);
     }
 
-    public CategoryDisplayResponse getDisplayableCategories() {
+    public CategoryDisplayResponse getAllDisplayableCategories() {
         List<CategoryDTO> categoryDTOs = categoryRepository
                 .findByIsDeletedFalseAndIsActivatedTrue()
                 .stream()
@@ -198,4 +217,3 @@ public class CategoryServiceImpl implements CategoryService {
         return new CategoryDisplayResponse(categoryDTOs);
     }
 }
-
