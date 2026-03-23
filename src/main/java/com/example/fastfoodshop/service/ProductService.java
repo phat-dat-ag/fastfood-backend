@@ -8,6 +8,7 @@ import com.example.fastfoodshop.response.product.ProductDisplayResponse;
 import com.example.fastfoodshop.response.product.ProductPageResponse;
 import com.example.fastfoodshop.response.product.ProductResponse;
 import com.example.fastfoodshop.response.product.ProductUpdateResponse;
+import com.example.fastfoodshop.response.product.ProductSelectionResponse;
 
 public interface ProductService {
     Product findProductOrThrow(Long productId);
@@ -16,19 +17,17 @@ public interface ProductService {
 
     ProductResponse createProduct(ProductCreateRequest productCreateRequest);
 
-    ProductResponse updateProduct(ProductUpdateRequest productUpdateRequest);
+    ProductResponse updateProduct(Long productId, ProductUpdateRequest productUpdateRequest);
 
-    ProductPageResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest);
+    ProductPageResponse getProductPage(ProductGetByCategoryRequest productGetByCategoryRequest);
 
-    ProductDisplayResponse getAllDisplayableProductsByCategory(String categorySlug);
+    ProductSelectionResponse getProductSelections();
 
-    ProductDisplayResponse getAllDisplayableProducts();
+    ProductUpdateResponse updateProductActivation(Long productId, boolean activated);
+
+    ProductUpdateResponse deleteProduct(Long productId);
+
+    ProductDisplayResponse getAllDisplayableProducts(String categorySlug);
 
     ProductResponse getProductBySlug(String productSlug);
-
-    ProductUpdateResponse activateProduct(Long productId);
-
-    ProductUpdateResponse deactivateProduct(Long productId);
-
-    ProductUpdateResponse deleteCategory(Long productId);
 }

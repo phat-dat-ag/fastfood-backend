@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.ProductDTO;
+import com.example.fastfoodshop.dto.ProductSelectionDTO;
 import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Category;
@@ -20,6 +21,7 @@ import com.example.fastfoodshop.request.ProductCreateRequest;
 import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
 import com.example.fastfoodshop.request.ProductUpdateRequest;
 import com.example.fastfoodshop.response.product.ProductDisplayResponse;
+import com.example.fastfoodshop.response.product.ProductSelectionResponse;
 import com.example.fastfoodshop.response.product.ProductPageResponse;
 import com.example.fastfoodshop.response.product.ProductResponse;
 import com.example.fastfoodshop.response.product.ProductUpdateResponse;
@@ -82,18 +84,6 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
-    private Product findActivatedProductOrThrow(Long productId) {
-        return productRepository.findByIdAndIsActivatedTrueAndIsDeletedFalse(productId).orElseThrow(
-                () -> new InvalidStatusProductException(productId)
-        );
-    }
-
-    private Product findDeactivatedProductOrThrow(Long productId) {
-        return productRepository.findByIdAndIsActivatedFalseAndIsDeletedFalse(productId).orElseThrow(
-                () -> new InvalidStatusProductException(productId)
-        );
-    }
-
     private void handleProductImage(Product product, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
             return;
@@ -153,8 +143,8 @@ public class ProductServiceImpl implements ProductService {
         return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    public ProductResponse updateProduct(ProductUpdateRequest productUpdateRequest) {
-        Product product = findProductOrThrow(productUpdateRequest.id());
+    public ProductResponse updateProduct(Long productId, ProductUpdateRequest productUpdateRequest) {
+        Product product = findProductOrThrow(productId);
         product.setName(productUpdateRequest.name());
         product.setDescription(productUpdateRequest.description());
         product.setActivated(productUpdateRequest.activated());
@@ -166,7 +156,7 @@ public class ProductServiceImpl implements ProductService {
         return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    public ProductPageResponse getAllProductsByCategory(ProductGetByCategoryRequest productGetByCategoryRequest) {
+    public ProductPageResponse getProductPage(ProductGetByCategoryRequest productGetByCategoryRequest) {
         Category category = categoryService.findCategoryOrThrow(
                 productGetByCategoryRequest.getCategorySlug()
         );
@@ -182,7 +172,44 @@ public class ProductServiceImpl implements ProductService {
         return ProductPageResponse.from(productPage);
     }
 
-    public ProductDisplayResponse getAllDisplayableProductsByCategory(String categorySlug) {
+    public ProductSelectionResponse getProductSelections() {
+        List<ProductSelectionDTO> productSelectionDTOs = productRepository
+                .findByIsDeletedFalseAndIsActivatedTrue()
+                .stream()
+                .map((product) -> new ProductSelectionDTO(product.getId(), product.getName()))
+                .toList();
+
+        return new ProductSelectionResponse(productSelectionDTOs);
+    }
+
+    public ProductUpdateResponse updateProductActivation(Long productId, boolean activated) {
+        Product product = findProductOrThrow(productId);
+        if (product.isActivated() == activated) {
+            throw new InvalidStatusProductException(productId);
+        }
+
+        product.setActivated(activated);
+        productRepository.save(product);
+
+        String message = activated
+                ? "Kích hoạt sản phẩm thành công: " + productId
+                : "Hủy kích hoạt sản phẩm thành công: " + productId;
+
+        return new ProductUpdateResponse(message);
+    }
+
+    public ProductUpdateResponse deleteProduct(Long productId) {
+        Product product = findProductOrThrow(productId);
+        if (product.isDeleted()) {
+            throw new DeletedProductException(productId);
+        }
+        product.setDeleted(true);
+
+        productRepository.save(product);
+        return new ProductUpdateResponse("Xóa sản phẩm thành công: " + productId);
+    }
+
+    public ProductDisplayResponse getAllDisplayableProducts(String categorySlug) {
         Category category = categoryService.findCategoryOrThrow(categorySlug);
         List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
@@ -217,18 +244,6 @@ public class ProductServiceImpl implements ProductService {
             PromotionResult promotionResult = categoryService.applyPromotion(product, category);
             productDTOs.add(ProductDTO.from(product, List.of(), promotionResult, averageRating, reviewCount, soldCount));
         }
-        return new ProductDisplayResponse(productDTOs);
-    }
-
-    public ProductDisplayResponse getAllDisplayableProducts() {
-        List<Product> products = productRepository.findByIsDeletedFalseAndIsActivatedTrue();
-
-        ArrayList<ProductDTO> productDTOs = new ArrayList<>();
-        for (Product product : products) {
-            categoryService.applyPromotion(product, product.getCategory());
-            productDTOs.add(ProductDTO.from(product));
-        }
-
         return new ProductDisplayResponse(productDTOs);
     }
 
@@ -268,32 +283,5 @@ public class ProductServiceImpl implements ProductService {
                 product, reviewDTOs, promotionResult, averageRating, reviewCount, soldCount
         );
         return new ProductResponse(productDTO);
-    }
-
-    public ProductUpdateResponse activateProduct(Long productId) {
-        Product product = findDeactivatedProductOrThrow(productId);
-        product.setActivated(true);
-
-        productRepository.save(product);
-        return new ProductUpdateResponse("Kích hoạt sản phẩm thành công: " + productId);
-    }
-
-    public ProductUpdateResponse deactivateProduct(Long productId) {
-        Product product = findActivatedProductOrThrow(productId);
-        product.setActivated(false);
-
-        productRepository.save(product);
-        return new ProductUpdateResponse("Hủy kích hoạt sản phẩm thành công: " + productId);
-    }
-
-    public ProductUpdateResponse deleteCategory(Long productId) {
-        Product product = findProductOrThrow(productId);
-        if (product.isDeleted()) {
-            throw new DeletedProductException(productId);
-        }
-        product.setDeleted(true);
-
-        productRepository.save(product);
-        return new ProductUpdateResponse("Xóa sản phẩm thành công: " + productId);
     }
 }

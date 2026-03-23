@@ -6,10 +6,7 @@ import jakarta.validation.constraints.Size;
 import org.springframework.web.multipart.MultipartFile;
 
 public record ProductUpdateRequest(
-        @NotNull(message = "Không được để trống id sản phẩm")
-        Long id,
-
-        @NotBlank(message = "Tên sản phâ không được để trống")
+        @NotBlank(message = "Tên sản phẩm không được để trống")
         @Size(min = 2, max = 80, message = "Tên sản phẩm từ 2 đến 80 kí tự")
         String name,
 

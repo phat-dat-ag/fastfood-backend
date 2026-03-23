@@ -12,15 +12,10 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsBySlug(String slug);
-
-    Optional<Product> findByIdAndIsActivatedTrueAndIsDeletedFalse(Long id);
-
-    Optional<Product> findByIdAndIsActivatedFalseAndIsDeletedFalse(Long id);
 
     Optional<Product> findBySlug(String slug);
 

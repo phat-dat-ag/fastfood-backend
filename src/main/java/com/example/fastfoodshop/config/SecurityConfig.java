@@ -70,7 +70,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/stripe/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/image/**").permitAll()
                         .requestMatchers("/api/admin/category/display/**").permitAll()
-                        .requestMatchers("/api/admin/product/display/**").permitAll()
+                        .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review/**").permitAll()
                         .requestMatchers("/api/user/manage/**").hasRole("ADMIN")
                         .requestMatchers("/api/review/manage/**").hasRole("ADMIN")
