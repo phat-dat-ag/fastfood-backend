@@ -1,6 +1,5 @@
 package com.example.fastfoodshop.service.implementation;
 
-import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.exception.question.DeletedQuestionException;
@@ -8,10 +7,8 @@ import com.example.fastfoodshop.exception.question.InvalidQuestionStatusExceptio
 import com.example.fastfoodshop.exception.question.QuestionNotFoundException;
 import com.example.fastfoodshop.repository.QuestionRepository;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
-import com.example.fastfoodshop.request.QuestionGetByTopicDifficultyRequest;
 import com.example.fastfoodshop.response.question.QuestionPageResponse;
 import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
-import com.example.fastfoodshop.service.AnswerService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.QuestionService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
@@ -33,26 +30,13 @@ import java.util.Map;
 public class QuestionServiceImpl implements QuestionService {
     private final CloudinaryService cloudinaryService;
     private final TopicDifficultyService topicDifficultyService;
-    private final AnswerService answerService;
     private final QuestionRepository questionRepository;
 
     private static final Logger log = LoggerFactory.getLogger(QuestionServiceImpl.class);
 
-    private Question findUndeletedQuestion(Long questionId) {
-        return questionRepository.findByIdAndIsDeletedFalse(questionId).orElseThrow(
+    private Question findQuestionOrThrow(Long questionId) {
+        return questionRepository.findById(questionId).orElseThrow(
                 () -> new QuestionNotFoundException(questionId)
-        );
-    }
-
-    private Question findActivatedQuestion(Long questionId) {
-        return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedTrue(questionId).orElseThrow(
-                () -> new InvalidQuestionStatusException(questionId)
-        );
-    }
-
-    private Question findDeactivatedQuestion(Long questionId) {
-        return questionRepository.findByIdAndIsDeletedFalseAndIsActivatedFalse(questionId).orElseThrow(
-                () -> new InvalidQuestionStatusException(questionId)
         );
     }
 
@@ -96,70 +80,78 @@ public class QuestionServiceImpl implements QuestionService {
         }
     }
 
-    public List<Question> getAllValidQuestionsByTopicDifficulty(TopicDifficulty topicDifficulty) {
-        return questionRepository.findByTopicDifficultyAndIsActivatedTrueAndIsDeletedFalse(topicDifficulty);
+    private Question buildQuestion(TopicDifficulty topicDifficulty, QuestionCreateRequest questionCreateRequest) {
+        Question question = new Question();
+
+        question.setTopicDifficulty(topicDifficulty);
+        question.setContent(questionCreateRequest.content());
+        question.setActivated(questionCreateRequest.activated());
+
+        handleQuestionImage(question, questionCreateRequest.imageUrl());
+        handleQuestionAudio(question, questionCreateRequest.audioUrl());
+
+        return question;
     }
 
     @Transactional
-    public QuestionUpdateResponse createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug) {
-        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(topicDifficultySlug);
+    public QuestionUpdateResponse createQuestions(
+            List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug
+    ) {
+        TopicDifficulty topicDifficulty = topicDifficultyService
+                .findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
-        for (QuestionCreateRequest questionCreateRequest : questionCreateRequests) {
-            Question question = new Question();
+        List<Question> questions = questionCreateRequests
+                .stream()
+                .map(request -> buildQuestion(topicDifficulty, request))
+                .toList();
 
-            question.setTopicDifficulty(topicDifficulty);
-            question.setContent(questionCreateRequest.content());
-            question.setActivated(questionCreateRequest.activated());
-
-            handleQuestionImage(question, questionCreateRequest.imageUrl());
-            handleQuestionAudio(question, questionCreateRequest.audioUrl());
-
-            Question savedQuestion = questionRepository.save(question);
-
-            List<Answer> savedAnswers = answerService.createAnswers(questionCreateRequest.answers(), savedQuestion);
-        }
+        questionRepository.saveAll(questions);
         return new QuestionUpdateResponse("Đã lưu các câu hỏi");
     }
 
     public QuestionPageResponse getAllQuestionsByTopicDifficulty(
-            QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
+            String topicDifficultySlug, int page, int size
     ) {
-        TopicDifficulty topicDifficulty = topicDifficultyService.findValidTopicDifficultyOrThrow(
-                questionGetByTopicDifficultyRequest.getTopicDifficultySlug()
-        );
+        TopicDifficulty topicDifficulty = topicDifficultyService
+                .findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
-        Pageable pageable = PageRequest.of(
-                questionGetByTopicDifficultyRequest.getPage(), questionGetByTopicDifficultyRequest.getSize()
-        );
-        Page<Question> questionPage = questionRepository.findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
+        Pageable pageable = PageRequest.of(page, size);
+
+        Page<Question> questionPage = questionRepository
+                .findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
 
         return QuestionPageResponse.from(questionPage);
     }
 
-    public QuestionUpdateResponse activateQuestion(Long questionId) {
-        Question question = findDeactivatedQuestion(questionId);
-        question.setActivated(true);
+    public QuestionUpdateResponse updateQuestionActivation(Long questionId, boolean activated) {
+        Question question = findQuestionOrThrow(questionId);
+        if (question.isActivated() == activated) {
+            throw new InvalidQuestionStatusException(questionId);
+        }
+
+        question.setActivated(activated);
         questionRepository.save(question);
 
-        return new QuestionUpdateResponse("Kích hoạt câu hỏi thành công: " + questionId);
-    }
+        String message = activated
+                ? "Đã kích hoạt câu hỏi: " + questionId
+                : "Đã hủy kích hoạt câu hỏi: " + questionId;
 
-    public QuestionUpdateResponse deactivateQuestion(Long questionId) {
-        Question question = findActivatedQuestion(questionId);
-        question.setActivated(false);
-        questionRepository.save(question);
-
-        return new QuestionUpdateResponse("Hủy kích hoạt câu hỏi thành công: " + questionId);
+        return new QuestionUpdateResponse(message);
     }
 
     public QuestionUpdateResponse deleteQuestion(Long questionId) {
-        Question question = findUndeletedQuestion(questionId);
+        Question question = findQuestionOrThrow(questionId);
         if (question.isDeleted()) {
             throw new DeletedQuestionException(questionId);
         }
+
         question.setDeleted(true);
         questionRepository.save(question);
 
         return new QuestionUpdateResponse("Xóa câu hỏi thành công: " + questionId);
+    }
+
+    public List<Question> getAllValidQuestionsByTopicDifficulty(TopicDifficulty topicDifficulty) {
+        return questionRepository.findByTopicDifficultyAndIsActivatedTrueAndIsDeletedFalse(topicDifficulty);
     }
 }

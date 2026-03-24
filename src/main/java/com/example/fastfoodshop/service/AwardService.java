@@ -3,7 +3,6 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.entity.Award;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.request.AwardCreateRequest;
-import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
 import com.example.fastfoodshop.response.award.AwardPageResponse;
 import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 
@@ -12,7 +11,7 @@ public interface AwardService {
 
     AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest request);
 
-    AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest awardGetByTopicDifficultyRequest);
+    AwardPageResponse getAllAwardsByTopicDifficulty(String topicDifficultySlug, int page, int size);
 
     AwardUpdateResponse updateAwardActivation(Long awardId, boolean activated);
 

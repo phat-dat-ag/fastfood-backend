@@ -81,8 +81,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/review/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/addresses/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/topics/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/awards/**").hasRole("ADMIN")
-                        .requestMatchers("/api/question/**").hasRole("ADMIN")
                         .requestMatchers("/api/image/**").hasRole("ADMIN")
                         .requestMatchers("/api/user/**").hasAnyRole("USER", "STAFF")
                         .requestMatchers("/api/quiz/**").hasAnyRole("USER", "STAFF")

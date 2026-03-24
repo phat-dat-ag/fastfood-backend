@@ -7,7 +7,6 @@ import com.example.fastfoodshop.exception.award.DeletedAwardException;
 import com.example.fastfoodshop.exception.award.InvalidAwardStatusException;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.request.AwardCreateRequest;
-import com.example.fastfoodshop.request.AwardGetByTopicDifficultyRequest;
 import com.example.fastfoodshop.response.award.AwardPageResponse;
 import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 import com.example.fastfoodshop.service.AwardService;
@@ -70,11 +69,11 @@ public class AwardServiceImpl implements AwardService {
         return new AwardUpdateResponse("Thêm phần thưởng thành công: " + savedAward.getId());
     }
 
-    public AwardPageResponse getAllAwardsByTopicDifficulty(AwardGetByTopicDifficultyRequest request) {
-        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+    public AwardPageResponse getAllAwardsByTopicDifficulty(String topicDifficultySlug, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
 
         TopicDifficulty topicDifficulty = topicDifficultyService
-                .findValidTopicDifficultyOrThrow(request.getTopicDifficultySlug());
+                .findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
         Page<Award> awardPage = awardRepository
                 .findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);

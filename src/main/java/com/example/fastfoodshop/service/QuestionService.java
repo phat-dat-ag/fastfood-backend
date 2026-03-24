@@ -3,24 +3,23 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.entity.Question;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
-import com.example.fastfoodshop.request.QuestionGetByTopicDifficultyRequest;
 import com.example.fastfoodshop.response.question.QuestionPageResponse;
 import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
 
 import java.util.List;
 
 public interface QuestionService {
-    List<Question> getAllValidQuestionsByTopicDifficulty(TopicDifficulty topicDifficulty);
-
-    QuestionUpdateResponse createQuestions(List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug);
-
-    QuestionPageResponse getAllQuestionsByTopicDifficulty(
-            QuestionGetByTopicDifficultyRequest questionGetByTopicDifficultyRequest
+    QuestionUpdateResponse createQuestions(
+            List<QuestionCreateRequest> questionCreateRequests, String topicDifficultySlug
     );
 
-    QuestionUpdateResponse activateQuestion(Long questionId);
+    QuestionPageResponse getAllQuestionsByTopicDifficulty(
+            String topicDifficultySlug, int page, int size
+    );
 
-    QuestionUpdateResponse deactivateQuestion(Long questionId);
+    QuestionUpdateResponse updateQuestionActivation(Long questionId, boolean activated);
 
     QuestionUpdateResponse deleteQuestion(Long questionId);
+
+    List<Question> getAllValidQuestionsByTopicDifficulty(TopicDifficulty topicDifficulty);
 }
