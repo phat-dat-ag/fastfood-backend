@@ -3,9 +3,9 @@ package com.example.fastfoodshop.service.implementation;
 import com.example.fastfoodshop.dto.ReviewDTO;
 import com.example.fastfoodshop.entity.Review;
 import com.example.fastfoodshop.entity.Order;
-import com.example.fastfoodshop.entity.OrderDetail;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.ReviewImage;
+import com.example.fastfoodshop.entity.base.BaseCreatedEntity;
 import com.example.fastfoodshop.exception.review.OrderAlreadyReviewedException;
 import com.example.fastfoodshop.exception.review.DuplicateReviewProductException;
 import com.example.fastfoodshop.exception.review.IncompleteReviewException;
@@ -13,6 +13,7 @@ import com.example.fastfoodshop.exception.review.OrderNotDeliveredException;
 import com.example.fastfoodshop.exception.review.ProductNotInOrderException;
 import com.example.fastfoodshop.exception.review.ReviewExpiredException;
 import com.example.fastfoodshop.exception.review.ReviewNotFoundException;
+import com.example.fastfoodshop.exception.review.DeletedReviewException;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ReviewCreateRequest;
 import com.example.fastfoodshop.response.review.ReviewPageResponse;
@@ -31,10 +32,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,80 +46,158 @@ public class ReviewServiceImpl implements ReviewService {
     private final ProductService productService;
     private final ReviewImageService reviewImageService;
 
-    private Review findUndeletedReviewOrThrow(Long reviewId) {
-        return reviewRepository.findById(reviewId).orElseThrow(
-                () -> new ReviewNotFoundException(reviewId)
-        );
+    private void validateOrderDelivered(Order order) {
+        if (order.getDeliveredAt() == null) {
+            throw new OrderNotDeliveredException(order.getId());
+        }
     }
 
-    @Transactional
-    public ReviewUpdateResponse createReviews(List<ReviewCreateRequest> reviewRequests, Long orderId) {
-        Order order = orderService.findOrderOrThrow(orderId);
-        if (order.getDeliveredAt() == null) {
-            throw new OrderNotDeliveredException(orderId);
-        }
-        LocalDateTime now = LocalDateTime.now();
-        if (order.getDeliveredAt().plusDays(2).isBefore(now)) {
+    private void validateReviewNotExpired(Order order) {
+        if (order.getDeliveredAt().plusDays(2).isBefore(LocalDateTime.now())) {
             throw new ReviewExpiredException(order.getId());
         }
+    }
+
+    private void validateOrderNotReviewed(Order order) {
         if (!order.getReviews().isEmpty()) {
             throw new OrderAlreadyReviewedException(order.getId());
         }
-        Set<Long> orderProductIds = new HashSet<>();
-        for (OrderDetail orderDetail : order.getOrderDetails()) {
-            orderProductIds.add(orderDetail.getProduct().getId());
+    }
+
+    private Order getValidOrderForReview(Long orderId) {
+        Order order = orderService.findOrderOrThrow(orderId);
+
+        validateOrderDelivered(order);
+        validateReviewNotExpired(order);
+        validateOrderNotReviewed(order);
+
+        return order;
+    }
+
+    private Set<Long> extractOrderProductIds(Order order) {
+        return order.getOrderDetails()
+                .stream()
+                .map(od -> od.getProduct().getId())
+                .collect(Collectors.toSet());
+    }
+
+    private void validateReviewRequest(
+            ReviewCreateRequest reviewCreateRequest,
+            Set<Long> orderProductIds,
+            Set<Long> reviewedProductIds
+    ) {
+        if (!orderProductIds.contains(reviewCreateRequest.productId())) {
+            throw new ProductNotInOrderException();
         }
-        Set<Long> reviewedProductIds = new HashSet<>();
 
-        for (ReviewCreateRequest reviewRequest : reviewRequests) {
-            if (!orderProductIds.contains(reviewRequest.productId())) {
-                throw new ProductNotInOrderException();
-            }
-            if (!reviewedProductIds.add(reviewRequest.productId())) {
-                throw new DuplicateReviewProductException();
-            }
-
-            Product product = productService.findProductOrThrow(reviewRequest.productId());
-
-            Review review = new Review();
-            review.setOrder(order);
-            review.setProduct(product);
-            review.setRating(reviewRequest.rating());
-            review.setComment(reviewRequest.comment());
-
-            Review savedReview = reviewRepository.save(review);
-
-            List<ReviewImage> reviewImages = reviewImageService.createReviewImages(reviewRequest.images(), savedReview);
-            savedReview.setReviewImages(reviewImages);
-
-            reviewRepository.save(savedReview);
+        if (!reviewedProductIds.add(reviewCreateRequest.productId())) {
+            throw new DuplicateReviewProductException();
         }
-        if (reviewedProductIds.size() != order.getOrderDetails().size()) {
+    }
+
+    private Review mapToReview(ReviewCreateRequest reviewCreateRequest, Order order, Product product) {
+        Review review = new Review();
+
+        review.setOrder(order);
+        review.setProduct(product);
+        review.setRating(reviewCreateRequest.rating());
+        review.setComment(reviewCreateRequest.comment());
+
+        return review;
+    }
+
+    private void attachReviewImages(ReviewCreateRequest reviewCreateRequest, Review review) {
+        List<ReviewImage> images =
+                reviewImageService.createReviewImages(reviewCreateRequest.images(), review);
+
+        review.setReviewImages(images);
+    }
+
+    private Map<Long, Product> getProductMap(List<ReviewCreateRequest> reviewCreateRequests) {
+        List<Long> productIds = reviewCreateRequests.stream()
+                .map(ReviewCreateRequest::productId)
+                .toList();
+
+        return productService.findAllByIds(productIds)
+                .stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+    }
+
+    private void createReview(
+            ReviewCreateRequest reviewCreateRequest, Order order, Map<Long, Product> productMap
+    ) {
+        Product product = productMap.get(reviewCreateRequest.productId());
+
+        Review review = mapToReview(reviewCreateRequest, order, product);
+
+        Review savedReview = reviewRepository.save(review);
+
+        attachReviewImages(reviewCreateRequest, savedReview);
+    }
+
+    private void validateAllProductsReviewed(
+            Set<Long> orderProductIds, Set<Long> reviewedProductIds
+    ) {
+        if (!reviewedProductIds.containsAll(orderProductIds)) {
             throw new IncompleteReviewException();
         }
-        return new ReviewUpdateResponse("Đánh giá sản đơn hàng thành công");
+    }
+
+    @Transactional
+    public ReviewUpdateResponse createReviews(List<ReviewCreateRequest> reviewCreateRequests, Long orderId) {
+        Order order = getValidOrderForReview(orderId);
+
+        Set<Long> orderProductIds = extractOrderProductIds(order);
+
+        Map<Long, Product> productMap = getProductMap(reviewCreateRequests);
+
+        Set<Long> reviewedProductIds = new HashSet<>();
+
+        for (ReviewCreateRequest reviewCreateRequest : reviewCreateRequests) {
+            validateReviewRequest(reviewCreateRequest, orderProductIds, reviewedProductIds);
+            createReview(reviewCreateRequest, order, productMap);
+        }
+
+        validateAllProductsReviewed(orderProductIds, reviewedProductIds);
+
+        return new ReviewUpdateResponse("Đánh giá đơn hàng thành công");
     }
 
     public ReviewProductsResponse getAllReviewsByProduct(Long productId) {
         Product product = productService.findProductOrThrow(productId);
-        List<Review> reviews = reviewRepository.findByProductAndIsDeletedFalse(product);
 
-        ArrayList<ReviewDTO> reviewDTOs = new ArrayList<>();
-        for (Review review : reviews) {
-            reviewDTOs.add(ReviewDTO.from(review));
-        }
+        List<ReviewDTO> reviewDTOs = reviewRepository
+                .findByProductAndIsDeletedFalse(product)
+                .stream()
+                .map(ReviewDTO::from)
+                .toList();
 
         return new ReviewProductsResponse(reviewDTOs);
     }
 
     public ReviewPageResponse getAllReviewsByAdmin(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+        Pageable pageable = PageRequest.of(
+                page, size,
+                Sort.by(BaseCreatedEntity.Field.createdAt).descending()
+        );
+
         Page<Review> reviewPage = reviewRepository.findByIsDeletedFalse(pageable);
+
         return ReviewPageResponse.from(reviewPage);
     }
 
+    private Review findReviewOrThrow(Long reviewId) {
+        return reviewRepository.findById(reviewId).orElseThrow(
+                () -> new ReviewNotFoundException(reviewId)
+        );
+    }
+
     public ReviewUpdateResponse deleteReview(Long reviewId) {
-        Review review = findUndeletedReviewOrThrow(reviewId);
+        Review review = findReviewOrThrow(reviewId);
+        if (review.isDeleted()) {
+            throw new DeletedReviewException();
+        }
+
         review.setDeleted(true);
         reviewRepository.save(review);
         return new ReviewUpdateResponse("Đã xóa đánh giá: " + reviewId);

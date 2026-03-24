@@ -4,11 +4,14 @@ import com.example.fastfoodshop.enums.OrderQueryType;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.request.PageRequest;
+import com.example.fastfoodshop.request.ReviewForm;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.order.OrderResponse;
 import com.example.fastfoodshop.response.order.OrderUpdateResponse;
+import com.example.fastfoodshop.response.review.ReviewUpdateResponse;
 import com.example.fastfoodshop.service.OrderService;
+import com.example.fastfoodshop.service.ReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrderController extends BaseController {
     private final OrderService orderService;
+    private final ReviewService reviewService;
 
     @PostMapping
     public ResponseEntity<ResponseWrapper<OrderResponse>> createOrder(
@@ -74,5 +78,13 @@ public class OrderController extends BaseController {
                         userDetails.getUsername(), orderQueryType, request.getPage(), request.getSize()
                 )
         );
+    }
+
+    @PostMapping("/{id}/reviews")
+    public ResponseEntity<ResponseWrapper<ReviewUpdateResponse>> createReviews(
+            @PathVariable("id") Long orderId,
+            @Valid @ModelAttribute ReviewForm reviewsForm
+    ) {
+        return okResponse(reviewService.createReviews(reviewsForm.reviews(), orderId));
     }
 }

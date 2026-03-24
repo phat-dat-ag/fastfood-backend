@@ -10,7 +10,11 @@ import com.example.fastfoodshop.response.product.ProductResponse;
 import com.example.fastfoodshop.response.product.ProductUpdateResponse;
 import com.example.fastfoodshop.response.product.ProductSelectionResponse;
 
+import java.util.List;
+
 public interface ProductService {
+    List<Product> findAllByIds(List<Long> productIds);
+
     Product findProductOrThrow(Long productId);
 
     void checkActivatedCategoryAndActivatedProduct(Long productId);

@@ -51,6 +51,16 @@ public class ProductServiceImpl implements ProductService {
 
     private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
 
+    public List<Product> findAllByIds(List<Long> productIds) {
+        List<Product> products = productRepository.findAllById(productIds);
+
+        if (products.size() != productIds.size()) {
+            throw new ProductNotFoundException();
+        }
+
+        return products;
+    }
+
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
         String uniqueSlug = baseSlug;
