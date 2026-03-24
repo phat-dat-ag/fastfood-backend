@@ -17,9 +17,11 @@ import com.example.fastfoodshop.exception.promotion.InvalidPromotionStatusExcept
 import com.example.fastfoodshop.exception.promotion.PromotionNotFoundException;
 import com.example.fastfoodshop.exception.promotion.UnavailablePromotionException;
 import com.example.fastfoodshop.factory.PromotionFactory;
+import com.example.fastfoodshop.projection.ItemPromotionProjection;
 import com.example.fastfoodshop.repository.AwardRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
+import com.example.fastfoodshop.response.image.ItemPromotionResponse;
 import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
 import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
 import com.example.fastfoodshop.response.promotion.PromotionResponse;
@@ -161,6 +163,18 @@ public class PromotionServiceImpl implements PromotionService {
         promotion.setDeleted(true);
         promotionRepository.save(promotion);
         return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
+    }
+
+    public ItemPromotionResponse getItemPromotionItems() {
+        LocalDateTime now = LocalDateTime.now();
+
+        List<ItemPromotionProjection> categoryProjections = promotionRepository
+                .getDisplayableCategoryPromotionsLimited4(now);
+
+        List<ItemPromotionProjection> productProjections = promotionRepository
+                .getDisplayableProductPromotionsLimited4(now);
+
+        return ItemPromotionResponse.from(categoryProjections, productProjections);
     }
 
     private void validateQuizCompleted(Quiz quiz) {

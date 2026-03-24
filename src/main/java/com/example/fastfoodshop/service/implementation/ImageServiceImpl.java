@@ -5,13 +5,11 @@ import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PageType;
 import com.example.fastfoodshop.exception.image.ImageNotFoundException;
-import com.example.fastfoodshop.projection.ItemPromotionProjection;
 import com.example.fastfoodshop.repository.ImageRepository;
 import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
 import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
 import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
-import com.example.fastfoodshop.response.image.ItemPromotionResponse;
 import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ImageService;
@@ -20,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -75,14 +72,6 @@ public class ImageServiceImpl implements ImageService {
                 .stream().map(ImageDTO::from).toList();
 
         return new ImageChallengeIntroductionResponse(imageDTOs);
-    }
-
-    public ItemPromotionResponse getItemPromotionImages() {
-        LocalDateTime now = LocalDateTime.now();
-        List<ItemPromotionProjection> categoryProjections = promotionRepository.getDisplayableCategoryPromotionsLimited4(now);
-        List<ItemPromotionProjection> productProjections = promotionRepository.getDisplayableProductPromotionsLimited4(now);
-
-        return ItemPromotionResponse.from(categoryProjections, productProjections);
     }
 
     public ImageUpdateResponse deleteImage(Long imageId) {

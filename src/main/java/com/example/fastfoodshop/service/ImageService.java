@@ -3,7 +3,6 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.request.ImageCreateRequest;
 import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
 import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
-import com.example.fastfoodshop.response.image.ItemPromotionResponse;
 import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 
 public interface ImageService {
@@ -12,8 +11,6 @@ public interface ImageService {
     ImageAboutUsResponse getAboutUsPageImages();
 
     ImageChallengeIntroductionResponse getChallengeIntroductionImages();
-
-    ItemPromotionResponse getItemPromotionImages();
 
     ImageUpdateResponse deleteImage(Long imageId);
 }
