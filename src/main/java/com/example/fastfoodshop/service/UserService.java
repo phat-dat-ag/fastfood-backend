@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.enums.UserQueryType;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
@@ -18,15 +19,13 @@ public interface UserService {
 
     User createUser(SignUpRequest signUpRequest);
 
-    User updateUser(User user, SignUpRequest signUpRequest);
+    User completeRegistration(User user, SignUpRequest signUpRequest);
 
-    User updateUser(User user, String rawPassword);
+    void saveUserPassword(User user, String rawPassword);
 
-    User updateUser(User user);
+    void activateAccount(User user);
 
-    UserPageResponse getAllCustomers(int page, int size);
-
-    UserPageResponse getAllStaff(int page, int size);
+    UserPageResponse getUsers(UserQueryType userQueryType, int page, int size);
 
     UserResponse updateUser(String phone, UserUpdateRequest userUpdateRequest);
 
@@ -34,9 +33,7 @@ public interface UserService {
 
     UserResponse updateAvatar(String phone, MultipartFile file);
 
-    UserUpdateResponse activateAccount(Long userId);
+    UserUpdateResponse updateUserActivation(Long userId, boolean activated);
 
-    UserUpdateResponse deactivateAccount(Long userId);
-
-    UserUpdateResponse deleteUser(String phone);
+    UserUpdateResponse deleteUser(Long userId);
 }

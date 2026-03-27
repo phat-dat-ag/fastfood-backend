@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.enums.UserQueryType;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
 import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
@@ -47,87 +48,120 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByPhone(phone).orElseThrow(() -> new UserNotFoundException(phone));
     }
 
-    private User findUndeletedUserByIdOrThrow(Long userId) {
-        return userRepository.findByIdAndIsDeletedFalse(userId).orElseThrow(
-                () -> new UserNotFoundException(userId)
-        );
+    private LocalDate parseDate(String date) {
+        return LocalDate.parse(date);
+    }
+
+    private User buildUser(SignUpRequest signUpRequest) {
+        LocalDate birthday = parseDate(signUpRequest.birthdayString());
+
+        User user = new User();
+
+        user.setName(signUpRequest.name());
+        user.setPhone(signUpRequest.phone());
+        user.setEmail(signUpRequest.email());
+        user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
+        user.setBirthday(birthday);
+        user.setActivated(false);
+        user.setDeleted(false);
+        user.setAvatarUrl(null);
+        user.setRole(UserRole.USER);
+
+        return user;
     }
 
     public User createUser(SignUpRequest signUpRequest) {
-        LocalDate birthday = LocalDate.parse(signUpRequest.birthdayString());
+        User user = buildUser(signUpRequest);
 
-        User user = new User();
-        user.setName(signUpRequest.name());
-        user.setPhone(signUpRequest.phone());
-        user.setEmail(signUpRequest.email());
-        user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
-        user.setBirthday(birthday);
-        user.setActivated(false);
-        user.setDeleted(false);
-        user.setAvatarUrl(null);
-        user.setRole(UserRole.USER);
         return userRepository.save(user);
     }
 
-    public User updateUser(User user, SignUpRequest signUpRequest) {
-        LocalDate birthday = LocalDate.parse(signUpRequest.birthdayString());
+    private void applySignupData(User user, SignUpRequest signUpRequest) {
+        LocalDate birthday = parseDate(signUpRequest.birthdayString());
 
         user.setName(signUpRequest.name());
         user.setPhone(signUpRequest.phone());
         user.setEmail(signUpRequest.email());
         user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
         user.setBirthday(birthday);
-        user.setActivated(false);
-        user.setDeleted(false);
-        user.setAvatarUrl(null);
-        user.setRole(UserRole.USER);
+    }
+
+    public User completeRegistration(User user, SignUpRequest signUpRequest) {
+        applySignupData(user, signUpRequest);
 
         return userRepository.save(user);
     }
 
-    public User updateUser(User user, String rawPassword) {
+    private void updateUserPassword(User user, String rawPassword) {
         user.setPasswordHash(passwordEncoder.encode((rawPassword)));
-        return userRepository.save(user);
     }
 
-    public User updateUser(User user) {
-        return userRepository.save(user);
+    public void saveUserPassword(User user, String rawPassword) {
+        updateUserPassword(user, rawPassword);
+
+        userRepository.save(user);
     }
 
-    public UserPageResponse getAllCustomers(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-        Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.USER, pageable);
+    public void activateAccount(User user) {
+        user.setActivated(true);
+        userRepository.save(user);
+    }
+
+    private UserRole getUserRole(UserQueryType userQueryType) {
+        if (userQueryType == UserQueryType.STAFF) {
+            return UserRole.STAFF;
+        }
+
+        return UserRole.USER;
+    }
+
+    public UserPageResponse getUsers(UserQueryType userQueryType, int page, int size) {
+        UserRole userRole = getUserRole(userQueryType);
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by(User.Field.id).ascending());
+
+        Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(userRole, pageable);
 
         return UserPageResponse.from(userPage);
     }
 
-    public UserPageResponse getAllStaff(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
-        Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(UserRole.STAFF, pageable);
+    private void updateUserFields(User user, UserUpdateRequest userUpdateRequest) {
+        LocalDate birthday = parseDate(userUpdateRequest.birthdayString());
 
-        return UserPageResponse.from(userPage);
+        user.setName(userUpdateRequest.name());
+        user.setEmail(userUpdateRequest.email());
+        user.setBirthday(birthday);
+    }
+
+    private UserResponse toResponse(User user) {
+        return new UserResponse(UserDTO.from(user));
     }
 
     public UserResponse updateUser(String phone, UserUpdateRequest userUpdateRequest) {
         User user = findUserOrThrow(phone);
-        LocalDate birthday = LocalDate.parse(userUpdateRequest.birthdayString());
-        user.setName(userUpdateRequest.name());
-        user.setEmail(userUpdateRequest.email());
-        user.setBirthday(birthday);
+
+        updateUserFields(user, userUpdateRequest);
 
         User updatedUser = userRepository.save(user);
-        return new UserResponse(UserDTO.from(updatedUser));
+
+        return toResponse(updatedUser);
+    }
+
+    private void validatePassword(User user, String password) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            throw new InvalidPasswordException();
+        }
     }
 
     public UserResponse changePassword(String phone, ChangePasswordRequest changePasswordRequest) {
         User user = findUserOrThrow(phone);
-        if (!passwordEncoder.matches(changePasswordRequest.password(), user.getPasswordHash())) {
-            throw new InvalidPasswordException();
-        }
 
-        user.setPasswordHash(passwordEncoder.encode(changePasswordRequest.newPassword()));
+        validatePassword(user, changePasswordRequest.password());
+
+        updateUserPassword(user, changePasswordRequest.newPassword());
+
         User updatedUser = userRepository.save(user);
-        return new UserResponse(UserDTO.from(updatedUser));
+        return toResponse(updatedUser);
     }
 
     public void handleAvatarImage(User user, MultipartFile file) {
@@ -154,38 +188,41 @@ public class UserServiceImpl implements UserService {
 
     public UserResponse updateAvatar(String phone, MultipartFile file) {
         User user = findUserOrThrow(phone);
+
         handleAvatarImage(user, file);
+
         User updatedUser = userRepository.save(user);
-        return new UserResponse(UserDTO.from(updatedUser));
+        return toResponse(updatedUser);
     }
 
-    public UserUpdateResponse activateAccount(Long userId) {
-        User user = findUndeletedUserByIdOrThrow(userId);
-        if (user.isActivated()) {
+    private User findUserOrThrow(Long userId) {
+        return userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException(userId));
+    }
+
+    public UserUpdateResponse updateUserActivation(Long userId, boolean activated) {
+        User user = findUserOrThrow(userId);
+        if (user.isActivated() == activated) {
             throw new InvalidUserStatusException();
         }
-        user.setActivated(true);
+
+        user.setActivated(activated);
         userRepository.save(user);
-        return new UserUpdateResponse("Kích hoạt tài khoản thành công: " + userId);
+
+        String message = activated
+                ? "Kích hoạt tài khoản thành công: " + userId
+                : "Hủy kích hoạt tài khoản thành công: " + userId;
+
+        return new UserUpdateResponse(message);
     }
 
-    public UserUpdateResponse deactivateAccount(Long userId) {
-        User user = findUndeletedUserByIdOrThrow(userId);
-        if (!user.isActivated()) {
-            throw new InvalidUserStatusException();
-        }
-        user.setActivated(false);
-        userRepository.save(user);
-        return new UserUpdateResponse("Hủy kích hoạt tài khoản thành công: " + userId);
-    }
-
-    public UserUpdateResponse deleteUser(String phone) {
-        User user = findUserOrThrow(phone);
+    public UserUpdateResponse deleteUser(Long userId) {
+        User user = findUserOrThrow(userId);
         if (user.isDeleted()) {
             throw new InvalidUserStatusException();
         }
+
         user.setDeleted(true);
-        User deletedUser = userRepository.save(user);
-        return new UserUpdateResponse("Xóa tài khoản thành công: " + phone);
+        userRepository.save(user);
+        return new UserUpdateResponse("Xóa tài khoản thành công: " + userId);
     }
 }

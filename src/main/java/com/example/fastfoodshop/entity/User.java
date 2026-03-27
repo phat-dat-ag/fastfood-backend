@@ -53,7 +53,7 @@ public class User extends BaseAuditableEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "role", length = 15, nullable = false)
-    UserRole role;
+    UserRole role = UserRole.USER;
 
     @Column(name = "password_hash", length = 255, nullable = false)
     @JsonIgnore

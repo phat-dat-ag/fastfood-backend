@@ -42,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (optionalUser.isPresent()) {
             User dbUser = optionalUser.get();
-            User updatedUser = userService.updateUser(dbUser, signUpRequest);
+            User updatedUser = userService.completeRegistration(dbUser, signUpRequest);
 
             List<OTPCode> otpCodes = otpCodeService.getOTPCodeByUserAndIsUsedFalse(updatedUser);
             LocalDateTime now = LocalDateTime.now();
@@ -75,8 +75,7 @@ public class AuthServiceImpl implements AuthService {
 
         for (OTPCode otpCode : otpCodes) {
             if (now.isBefore(otpCode.getExpiredAt()) && verifySignUpRequest.otp().equals(otpCode.getCode())) {
-                user.setActivated(true);
-                userService.updateUser(user);
+                userService.activateAccount(user);
                 otpCodeService.updateOTPCode(otpCode, true);
                 return new VerifyResponse("Xác thực OTP đăng ký thành công");
             }
@@ -127,7 +126,7 @@ public class AuthServiceImpl implements AuthService {
         LocalDateTime now = LocalDateTime.now();
         for (OTPCode otpCode : otpCodes) {
             if (now.isBefore(otpCode.getExpiredAt()) && verifyForgetPasswordRequest.otp().equals(otpCode.getCode())) {
-                userService.updateUser(user, verifyForgetPasswordRequest.newPassword());
+                userService.saveUserPassword(user, verifyForgetPasswordRequest.newPassword());
                 otpCodeService.updateOTPCode(otpCode, true);
                 return new VerifyResponse("Xác thực OTP quên mật khẩu thành công");
             }
