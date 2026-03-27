@@ -10,13 +10,15 @@ import com.example.fastfoodshop.response.quiz.QuizUpdateResponse;
 public interface QuizService {
     QuizResponse getQuiz(String phone, String topicDifficultySlug);
 
-    QuizResponse checkQuizSubmission(String phone, QuizSubmitRequest quizSubmitRequest);
+    QuizResponse submitQuiz(String phone, QuizSubmitRequest quizSubmitRequest);
 
-    QuizUpdateResponse addFeedbackToCompletedQuiz(String phone, QuizAddFeedbackRequest quizAddFeedbackRequest);
+    QuizUpdateResponse addFeedbackToQuiz(
+            String phone, Long quizId, QuizAddFeedbackRequest quizAddFeedbackRequest
+    );
 
-    QuizHistoryPageResponse getAllHistoryQuizzesByUser(String phone, int page, int size);
+    QuizHistoryPageResponse getQuizHistories(String phone, int page, int size);
 
-    QuizResponse getQuizHistoryDetailByUser(String phone, Long quizId);
+    QuizResponse getQuizHistory(String phone, Long quizId);
 
-    QuizFeedbackPageResponse getAllFeedbacksByAdmin(int page, int size);
+    QuizFeedbackPageResponse getAllQuizFeedbacks(int page, int size);
 }

@@ -14,6 +14,7 @@ import com.example.fastfoodshop.exception.quiz.InvalidQuizException;
 import com.example.fastfoodshop.exception.quiz.NotEnoughQuestionsException;
 import com.example.fastfoodshop.exception.quiz.NoAttemptsRemainingException;
 import com.example.fastfoodshop.exception.quiz.QuizHistoryNotFoundException;
+import com.example.fastfoodshop.exception.quiz.NotAllowFeedbackException;
 import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.repository.QuizRepository;
 import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
@@ -45,7 +46,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -60,32 +60,39 @@ public class QuizServiceImpl implements QuizService {
     private final QuizRepository quizRepository;
     private final AnswerRepository answerRepository;
 
-    private Quiz checkPlayableQuiz(User user) {
+    private List<Quiz> getQuizzesToday(User user) {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
         LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
 
-        List<Quiz> quizzes = quizRepository.findByUserAndStartedAtBetween(user, startOfDay, endOfDay);
+        return quizRepository.findByUserAndStartedAtBetween(user, startOfDay, endOfDay);
+    }
 
+    private Quiz findPlayableQuizOrThrow(List<Quiz> quizzes) {
         int completedCount = 0;
 
         for (Quiz quiz : quizzes) {
-            LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(quiz.getTopicDifficulty().getDuration());
+            int durationSeconds = quiz.getTopicDifficulty().getDuration();
+
+            LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(durationSeconds);
+
             boolean isExpired = LocalDateTime.now().isAfter(expiredAt);
 
             if (!isExpired && quiz.getCompletedAt() == null) {
                 return quiz;
             }
 
-            if (quiz.getCompletedAt() != null || isExpired) completedCount++;
+            completedCount++;
         }
 
-        if (completedCount >= 3) return null;
+        if (completedCount >= 3) {
+            throw new NoAttemptsRemainingException();
+        }
 
         return new Quiz();
     }
 
-    private Quiz saveQuiz(TopicDifficulty topicDifficulty, User user) {
+    private Quiz createNewQuiz(TopicDifficulty topicDifficulty, User user) {
         Quiz quiz = new Quiz();
 
         quiz.setUser(user);
@@ -95,7 +102,7 @@ public class QuizServiceImpl implements QuizService {
         return quizRepository.save(quiz);
     }
 
-    private ArrayList<Question> getSelectedQuestions(TopicDifficulty topicDifficulty, List<Question> questions) {
+    private ArrayList<Question> selectRandomQuestions(TopicDifficulty topicDifficulty, List<Question> questions) {
         int requiredCount = topicDifficulty.getQuestionCount();
         if (questions.size() < requiredCount) {
             throw new NotEnoughQuestionsException();
@@ -103,11 +110,6 @@ public class QuizServiceImpl implements QuizService {
 
         Collections.shuffle(questions);
         return new ArrayList<>(questions.subList(0, requiredCount));
-    }
-
-    private Quiz findUncompletedQuizOrThrow(Long quizId, User user, TopicDifficulty topicDifficulty) {
-        return quizRepository.findByIdAndUserAndTopicDifficultyAndCompletedAtIsNull(quizId, user, topicDifficulty)
-                .orElseThrow(() -> new InvalidQuizException(quizId));
     }
 
     private Quiz findQuizHistoryOrThrow(Long quizId, User user) {
@@ -119,46 +121,72 @@ public class QuizServiceImpl implements QuizService {
     @Transactional
     public QuizResponse getQuiz(String phone, String topicDifficultySlug) {
         User user = userService.findUserOrThrow(phone);
-        Quiz existingOrPlayableQuiz = checkPlayableQuiz(user);
 
-        if (existingOrPlayableQuiz == null) {
-            throw new NoAttemptsRemainingException();
-        }
+        List<Quiz> quizzesToday = getQuizzesToday(user);
+
+        Quiz existingOrPlayableQuiz = findPlayableQuizOrThrow(quizzesToday);
 
         if (existingOrPlayableQuiz.getId() != null) {
             return new QuizResponse(QuizDTO.createUserQuizResponse(existingOrPlayableQuiz));
         }
 
-        TopicDifficulty topicDifficulty = topicDifficultyService.findPlayableTopicDifficultyBySlug(topicDifficultySlug);
+        TopicDifficulty topicDifficulty =
+                topicDifficultyService.findPlayableTopicDifficultyBySlug(topicDifficultySlug);
 
-        Quiz savedQuiz = saveQuiz(topicDifficulty, user);
+        Quiz createdQuiz = createNewQuiz(topicDifficulty, user);
 
         List<Question> questions = questionService.getAllValidQuestionsByTopicDifficulty(topicDifficulty);
-        ArrayList<Question> selectedQuestions = getSelectedQuestions(topicDifficulty, questions);
 
-        quizQuestionService.createQuizQuestions(savedQuiz, selectedQuestions);
+        ArrayList<Question> selectedQuestions = selectRandomQuestions(topicDifficulty, questions);
 
-        return new QuizResponse(QuizDTO.createUserQuizResponse(savedQuiz, selectedQuestions));
+        quizQuestionService.createQuizQuestions(createdQuiz, selectedQuestions);
+
+        return new QuizResponse(QuizDTO.createUserQuizResponse(createdQuiz, selectedQuestions));
     }
 
-    private Map<Long, Long> generateSubmittedMap(List<QuizQuestionSubmitRequest> quizQuestionSubmits) {
-        Map<Long, Long> submittedMap = new HashMap<>();
-        for (QuizQuestionSubmitRequest questionSubmitRequest : quizQuestionSubmits) {
-            submittedMap.put(questionSubmitRequest.questionId(), questionSubmitRequest.answerId());
+    private void validateQuizNotExpired(Quiz quiz) {
+        LocalDateTime now = LocalDateTime.now();
+        long totalDuration = quiz.getTopicDifficulty().getDuration() + QuizConstants.SUBMIT_TIME_BUFFER_SECONDS;
+        LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(totalDuration);
+
+        if (now.isAfter(expiredAt)) {
+            throw new GameTimeExpiredException();
         }
-        return submittedMap;
     }
 
-    private Map<Long, Answer> generateAnswerMap(Map<Long, Long> submittedMap) {
+    private Map<Long, Long> mapQuestionToSubmittedAnswerIds(
+            List<QuizQuestionSubmitRequest> quizQuestionSubmits
+    ) {
+        return quizQuestionSubmits
+                .stream()
+                .collect(
+                        Collectors.toMap(
+                                QuizQuestionSubmitRequest::questionId,
+                                QuizQuestionSubmitRequest::answerId,
+                                (oldKey, newKey) -> newKey
+                        )
+                );
+    }
+
+    private Map<Long, Answer> mapAnswersById(Map<Long, Long> submittedMap) {
         List<Long> answerIds = submittedMap.values().stream()
                 .filter(Objects::nonNull)
                 .distinct()
-                .collect(Collectors.toList());
-        return answerRepository.findAllById(answerIds).stream()
-                .collect(Collectors.toMap(Answer::getId, Function.identity()));
+                .toList();
+
+        return answerRepository
+                .findAllById(answerIds)
+                .stream()
+                .collect(
+                        Collectors.toMap(Answer::getId, Function.identity())
+                );
     }
 
-    private int updateQuizAnswerAndCalculateScore(
+    private boolean isValidAnswer(Long questionId, Answer answer) {
+        return answer != null && answer.getQuestion().getId().equals(questionId);
+    }
+
+    private int applyAnswersAndCalculateScore(
             List<QuizQuestion> quizQuestions,
             Map<Long, Long> submittedMap,
             Map<Long, Answer> answerMap
@@ -175,7 +203,8 @@ public class QuizServiceImpl implements QuizService {
             }
 
             Answer answer = answerMap.get(answerId);
-            if (answer == null || !answer.getQuestion().getId().equals(questionId)) {
+
+            if (!isValidAnswer(questionId, answer)) {
                 quizQuestion.setAnswer(null);
                 continue;
             }
@@ -187,30 +216,32 @@ public class QuizServiceImpl implements QuizService {
         return score;
     }
 
+    private Quiz findUncompletedQuizOrThrow(Long quizId, User user, TopicDifficulty topicDifficulty) {
+        return quizRepository.findByIdAndUserAndTopicDifficultyAndCompletedAtIsNull(quizId, user, topicDifficulty)
+                .orElseThrow(() -> new InvalidQuizException(quizId));
+    }
+
     @Transactional
-    public QuizResponse checkQuizSubmission(String phone, QuizSubmitRequest quizSubmitRequest) {
+    public QuizResponse submitQuiz(String phone, QuizSubmitRequest quizSubmitRequest) {
         User user = userService.findUserOrThrow(phone);
+
         TopicDifficulty topicDifficulty = topicDifficultyService
                 .findValidTopicDifficultyOrThrow(quizSubmitRequest.topicDifficultySlug());
+
         Quiz quiz = findUncompletedQuizOrThrow(quizSubmitRequest.quizId(), user, topicDifficulty);
 
-        LocalDateTime now = LocalDateTime.now();
-        long totalDuration = quiz.getTopicDifficulty().getDuration() + QuizConstants.SUBMIT_TIME_BUFFER_SECONDS;
-        LocalDateTime expiredAt = quiz.getStartedAt().plusSeconds(totalDuration);
+        validateQuizNotExpired(quiz);
 
-        if (now.isAfter(expiredAt)) {
-            throw new GameTimeExpiredException();
-        }
+        Map<Long, Long> submittedMap = mapQuestionToSubmittedAnswerIds(quizSubmitRequest.quizQuestions());
 
-        Map<Long, Long> submittedMap = generateSubmittedMap(quizSubmitRequest.quizQuestions());
-
-        Map<Long, Answer> answerMap = generateAnswerMap(submittedMap);
+        Map<Long, Answer> answerMap = mapAnswersById(submittedMap);
 
         List<QuizQuestion> quizQuestions = quiz.getQuizQuestions();
 
         quiz.setCompletedAt(LocalDateTime.now());
 
-        int score = updateQuizAnswerAndCalculateScore(quizQuestions, submittedMap, answerMap);
+        int score = applyAnswersAndCalculateScore(quizQuestions, submittedMap, answerMap);
+
         if (score >= topicDifficulty.getMinCorrectToReward()) {
             Promotion promotion = promotionService.grantPromotion(user, quiz);
             quiz.setPromotion(promotion);
@@ -221,44 +252,72 @@ public class QuizServiceImpl implements QuizService {
         return new QuizResponse(QuizDTO.createUserQuizResponse(checkedQuiz));
     }
 
-    public QuizUpdateResponse addFeedbackToCompletedQuiz(String phone, QuizAddFeedbackRequest quizAddFeedbackRequest) {
-        User user = userService.findUserOrThrow(phone);
-        Quiz quiz = findQuizHistoryOrThrow(quizAddFeedbackRequest.quizId(), user);
-
+    private void checkFeedbackCompletion(Quiz quiz) {
         if (quiz.getFeedbackAt() != null) {
             throw new QuizAlreadyFeedbackException();
         }
+    }
 
+    private void checkFeedbackPermission(Quiz quiz) {
         LocalDateTime completedAt = quiz.getCompletedAt();
-        boolean canGiveFeedback = completedAt != null
-                && completedAt.plusDays(QuizConstants.FEEDBACK_ALLOWED_DURATION_DAYS)
-                .isAfter(LocalDateTime.now());
 
-        if (canGiveFeedback) {
-            quiz.setFeedback(quizAddFeedbackRequest.feedback());
-            quiz.setFeedbackAt(LocalDateTime.now());
+        boolean isCompleted = completedAt != null;
+
+        if (!isCompleted) {
+            throw new NotAllowFeedbackException();
         }
+
+        LocalDateTime allowedDuration = completedAt.plusDays(QuizConstants.FEEDBACK_ALLOWED_DURATION_DAYS);
+
+        boolean isWithinAllowedDuration = allowedDuration.isAfter(LocalDateTime.now());
+
+        if (!isWithinAllowedDuration) {
+            throw new NotAllowFeedbackException();
+        }
+    }
+
+    private void setFeedback(Quiz quiz, String feedbackContent) {
+        quiz.setFeedback(feedbackContent);
+        quiz.setFeedbackAt(LocalDateTime.now());
+    }
+
+    public QuizUpdateResponse addFeedbackToQuiz(
+            String phone, Long quizId, QuizAddFeedbackRequest quizAddFeedbackRequest
+    ) {
+        User user = userService.findUserOrThrow(phone);
+        Quiz quiz = findQuizHistoryOrThrow(quizId, user);
+
+        checkFeedbackCompletion(quiz);
+
+        checkFeedbackPermission(quiz);
+
+        setFeedback(quiz, quizAddFeedbackRequest.feedback());
+
         quizRepository.save(quiz);
 
         return new QuizUpdateResponse("Đã thêm đánh giá cho trò chơi");
     }
 
-    public QuizHistoryPageResponse getAllHistoryQuizzesByUser(String phone, int page, int size) {
+    public QuizHistoryPageResponse getQuizHistories(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
+
         Pageable pageable = PageRequest.of(page, size);
         Page<Quiz> quizPage = quizRepository.findByUserAndCompletedAtIsNotNull(user, pageable);
 
         return QuizHistoryPageResponse.from(quizPage);
     }
 
-    public QuizResponse getQuizHistoryDetailByUser(String phone, Long quizId) {
+    public QuizResponse getQuizHistory(String phone, Long quizId) {
         User user = userService.findUserOrThrow(phone);
+
         Quiz quiz = findQuizHistoryOrThrow(quizId, user);
+
         return new QuizResponse(QuizDTO.createReviewQuizResponse(quiz));
     }
 
-    public QuizFeedbackPageResponse getAllFeedbacksByAdmin(int page, int size) {
+    public QuizFeedbackPageResponse getAllQuizFeedbacks(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
+
         Page<Quiz> quizPage = quizRepository.findByFeedbackAtIsNotNull(pageable);
 
         return QuizFeedbackPageResponse.from(quizPage);

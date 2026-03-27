@@ -3,7 +3,6 @@ package com.example.fastfoodshop.controller;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.QuizAddFeedbackRequest;
 import com.example.fastfoodshop.request.QuizSubmitRequest;
-import com.example.fastfoodshop.response.quiz.QuizFeedbackPageResponse;
 import com.example.fastfoodshop.response.quiz.QuizHistoryPageResponse;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.quiz.QuizResponse;
@@ -19,62 +18,48 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
-@RequestMapping("/api/quiz")
+@RequestMapping("/api/quizzes")
 @RequiredArgsConstructor
 public class QuizController extends BaseController {
     private final QuizService quizService;
 
-    @GetMapping()
-    public ResponseEntity<ResponseWrapper<QuizResponse>> getQuiz(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("topicDifficultySlug") String topicDifficultySlug
-    ) {
-        return okResponse(quizService.getQuiz(userDetails.getUsername(), topicDifficultySlug));
-    }
-
-    @PostMapping()
+    @PostMapping
     public ResponseEntity<ResponseWrapper<QuizResponse>> submitQuiz(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody QuizSubmitRequest quizSubmitRequest
     ) {
-        return okResponse(quizService.checkQuizSubmission(userDetails.getUsername(), quizSubmitRequest));
+        return okResponse(quizService.submitQuiz(userDetails.getUsername(), quizSubmitRequest));
     }
 
-    @PutMapping()
+    @PutMapping("/{id}/feedback")
     public ResponseEntity<ResponseWrapper<QuizUpdateResponse>> addFeedbackToQuiz(
             @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable("id") Long quizId,
             @Valid @RequestBody QuizAddFeedbackRequest quizAddFeedbackRequest
     ) {
-        return okResponse(quizService.addFeedbackToCompletedQuiz(userDetails.getUsername(), quizAddFeedbackRequest));
+        return okResponse(quizService.addFeedbackToQuiz(userDetails.getUsername(), quizId, quizAddFeedbackRequest));
     }
 
-    @GetMapping("/by-user")
-    public ResponseEntity<ResponseWrapper<QuizHistoryPageResponse>> getAllHistoryQuizzesByUser(
+    @GetMapping
+    public ResponseEntity<ResponseWrapper<QuizHistoryPageResponse>> getQuizHistories(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @ModelAttribute PageRequest request
     ) {
-        return okResponse(quizService.getAllHistoryQuizzesByUser(
+        return okResponse(quizService.getQuizHistories(
                 userDetails.getUsername(), request.getPage(), request.getSize())
         );
     }
 
-    @GetMapping("/by-user/detail")
-    public ResponseEntity<ResponseWrapper<QuizResponse>> getQuizHistoryDetailByUser(
+    @GetMapping("/{id}")
+    public ResponseEntity<ResponseWrapper<QuizResponse>> getQuizHistory(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam("quizId") Long quizId
+            @PathVariable("id") Long quizId
     ) {
-        return okResponse(quizService.getQuizHistoryDetailByUser(userDetails.getUsername(), quizId));
-    }
-
-    @GetMapping("/manage")
-    public ResponseEntity<ResponseWrapper<QuizFeedbackPageResponse>> getAllFeedbacksByAdmin(
-            @Valid @ModelAttribute PageRequest request
-    ) {
-        return okResponse(quizService.getAllFeedbacksByAdmin(request.getPage(), request.getSize()));
+        return okResponse(quizService.getQuizHistory(userDetails.getUsername(), quizId));
     }
 }
