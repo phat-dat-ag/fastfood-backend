@@ -66,24 +66,35 @@ public class SecurityConfig {
                                 "/api-docs/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/stripe/webhook").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/image/**").permitAll()
-                        .requestMatchers("/api/pages/**").permitAll()
-                        .requestMatchers("/api/categories/**").permitAll()
-                        .requestMatchers("/api/products/**").permitAll()
-                        .requestMatchers("/api/promotions/**").permitAll()
-                        .requestMatchers("/api/carts/**").hasAnyRole("USER", "STAFF")
+
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/stripe/webhook"
+                        ).permitAll()
+
+                        .requestMatchers(
+                                "/api/pages/**",
+                                "/api/categories/**",
+                                "/api/products/**",
+                                "/api/promotions/**"
+                        ).permitAll()
+
                         .requestMatchers(HttpMethod.GET, "/api/orders/**").permitAll()
-                        .requestMatchers("/api/orders/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/addresses/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/topics/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/topic-difficulties/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/image/**").hasRole("ADMIN")
-                        .requestMatchers("/api/users/**").hasAnyRole("USER", "STAFF")
-                        .requestMatchers("/api/quizzes/**").hasAnyRole("USER", "STAFF")
+
+                        .requestMatchers(
+                                "/api/carts/**",
+                                "/api/orders/**",
+                                "/api/addresses/**",
+                                "/api/topics/**",
+                                "/api/topic-difficulties/**",
+                                "/api/users/**",
+                                "/api/quizzes/**"
+                        ).hasAnyRole("USER", "STAFF")
+
                         .requestMatchers("/api/staff/**").hasRole("STAFF")
+
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
