@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.constant.OrderConstant;
 import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.OrderStatsDTO;
 import com.example.fastfoodshop.entity.Address;
 import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.entity.Promotion;
@@ -24,6 +25,7 @@ import com.example.fastfoodshop.exception.order.PaymentNotAllowedException;
 import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
 import com.example.fastfoodshop.exception.order.AccessDeniedException;
+import com.example.fastfoodshop.projection.OrderStatsProjection;
 import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
@@ -31,6 +33,7 @@ import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.dto.OrderDTO;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.order.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderStatsResponse;
 import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 import com.example.fastfoodshop.service.CartService;
 import com.example.fastfoodshop.service.OrderNoteService;
@@ -441,5 +444,25 @@ public class OrderServiceImpl implements OrderService {
             case UNFINISHED -> getAllUnfinishedOrders(page, size);
             case ALL -> getAllOrdersByAdmin(page, size);
         };
+    }
+
+    public OrderStatsResponse getOrderStats() {
+        OrderStatsProjection statsProjection = orderRepository.getStats();
+
+        OrderStatsDTO orderStatsDTO = new OrderStatsDTO(
+                statsProjection.getPendingOrderAmount(),
+                statsProjection.getConfirmedOrderAmount(),
+                statsProjection.getDeliveringOrderAmount(),
+                statsProjection.getDeliveredOrderAmount(),
+                statsProjection.getCancelledOrderAmount(),
+                statsProjection.getCashOnDeliveryOrderAmount(),
+                statsProjection.getBankTransferOrderAmount(),
+                statsProjection.getDiscountedOrderAmount(),
+                statsProjection.getCashOnDeliveryRevenue(),
+                statsProjection.getBankTransferRevenue(),
+                statsProjection.getTotalRevenue()
+        );
+
+        return new OrderStatsResponse(orderStatsDTO);
     }
 }

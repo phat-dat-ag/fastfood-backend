@@ -1,15 +1,18 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.TopicDTO;
+import com.example.fastfoodshop.dto.TopicStatsDTO;
 import com.example.fastfoodshop.dto.TopicDifficultyFullDTO;
+import com.example.fastfoodshop.dto.TopicDifficultyDisplayDTO;
 import com.example.fastfoodshop.dto.TopicDisplayDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.exception.topic.DeletedTopicException;
 import com.example.fastfoodshop.exception.topic.InvalidTopicStatusException;
 import com.example.fastfoodshop.exception.topic.TopicNotFoundException;
+import com.example.fastfoodshop.projection.TopicStatsProjection;
 import com.example.fastfoodshop.repository.TopicRepository;
 import com.example.fastfoodshop.request.TopicCreateRequest;
-import com.example.fastfoodshop.dto.TopicDifficultyDisplayDTO;
+import com.example.fastfoodshop.response.topic.TopicStatsResponse;
 import com.example.fastfoodshop.response.topic.TopicDisplayResponse;
 import com.example.fastfoodshop.response.topic.TopicPageResponse;
 import com.example.fastfoodshop.response.topic.TopicResponse;
@@ -178,5 +181,16 @@ public class TopicServiceImpl implements TopicService {
 
         topicRepository.save(topic);
         return new TopicUpdateResponse("Đã xóa chủ đề: " + topicId);
+    }
+
+    public TopicStatsResponse getTopicStats() {
+        List<TopicStatsProjection> topicStatsProjections = topicRepository.getStats();
+
+        List<TopicStatsDTO> topicStatsDTOs = topicStatsProjections
+                .stream()
+                .map(TopicStatsDTO::from)
+                .toList();
+
+        return new TopicStatsResponse(topicStatsDTOs);
     }
 }

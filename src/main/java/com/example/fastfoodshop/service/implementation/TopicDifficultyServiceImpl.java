@@ -1,17 +1,20 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.TopicDifficultyDTO;
+import com.example.fastfoodshop.dto.TopicDifficultyStatsDTO;
 import com.example.fastfoodshop.entity.Topic;
 import com.example.fastfoodshop.entity.TopicDifficulty;
 import com.example.fastfoodshop.exception.topic_difficulty.DeletedTopicDifficultyException;
 import com.example.fastfoodshop.exception.topic_difficulty.InvalidTopicDifficultyStatusException;
 import com.example.fastfoodshop.exception.topic_difficulty.TopicDifficultyNotFoundException;
 import com.example.fastfoodshop.exception.topic_difficulty.UnavailableTopicDifficultyException;
+import com.example.fastfoodshop.projection.TopicDifficultyStatsProjection;
 import com.example.fastfoodshop.repository.TopicDifficultyRepository;
 import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyStatsResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import com.example.fastfoodshop.service.TopicService;
@@ -21,6 +24,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -138,6 +143,17 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
 
         topicDifficultyRepository.save(topicDifficulty);
         return new TopicDifficultyUpdateResponse("Đã xóa độ khó: " + topicDifficultyId);
+    }
+
+    public TopicDifficultyStatsResponse getTopicDifficultyStats() {
+        List<TopicDifficultyStatsProjection> topicDifficultyStatsProjection = topicDifficultyRepository.getStats();
+
+        List<TopicDifficultyStatsDTO> topicDifficultyStatsDTOs = topicDifficultyStatsProjection
+                .stream()
+                .map(TopicDifficultyStatsDTO::from)
+                .toList();
+
+        return new TopicDifficultyStatsResponse(topicDifficultyStatsDTOs);
     }
 
     public TopicDifficulty findValidTopicDifficultyOrThrow(String topicDifficultySlug) {

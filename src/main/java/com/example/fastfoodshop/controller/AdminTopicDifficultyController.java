@@ -11,6 +11,7 @@ import com.example.fastfoodshop.response.award.AwardUpdateResponse;
 import com.example.fastfoodshop.response.question.QuestionPageResponse;
 import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyStatsResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 import com.example.fastfoodshop.service.AwardService;
 import com.example.fastfoodshop.service.QuestionService;
@@ -69,6 +70,11 @@ public class AdminTopicDifficultyController extends BaseController {
             @PathVariable("id") Long topicDifficultyId
     ) {
         return okResponse(topicDifficultyService.deleteTopicDifficulty(topicDifficultyId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseWrapper<TopicDifficultyStatsResponse>> getTopicDifficultyStats() {
+        return okResponse(topicDifficultyService.getTopicDifficultyStats());
     }
 
     @PostMapping("/{topicDifficultySlug}/questions")

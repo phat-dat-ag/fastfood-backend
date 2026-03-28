@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.CategoryDTO;
+import com.example.fastfoodshop.dto.CategoryStatsDTO;
 import com.example.fastfoodshop.dto.CategorySelectionDTO;
 import com.example.fastfoodshop.dto.PromotionDTO;
 import com.example.fastfoodshop.dto.PromotionResult;
@@ -10,10 +11,12 @@ import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
+import com.example.fastfoodshop.projection.CategoryStatsProjection;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
+import com.example.fastfoodshop.response.category.CategoryStatsResponse;
 import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 import com.example.fastfoodshop.response.category.CategoryPageResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
@@ -215,5 +218,19 @@ public class CategoryServiceImpl implements CategoryService {
                 .toList();
 
         return new CategoryDisplayResponse(categoryDTOs);
+    }
+
+    public CategoryStatsResponse getCategoryStats() {
+        List<CategoryStatsProjection> categoryStatsProjections = categoryRepository.getStats();
+
+        List<CategoryStatsDTO> categoryStatsDTOs = categoryStatsProjections
+                .stream()
+                .map(categoryStatsProjection -> new CategoryStatsDTO(
+                        categoryStatsProjection.getName(),
+                        categoryStatsProjection.getTotalRevenue(),
+                        categoryStatsProjection.getTotalQuantitySold()
+                )).toList();
+
+        return new CategoryStatsResponse(categoryStatsDTOs);
     }
 }

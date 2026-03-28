@@ -9,6 +9,7 @@ import com.example.fastfoodshop.response.product.ProductPageResponse;
 import com.example.fastfoodshop.response.product.ProductResponse;
 import com.example.fastfoodshop.response.product.ProductUpdateResponse;
 import com.example.fastfoodshop.response.product.ProductSelectionResponse;
+import com.example.fastfoodshop.response.product.ProductStatsResponse;
 
 import java.util.List;
 
@@ -34,4 +35,6 @@ public interface ProductService {
     ProductDisplayResponse getAllDisplayableProducts(String categorySlug);
 
     ProductResponse getProductBySlug(String productSlug);
+
+    ProductStatsResponse getProductStats();
 }

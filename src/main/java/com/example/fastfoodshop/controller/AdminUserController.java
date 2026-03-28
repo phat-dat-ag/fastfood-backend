@@ -5,6 +5,7 @@ import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.user.UserPageResponse;
+import com.example.fastfoodshop.response.user.UserStatsResponse;
 import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import com.example.fastfoodshop.service.UserService;
 import jakarta.validation.Valid;
@@ -47,5 +48,10 @@ public class AdminUserController extends BaseController {
             @PathVariable("id") Long userId
     ) {
         return okResponse(userService.deleteUser(userId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseWrapper<UserStatsResponse>> getStats() {
+        return okResponse(userService.getUserStats());
     }
 }

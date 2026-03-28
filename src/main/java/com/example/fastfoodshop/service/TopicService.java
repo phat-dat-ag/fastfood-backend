@@ -6,6 +6,7 @@ import com.example.fastfoodshop.response.topic.TopicDisplayResponse;
 import com.example.fastfoodshop.response.topic.TopicPageResponse;
 import com.example.fastfoodshop.response.topic.TopicResponse;
 import com.example.fastfoodshop.response.topic.TopicUpdateResponse;
+import com.example.fastfoodshop.response.topic.TopicStatsResponse;
 
 public interface TopicService {
     Topic findValidTopicOrThrow(String topicSlug);
@@ -21,6 +22,8 @@ public interface TopicService {
     TopicUpdateResponse updateTopicActivation(Long topicId, boolean activated);
 
     TopicUpdateResponse deleteTopic(Long topicId);
+
+    TopicStatsResponse getTopicStats();
 
     TopicDisplayResponse getDisplayableTopics();
 }

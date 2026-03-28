@@ -1,18 +1,21 @@
 package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.UserDTO;
+import com.example.fastfoodshop.dto.UserStatsDTO;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.UserQueryType;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
 import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
 import com.example.fastfoodshop.exception.user.UserNotFoundException;
+import com.example.fastfoodshop.projection.UserStatsProjection;
 import com.example.fastfoodshop.repository.UserRepository;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
 import com.example.fastfoodshop.response.user.UserPageResponse;
 import com.example.fastfoodshop.response.user.UserResponse;
+import com.example.fastfoodshop.response.user.UserStatsResponse;
 import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.UserService;
@@ -224,5 +227,20 @@ public class UserServiceImpl implements UserService {
         user.setDeleted(true);
         userRepository.save(user);
         return new UserUpdateResponse("Xóa tài khoản thành công: " + userId);
+    }
+
+    public UserStatsResponse getUserStats() {
+        UserStatsProjection statsProjection = userRepository.getStats();
+
+        UserStatsDTO userStatsDTO = new UserStatsDTO(
+                statsProjection.getTotalStaff(),
+                statsProjection.getTotalActivatedStaff(),
+                statsProjection.getStaffJoinedThisMonth(),
+                statsProjection.getTotalUser(),
+                statsProjection.getTotalActivatedUser(),
+                statsProjection.getUserJoinedThisMonth()
+        );
+
+        return new UserStatsResponse(userStatsDTO);
     }
 }

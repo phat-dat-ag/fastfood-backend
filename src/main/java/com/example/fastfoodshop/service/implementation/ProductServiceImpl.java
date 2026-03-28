@@ -4,6 +4,7 @@ import com.example.fastfoodshop.dto.ProductDTO;
 import com.example.fastfoodshop.dto.ProductSelectionDTO;
 import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.dto.ReviewDTO;
+import com.example.fastfoodshop.dto.ProductStatsDTO;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
@@ -14,11 +15,13 @@ import com.example.fastfoodshop.exception.product.ProductNotFoundException;
 import com.example.fastfoodshop.exception.product.UnavailableProductException;
 import com.example.fastfoodshop.projection.ProductRatingStatsProjection;
 import com.example.fastfoodshop.projection.ProductSoldCountProjection;
+import com.example.fastfoodshop.projection.ProductStatsProjection;
 import com.example.fastfoodshop.repository.ProductRepository;
 import com.example.fastfoodshop.repository.ReviewRepository;
 import com.example.fastfoodshop.request.ProductCreateRequest;
 import com.example.fastfoodshop.request.ProductGetByCategoryRequest;
 import com.example.fastfoodshop.request.ProductUpdateRequest;
+import com.example.fastfoodshop.response.product.ProductStatsResponse;
 import com.example.fastfoodshop.response.product.ProductDisplayResponse;
 import com.example.fastfoodshop.response.product.ProductSelectionResponse;
 import com.example.fastfoodshop.response.product.ProductPageResponse;
@@ -320,5 +323,19 @@ public class ProductServiceImpl implements ProductService {
         );
 
         return new ProductResponse(productDTO);
+    }
+
+    public ProductStatsResponse getProductStats() {
+        List<ProductStatsProjection> statsProjections = productRepository.getStats();
+
+        List<ProductStatsDTO> productStatsDTOs = statsProjections
+                .stream()
+                .map(productStatsProjection -> new ProductStatsDTO(
+                        productStatsProjection.getName(),
+                        productStatsProjection.getTotalRevenue(),
+                        productStatsProjection.getTotalQuantitySold()
+                )).toList();
+
+        return new ProductStatsResponse(productStatsDTOs);
     }
 }

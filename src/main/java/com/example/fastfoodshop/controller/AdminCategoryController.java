@@ -5,12 +5,25 @@ import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.request.PageRequest;
 import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.category.*;
+import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
+import com.example.fastfoodshop.response.category.CategoryStatsResponse;
+import com.example.fastfoodshop.response.category.CategoryPageResponse;
+import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 import com.example.fastfoodshop.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/api/admin/categories")
@@ -58,5 +71,10 @@ public class AdminCategoryController extends BaseController {
             @PathVariable("id") Long categoryId
     ) {
         return okResponse(categoryService.deleteCategory(categoryId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseWrapper<CategoryStatsResponse>> getCategoryStats() {
+        return okResponse(categoryService.getCategoryStats());
     }
 }

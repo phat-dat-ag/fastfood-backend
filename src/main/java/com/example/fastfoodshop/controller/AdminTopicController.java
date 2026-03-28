@@ -7,6 +7,7 @@ import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.topic.TopicPageResponse;
 import com.example.fastfoodshop.response.topic.TopicResponse;
+import com.example.fastfoodshop.response.topic.TopicStatsResponse;
 import com.example.fastfoodshop.response.topic.TopicUpdateResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
@@ -48,7 +49,7 @@ public class AdminTopicController extends BaseController {
         return okResponse(topicService.updateTopic(topicId, topicCreateRequest));
     }
 
-    @GetMapping("/{slug}")
+    @GetMapping("/slug/{slug}")
     public ResponseEntity<ResponseWrapper<TopicResponse>> getTopicBySlug(
             @PathVariable("slug") String topicSlug
     ) {
@@ -75,6 +76,11 @@ public class AdminTopicController extends BaseController {
             @PathVariable("id") Long topicId
     ) {
         return okResponse(topicService.deleteTopic(topicId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseWrapper<TopicStatsResponse>> getTopicStats() {
+        return okResponse(topicService.getTopicStats());
     }
 
     @PostMapping("/{slug}/difficulties")

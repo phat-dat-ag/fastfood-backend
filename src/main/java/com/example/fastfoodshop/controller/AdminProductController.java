@@ -6,6 +6,7 @@ import com.example.fastfoodshop.request.ProductUpdateRequest;
 import com.example.fastfoodshop.request.UpdateActivationRequest;
 import com.example.fastfoodshop.response.ResponseWrapper;
 import com.example.fastfoodshop.response.product.ProductSelectionResponse;
+import com.example.fastfoodshop.response.product.ProductStatsResponse;
 import com.example.fastfoodshop.response.product.ProductPageResponse;
 import com.example.fastfoodshop.response.product.ProductResponse;
 import com.example.fastfoodshop.response.product.ProductUpdateResponse;
@@ -72,5 +73,10 @@ public class AdminProductController extends BaseController {
             @PathVariable("id") Long productId
     ) {
         return okResponse(productService.deleteProduct(productId));
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<ResponseWrapper<ProductStatsResponse>> getProductStats() {
+        return okResponse(productService.getProductStats());
     }
 }

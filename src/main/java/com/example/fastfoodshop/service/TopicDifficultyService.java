@@ -5,6 +5,7 @@ import com.example.fastfoodshop.request.TopicDifficultyCreateRequest;
 import com.example.fastfoodshop.request.TopicDifficultyUpdateRequest;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyPageResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyResponse;
+import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyStatsResponse;
 import com.example.fastfoodshop.response.topic_difficulty.TopicDifficultyUpdateResponse;
 
 public interface TopicDifficultyService {
@@ -23,6 +24,8 @@ public interface TopicDifficultyService {
     TopicDifficultyResponse getTopicDifficultyBySlug(String topicDifficultySlug);
 
     TopicDifficultyUpdateResponse deleteTopicDifficulty(Long topicDifficultyId);
+
+    TopicDifficultyStatsResponse getTopicDifficultyStats();
 
     TopicDifficulty findValidTopicDifficultyOrThrow(String topicDifficultySlug);
 
