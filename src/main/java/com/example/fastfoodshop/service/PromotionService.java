@@ -5,7 +5,7 @@ import com.example.fastfoodshop.entity.Quiz;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.PromotionQueryType;
 import com.example.fastfoodshop.request.PromotionCreateRequest;
-import com.example.fastfoodshop.response.image.ItemPromotionResponse;
+import com.example.fastfoodshop.response.promotion.ItemPromotionResponse;
 import com.example.fastfoodshop.response.promotion.PromotionPageResponse;
 import com.example.fastfoodshop.response.promotion.PromotionOrdersResponse;
 import com.example.fastfoodshop.response.promotion.PromotionResponse;

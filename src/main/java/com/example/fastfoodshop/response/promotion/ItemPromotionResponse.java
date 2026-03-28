@@ -1,4 +1,4 @@
-package com.example.fastfoodshop.response.image;
+package com.example.fastfoodshop.response.promotion;
 
 import com.example.fastfoodshop.dto.ItemPromotionDTO;
 import com.example.fastfoodshop.projection.ItemPromotionProjection;

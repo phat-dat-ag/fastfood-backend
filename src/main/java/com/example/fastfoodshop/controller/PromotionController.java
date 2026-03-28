@@ -1,7 +1,7 @@
 package com.example.fastfoodshop.controller;
 
 import com.example.fastfoodshop.response.ResponseWrapper;
-import com.example.fastfoodshop.response.image.ItemPromotionResponse;
+import com.example.fastfoodshop.response.promotion.ItemPromotionResponse;
 import com.example.fastfoodshop.service.PromotionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

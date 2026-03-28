@@ -1,15 +1,10 @@
 package com.example.fastfoodshop.service.implementation;
 
-import com.example.fastfoodshop.dto.ImageDTO;
 import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
-import com.example.fastfoodshop.enums.PageType;
 import com.example.fastfoodshop.exception.image.ImageNotFoundException;
 import com.example.fastfoodshop.repository.ImageRepository;
-import com.example.fastfoodshop.repository.PromotionRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
-import com.example.fastfoodshop.response.image.ImageAboutUsResponse;
-import com.example.fastfoodshop.response.image.ImageChallengeIntroductionResponse;
 import com.example.fastfoodshop.response.image.ImageUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ImageService;
@@ -18,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -26,12 +20,7 @@ import java.util.Map;
 public class ImageServiceImpl implements ImageService {
     private final CloudinaryService cloudinaryService;
     private final UserService userService;
-    private final PromotionRepository promotionRepository;
     private final ImageRepository imageRepository;
-
-    private Image findImageOrThrow(Long imageId) {
-        return imageRepository.findById(imageId).orElseThrow(() -> new ImageNotFoundException(imageId));
-    }
 
     private void handleUploadImage(Image image, MultipartFile imageFile) {
         if (imageFile == null || imageFile.isEmpty())
@@ -58,20 +47,8 @@ public class ImageServiceImpl implements ImageService {
         return new ImageUpdateResponse("Đã lưu ảnh thành công");
     }
 
-    public ImageAboutUsResponse getAboutUsPageImages() {
-        List<ImageDTO> imageDTOs = imageRepository
-                .findByPageType(PageType.ABOUT_US)
-                .stream().map(ImageDTO::from).toList();
-
-        return ImageAboutUsResponse.from(imageDTOs);
-    }
-
-    public ImageChallengeIntroductionResponse getChallengeIntroductionImages() {
-        List<ImageDTO> imageDTOs = imageRepository
-                .findByPageType(PageType.CHALLENGE)
-                .stream().map(ImageDTO::from).toList();
-
-        return new ImageChallengeIntroductionResponse(imageDTOs);
+    private Image findImageOrThrow(Long imageId) {
+        return imageRepository.findById(imageId).orElseThrow(() -> new ImageNotFoundException(imageId));
     }
 
     public ImageUpdateResponse deleteImage(Long imageId) {

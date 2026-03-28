@@ -69,6 +69,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/image/**").permitAll()
+                        .requestMatchers("/api/pages/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/products/**").permitAll()
                         .requestMatchers("/api/promotions/**").permitAll()
