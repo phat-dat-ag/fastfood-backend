@@ -2,22 +2,28 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.dto.UserDTO;
 import com.example.fastfoodshop.dto.UserStatsDTO;
+import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.UserQueryType;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.exception.auth.InvalidPasswordException;
 import com.example.fastfoodshop.exception.auth.InvalidUserStatusException;
+import com.example.fastfoodshop.exception.auth.PhoneAlreadyExistsException;
 import com.example.fastfoodshop.exception.user.UserNotFoundException;
 import com.example.fastfoodshop.projection.UserStatsProjection;
 import com.example.fastfoodshop.repository.UserRepository;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
+import com.example.fastfoodshop.request.VerifySignUpRequest;
+import com.example.fastfoodshop.response.auth.OTPResponse;
+import com.example.fastfoodshop.response.auth.VerifyResponse;
 import com.example.fastfoodshop.response.user.UserPageResponse;
 import com.example.fastfoodshop.response.user.UserResponse;
 import com.example.fastfoodshop.response.user.UserStatsResponse;
 import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import com.example.fastfoodshop.service.CloudinaryService;
+import com.example.fastfoodshop.service.OTPCodeService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -40,19 +46,16 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
+    private final OTPCodeService otpCodeService;
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-
-    public Optional<User> getUserByPhone(String phone) {
-        return userRepository.findByPhone(phone);
-    }
 
     public User findUserOrThrow(String phone) {
         return userRepository.findByPhone(phone).orElseThrow(() -> new UserNotFoundException(phone));
     }
 
-    private LocalDate parseDate(String date) {
-        return LocalDate.parse(date);
+    private Optional<User> getUserByPhone(String phone) {
+        return userRepository.findByPhone(phone);
     }
 
     private User buildUser(SignUpRequest signUpRequest) {
@@ -73,10 +76,14 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
-    public User createUser(SignUpRequest signUpRequest) {
+    private User createUser(SignUpRequest signUpRequest) {
         User user = buildUser(signUpRequest);
 
         return userRepository.save(user);
+    }
+
+    private LocalDate parseDate(String date) {
+        return LocalDate.parse(date);
     }
 
     private void applySignupData(User user, SignUpRequest signUpRequest) {
@@ -89,10 +96,67 @@ public class UserServiceImpl implements UserService {
         user.setBirthday(birthday);
     }
 
-    public User completeRegistration(User user, SignUpRequest signUpRequest) {
+    private User completeRegistration(User user, SignUpRequest signUpRequest) {
         applySignupData(user, signUpRequest);
 
         return userRepository.save(user);
+    }
+
+    private User getOrCreateUser(SignUpRequest request) {
+        Optional<User> optionalUser = getUserByPhone(request.phone());
+
+        if (optionalUser.isEmpty()) {
+            return createUser(request);
+        }
+
+        User user = optionalUser.get();
+
+        if (user.isActivated()) {
+            throw new PhoneAlreadyExistsException(request.phone());
+        }
+
+        return completeRegistration(user, request);
+    }
+
+    private OTPCode sendSignupOTP(User user) {
+        return otpCodeService.sendOTP(
+                user,
+                "Đăng ký tài khoản mới",
+                "Mã OTP đăng ký tài khoản mới của bạn là: "
+        );
+    }
+
+    private OTPResponse buildOTPResponse(User user, OTPCode otp) {
+        return new OTPResponse(user.getPhone(), otp.getExpiredAt());
+    }
+
+    public OTPResponse signUp(SignUpRequest signUpRequest) {
+        User user = getOrCreateUser(signUpRequest);
+
+        OTPCode validOtp = otpCodeService.findValidOTPOrNull(user);
+
+        if (validOtp != null) {
+            return buildOTPResponse(user, validOtp);
+        }
+
+        OTPCode newOtp = sendSignupOTP(user);
+        return buildOTPResponse(user, newOtp);
+    }
+
+    private void activateAccount(User user) {
+        user.setActivated(true);
+        userRepository.save(user);
+    }
+
+    public VerifyResponse verifySignUpOTP(VerifySignUpRequest verifySignUpRequest) {
+        User user = findUserOrThrow(verifySignUpRequest.phone());
+
+        OTPCode validOtp = otpCodeService.findMatchingValidOTP(user, verifySignUpRequest.otp());
+
+        activateAccount(user);
+        otpCodeService.updateOTPCode(validOtp, true);
+
+        return new VerifyResponse("Xác thực OTP đăng ký thành công");
     }
 
     private void updateUserPassword(User user, String rawPassword) {
@@ -102,11 +166,6 @@ public class UserServiceImpl implements UserService {
     public void saveUserPassword(User user, String rawPassword) {
         updateUserPassword(user, rawPassword);
 
-        userRepository.save(user);
-    }
-
-    public void activateAccount(User user) {
-        user.setActivated(true);
         userRepository.save(user);
     }
 
@@ -205,7 +264,7 @@ public class UserServiceImpl implements UserService {
     public UserUpdateResponse updateUserActivation(Long userId, boolean activated) {
         User user = findUserOrThrow(userId);
         if (user.isActivated() == activated) {
-            throw new InvalidUserStatusException();
+            throw new InvalidUserStatusException("No change user status");
         }
 
         user.setActivated(activated);
@@ -221,7 +280,7 @@ public class UserServiceImpl implements UserService {
     public UserUpdateResponse deleteUser(Long userId) {
         User user = findUserOrThrow(userId);
         if (user.isDeleted()) {
-            throw new InvalidUserStatusException();
+            throw new InvalidUserStatusException("User is deleted");
         }
 
         user.setDeleted(true);

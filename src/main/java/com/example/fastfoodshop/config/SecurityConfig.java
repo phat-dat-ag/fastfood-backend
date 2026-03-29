@@ -73,6 +73,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
+                                "/api/password-resets/**",
                                 "/api/pages/**",
                                 "/api/categories/**",
                                 "/api/products/**",
@@ -80,6 +81,8 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(HttpMethod.GET, "/api/orders/**").permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/users/**").permitAll()
 
                         .requestMatchers(
                                 "/api/carts/**",

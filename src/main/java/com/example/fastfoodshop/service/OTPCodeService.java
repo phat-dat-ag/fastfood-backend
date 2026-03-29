@@ -11,4 +11,8 @@ public interface OTPCodeService {
     OTPCode sendOTP(User user, String emailTitle, String emailMessage);
 
     void updateOTPCode(OTPCode otpCode, boolean isUsed);
+
+    OTPCode findValidOTPOrNull(User user);
+
+    OTPCode findMatchingValidOTP(User user, String otp);
 }

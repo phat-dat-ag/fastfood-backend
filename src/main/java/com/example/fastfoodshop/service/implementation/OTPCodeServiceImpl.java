@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.auth.InvalidOTPCodeException;
 import com.example.fastfoodshop.exception.otp.SendOTPException;
 import com.example.fastfoodshop.repository.OTPCodeRepository;
 import com.example.fastfoodshop.service.EmailService;
@@ -27,7 +28,7 @@ public class OTPCodeServiceImpl implements OTPCodeService {
         return String.valueOf(number);
     }
 
-    public OTPCode sendOTP(User user, String emailTitle, String emailMessage) {
+    private OTPCode buildOTPCode(User user) {
         String otp_code = generateOTP();
 
         OTPCode otp = new OTPCode();
@@ -35,13 +36,20 @@ public class OTPCodeServiceImpl implements OTPCodeService {
         otp.setCode(otp_code);
         otp.setExpiredAt(LocalDateTime.now().plusMinutes(5));
         otp.setUsed(false);
+
+        return otp;
+    }
+
+    public OTPCode sendOTP(User user, String emailTitle, String emailMessage) {
+        OTPCode otp = buildOTPCode(user);
+
         otpCodeRepository.save(otp);
 
         try {
             emailService.sendEmail(
                     user.getEmail(),
                     emailTitle,
-                    emailMessage + otp_code
+                    emailMessage + otp.getCode()
             );
             return otp;
         } catch (Exception e) {
@@ -54,5 +62,27 @@ public class OTPCodeServiceImpl implements OTPCodeService {
         otpCode.setUsed(isUsed);
         otpCodeRepository.save(otpCode);
     }
-}
 
+    public OTPCode findValidOTPOrNull(User user) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return getOTPCodeByUserAndIsUsedFalse(user)
+                .stream()
+                .filter(otp -> now.isBefore(otp.getExpiredAt()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public OTPCode findMatchingValidOTP(User user, String otp) {
+        LocalDateTime now = LocalDateTime.now();
+
+        return getOTPCodeByUserAndIsUsedFalse(user)
+                .stream()
+                .filter(code ->
+                        now.isBefore(code.getExpiredAt()) &&
+                                code.getCode().equals(otp)
+                )
+                .findFirst()
+                .orElseThrow(InvalidOTPCodeException::new);
+    }
+}

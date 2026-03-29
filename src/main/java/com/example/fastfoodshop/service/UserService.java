@@ -5,26 +5,23 @@ import com.example.fastfoodshop.enums.UserQueryType;
 import com.example.fastfoodshop.request.ChangePasswordRequest;
 import com.example.fastfoodshop.request.SignUpRequest;
 import com.example.fastfoodshop.request.UserUpdateRequest;
+import com.example.fastfoodshop.request.VerifySignUpRequest;
+import com.example.fastfoodshop.response.auth.OTPResponse;
+import com.example.fastfoodshop.response.auth.VerifyResponse;
 import com.example.fastfoodshop.response.user.UserPageResponse;
 import com.example.fastfoodshop.response.user.UserResponse;
 import com.example.fastfoodshop.response.user.UserStatsResponse;
 import com.example.fastfoodshop.response.user.UserUpdateResponse;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
 public interface UserService {
-    Optional<User> getUserByPhone(String phone);
+    OTPResponse signUp(SignUpRequest signUpRequest);
+
+    VerifyResponse verifySignUpOTP(VerifySignUpRequest verifySignUpRequest);
 
     User findUserOrThrow(String phone);
 
-    User createUser(SignUpRequest signUpRequest);
-
-    User completeRegistration(User user, SignUpRequest signUpRequest);
-
     void saveUserPassword(User user, String rawPassword);
-
-    void activateAccount(User user);
 
     UserPageResponse getUsers(UserQueryType userQueryType, int page, int size);
 
