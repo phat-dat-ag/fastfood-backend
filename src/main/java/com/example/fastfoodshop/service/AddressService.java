@@ -6,11 +6,11 @@ import com.example.fastfoodshop.response.address.AddressResponse;
 import com.example.fastfoodshop.response.address.AddressesResponse;
 
 public interface AddressService {
-    Address findAddressOrThrow(Long id);
+    Address findAddressOrThrow(Long addressId);
 
     AddressResponse createAddress(String phone, AddressCreateRequest request);
 
     AddressesResponse getAddressesByUser(String phone);
 
-    AddressResponse deleteAddress(String phone, Long id);
+    AddressResponse deleteAddress(String phone, Long addressId);
 }
