@@ -10,11 +10,13 @@ import com.example.fastfoodshop.security.JwtUtil;
 import com.example.fastfoodshop.service.AuthService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -51,6 +53,8 @@ public class AuthServiceImpl implements AuthService {
 
         validatePassword(user, signInRequest.password());
 
+        log.info("[AuthService] Successfully logged in with phone={}", signInRequest.phone());
+
         return buildSignInResponse(user);
     }
 
@@ -59,6 +63,8 @@ public class AuthServiceImpl implements AuthService {
         String phone = userDetails.getUsername();
 
         User user = userService.findUserOrThrow(phone);
+
+        log.info("[AuthService] Successfully verify user with phone={}", phone);
 
         return buildSignInResponse(user);
     }
