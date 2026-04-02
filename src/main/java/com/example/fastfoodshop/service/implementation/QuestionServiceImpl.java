@@ -9,6 +9,7 @@ import com.example.fastfoodshop.repository.QuestionRepository;
 import com.example.fastfoodshop.request.QuestionCreateRequest;
 import com.example.fastfoodshop.response.question.QuestionPageResponse;
 import com.example.fastfoodshop.response.question.QuestionUpdateResponse;
+import com.example.fastfoodshop.service.AnswerService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.QuestionService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
@@ -31,6 +32,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final CloudinaryService cloudinaryService;
     private final TopicDifficultyService topicDifficultyService;
     private final QuestionRepository questionRepository;
+    private final AnswerService answerService;
 
     private static final Logger log = LoggerFactory.getLogger(QuestionServiceImpl.class);
 
@@ -100,12 +102,15 @@ public class QuestionServiceImpl implements QuestionService {
         TopicDifficulty topicDifficulty = topicDifficultyService
                 .findValidTopicDifficultyOrThrow(topicDifficultySlug);
 
-        List<Question> questions = questionCreateRequests
-                .stream()
-                .map(request -> buildQuestion(topicDifficulty, request))
-                .toList();
+        for (QuestionCreateRequest questionCreateRequest : questionCreateRequests) {
+            Question question = buildQuestion(topicDifficulty, questionCreateRequest);
 
-        questionRepository.saveAll(questions);
+            questionRepository.save(question);
+
+            answerService.createAnswers(questionCreateRequest.answers(), question);
+        }
+
+
         return new QuestionUpdateResponse("Đã lưu các câu hỏi");
     }
 
