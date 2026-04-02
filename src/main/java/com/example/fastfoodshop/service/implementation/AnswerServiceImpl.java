@@ -30,25 +30,10 @@ public class AnswerServiceImpl implements AnswerService {
         if (imageFile == null || imageFile.isEmpty())
             return;
 
-        String oldPublicId = answer.getImagePublicId();
         Map<?, ?> result = cloudinaryService.uploadImage(imageFile, FolderNameConstants.answerFolderName);
 
         answer.setImageUrl((String) result.get("secure_url"));
         answer.setImagePublicId((String) result.get("public_id"));
-
-        if (oldPublicId != null && !oldPublicId.isEmpty()) {
-            try {
-                if (cloudinaryService.deleteImage(oldPublicId)) {
-                    log.info("[AnswerService] Deleted old answer image successfully oldPublicId={}", oldPublicId);
-                } else {
-                    log.warn("[AnswerService] Deleted old answer image failed oldPublicId={}", oldPublicId);
-                }
-            } catch (Exception e) {
-                log.warn("[AnswerService] Occurred exception when deleting old image answer oldPublicId={}"
-                        , oldPublicId, e
-                );
-            }
-        }
     }
 
     private void validateAnswerCount(List<AnswerCreateRequest> answerCreateRequests) {
