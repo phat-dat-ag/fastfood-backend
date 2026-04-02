@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service.implementation;
 
+import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.constant.QuizConstants;
 import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
@@ -10,12 +11,15 @@ import com.example.fastfoodshop.request.AnswerCreateRequest;
 import com.example.fastfoodshop.service.AnswerService;
 import com.example.fastfoodshop.service.CloudinaryService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AnswerServiceImpl implements AnswerService {
@@ -27,16 +31,22 @@ public class AnswerServiceImpl implements AnswerService {
             return;
 
         String oldPublicId = answer.getImagePublicId();
-        Map<?, ?> result = cloudinaryService.uploadImage(imageFile, "answer");
+        Map<?, ?> result = cloudinaryService.uploadImage(imageFile, FolderNameConstants.answerFolderName);
 
         answer.setImageUrl((String) result.get("secure_url"));
         answer.setImagePublicId((String) result.get("public_id"));
 
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
-                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                if (cloudinaryService.deleteImage(oldPublicId)) {
+                    log.info("[AnswerService] Deleted old answer image successfully oldPublicId={}", oldPublicId);
+                } else {
+                    log.warn("[AnswerService] Deleted old answer image failed oldPublicId={}", oldPublicId);
+                }
             } catch (Exception e) {
-                System.out.println("Ngoai lệ khi dọn ảnh câu trả lời cũ: " + e.getMessage());
+                log.warn("[AnswerService] Occurred exception when deleting old image answer oldPublicId={}"
+                        , oldPublicId, e
+                );
             }
         }
     }
@@ -69,6 +79,7 @@ public class AnswerServiceImpl implements AnswerService {
         return answer;
     }
 
+    @Transactional
     public void createAnswers(List<AnswerCreateRequest> answerCreateRequests, Question question) {
         validateAnswerCount(answerCreateRequests);
 
@@ -79,7 +90,17 @@ public class AnswerServiceImpl implements AnswerService {
 
             handleAnswerImage(answer, answerCreateRequest.imageUrl());
 
-            answerRepository.save(answer);
+            Answer savedAnswer = answerRepository.save(answer);
+
+            log.debug(
+                    "[AnswerService] Successfully created answer {} for questionId={}",
+                    savedAnswer.getId(), question.getId()
+            );
         }
+
+        log.info(
+                "[AnswerService] Successfully created {} answers for questionId={}",
+                answerCreateRequests.size(), question.getId()
+        );
     }
 }
