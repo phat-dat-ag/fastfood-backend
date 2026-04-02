@@ -1,7 +1,10 @@
 package com.example.fastfoodshop.service.implementation;
 
+import com.example.fastfoodshop.constant.QuizConstants;
 import com.example.fastfoodshop.entity.Answer;
 import com.example.fastfoodshop.entity.Question;
+import com.example.fastfoodshop.exception.question.InvalidAnswerCountException;
+import com.example.fastfoodshop.exception.question.InvalidCorrectAnswerCountException;
 import com.example.fastfoodshop.repository.AnswerRepository;
 import com.example.fastfoodshop.request.AnswerCreateRequest;
 import com.example.fastfoodshop.service.AnswerService;
@@ -10,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -39,30 +41,45 @@ public class AnswerServiceImpl implements AnswerService {
         }
     }
 
-    public ArrayList<Answer> createAnswers(List<AnswerCreateRequest> answerCreateRequests, Question question) {
-        if (answerCreateRequests == null || answerCreateRequests.size() != 4) {
-            throw new IllegalArgumentException("Mỗi câu hỏi phải có đúng 4 đáp án");
+    private void validateAnswerCount(List<AnswerCreateRequest> answerCreateRequests) {
+        if (answerCreateRequests == null) {
+            throw new InvalidAnswerCountException(0);
         }
 
-        boolean hasCorrect = answerCreateRequests.stream()
-                .anyMatch(AnswerCreateRequest::correct);
-
-        if (!hasCorrect) {
-            throw new IllegalArgumentException("Phải có ít nhất 1 đáp án đúng");
+        if (answerCreateRequests.size() != QuizConstants.VALID_ANSWER_COUNT) {
+            throw new InvalidAnswerCountException(answerCreateRequests.size());
         }
+    }
 
-        ArrayList<Answer> answers = new ArrayList<>();
+    private void validateHavingCorrectAnswer(List<AnswerCreateRequest> answerCreateRequests) {
+        long correctAnswerCount = answerCreateRequests.stream().filter(AnswerCreateRequest::correct).count();
+
+        if (correctAnswerCount != QuizConstants.VALID_CORRECT_ANSWER_COUNT) {
+            throw new InvalidCorrectAnswerCountException(correctAnswerCount);
+        }
+    }
+
+    private Answer createAnswer(AnswerCreateRequest answerCreateRequest, Question question) {
+        Answer answer = new Answer();
+
+        answer.setQuestion(question);
+        answer.setContent(answerCreateRequest.content());
+        answer.setCorrect(answerCreateRequest.correct());
+
+        return answer;
+    }
+
+    public void createAnswers(List<AnswerCreateRequest> answerCreateRequests, Question question) {
+        validateAnswerCount(answerCreateRequests);
+
+        validateHavingCorrectAnswer(answerCreateRequests);
 
         for (AnswerCreateRequest answerCreateRequest : answerCreateRequests) {
-            Answer answer = new Answer();
-            answer.setQuestion(question);
-            answer.setContent(answerCreateRequest.content());
-            answer.setCorrect(answerCreateRequest.correct());
+            Answer answer = createAnswer(answerCreateRequest, question);
+
             handleAnswerImage(answer, answerCreateRequest.imageUrl());
 
-            Answer savedAnswer = answerRepository.save(answer);
-            answers.add(savedAnswer);
+            answerRepository.save(answer);
         }
-        return answers;
     }
 }
