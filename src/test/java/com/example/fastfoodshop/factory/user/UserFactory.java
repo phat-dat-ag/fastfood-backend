@@ -19,15 +19,6 @@ public class UserFactory {
         return user;
     }
 
-    public static User createValidUser() {
-        User user = new User();
-
-        user.setId(100L);
-        user.setPhone("0989898923");
-
-        return user;
-    }
-
     public static User createActivatedUser() {
         User user = createUser();
 

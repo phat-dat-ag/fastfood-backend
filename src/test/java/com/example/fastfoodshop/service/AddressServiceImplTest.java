@@ -43,7 +43,7 @@ public class AddressServiceImplTest {
 
     @Test
     void findAddressOrThrow_validAddressId_shouldReturnAddress() {
-        User validUser = UserFactory.createValidUser();
+        User validUser = UserFactory.createActivatedUser();
 
         Address address = AddressFactory.createValidAddress(validUser);
 
@@ -74,7 +74,7 @@ public class AddressServiceImplTest {
     void createAddress_validRequest_shouldReturnAddressResponse() {
         AddressCreateRequest validRequest = AddressCreateRequestFactory.createValid();
 
-        User validUser = UserFactory.createValidUser();
+        User validUser = UserFactory.createActivatedUser();
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
@@ -111,7 +111,7 @@ public class AddressServiceImplTest {
 
     @Test
     void getAddressesByUser_validUser_shouldReturnAddresses() {
-        User validUser = UserFactory.createValidUser();
+        User validUser = UserFactory.createActivatedUser();
 
         List<Address> addresses = List.of(
                 AddressFactory.createValidAddress(validUser),
@@ -147,7 +147,7 @@ public class AddressServiceImplTest {
 
     @Test
     void deleteAddress_valid_shouldReturnAddressResponse() {
-        User validUser = UserFactory.createValidUser();
+        User validUser = UserFactory.createActivatedUser();
 
         Address validAddress = AddressFactory.createValidAddress(validUser);
 
@@ -186,7 +186,7 @@ public class AddressServiceImplTest {
 
     @Test
     void deleteAddress_addressNotFound_shouldThrowException() {
-        User validUser = UserFactory.createValidUser();
+        User validUser = UserFactory.createActivatedUser();
 
         Long notFoundAddressId = 1L;
 
