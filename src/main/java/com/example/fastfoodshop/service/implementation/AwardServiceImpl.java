@@ -50,11 +50,18 @@ public class AwardServiceImpl implements AwardService {
 
         if (availableAwards.isEmpty()) {
             Optional<Award> optionalAward = awardRepository.findAnyAvailableAwardAsFallback(topicDifficulty.getId());
-            return optionalAward.orElseThrow(AwardNotFoundException::new);
+
+            if (optionalAward.isEmpty()) {
+                throw new AwardNotFoundException();
+            }
+
+            return optionalAward.get();
         }
 
         int index = NumberUtils.randomNumber(0, availableAwards.size() - 1);
-        return availableAwards.get(index);
+        Award award = availableAwards.get(index);
+
+        return award;
     }
 
     public AwardUpdateResponse createAward(String topicDifficultySlug, AwardCreateRequest awardCreateRequest) {
