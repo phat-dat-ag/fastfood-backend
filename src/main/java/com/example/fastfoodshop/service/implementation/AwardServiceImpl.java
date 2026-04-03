@@ -13,6 +13,7 @@ import com.example.fastfoodshop.service.AwardService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import com.example.fastfoodshop.util.NumberUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AwardServiceImpl implements AwardService {
@@ -55,12 +57,14 @@ public class AwardServiceImpl implements AwardService {
                 throw new AwardNotFoundException();
             }
 
+            log.debug("[AwardService]: Award is not available, use fallback");
             return optionalAward.get();
         }
 
         int index = NumberUtils.randomNumber(0, availableAwards.size() - 1);
         Award award = availableAwards.get(index);
 
+        log.debug("[AwardService] Selected award with id={}", award.getId());
         return award;
     }
 
@@ -73,6 +77,9 @@ public class AwardServiceImpl implements AwardService {
         buildAward(award, awardCreateRequest);
 
         Award savedAward = awardRepository.save(award);
+
+        log.info("[AwardService] Successfully created award id={}", savedAward.getId());
+
         return new AwardUpdateResponse("Thêm phần thưởng thành công: " + savedAward.getId());
     }
 
@@ -84,6 +91,8 @@ public class AwardServiceImpl implements AwardService {
 
         Page<Award> awardPage = awardRepository
                 .findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
+
+        log.info("[AwardService] Successfully get award page");
 
         return AwardPageResponse.from(awardPage);
     }
@@ -100,6 +109,11 @@ public class AwardServiceImpl implements AwardService {
         String message = activated ? "Kích hoạt phần thưởng thành công: " + awardId
                 : "Hủy kích hoạt phần thưởng thành công: " + awardId;
 
+        log.info(
+                "[AwardService] Successfully updated new status for award id={}, activated={}"
+                , awardId, activated
+        );
+
         return new AwardUpdateResponse(message);
     }
 
@@ -111,6 +125,9 @@ public class AwardServiceImpl implements AwardService {
         award.setDeleted(true);
 
         awardRepository.save(award);
+
+        log.info("[AwardService] Successfully deleted award id={}", awardId);
+
         return new AwardUpdateResponse("Xóa phần thưởng thành công: " + awardId);
     }
 }
