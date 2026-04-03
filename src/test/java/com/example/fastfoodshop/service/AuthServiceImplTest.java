@@ -169,4 +169,36 @@ public class AuthServiceImplTest {
 
         verify(userService).findUserOrThrow(phone);
     }
+
+    @Test
+    void verify_deletedUser_shouldThrowInvalidUserStatusException() {
+        Authentication authentication = mock(Authentication.class);
+        UserDetails userDetails = mock(UserDetails.class);
+
+        User deletedUser = UserFactory.createDeletedUser();
+
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUsername()).thenReturn(deletedUser.getPhone());
+        when(userService.findUserOrThrow(deletedUser.getPhone())).thenReturn(deletedUser);
+
+        assertThrows(InvalidUserStatusException.class, () -> authService.verify(authentication));
+
+        verify(userService).findUserOrThrow(deletedUser.getPhone());
+    }
+
+    @Test
+    void verify_deactivatedUser_shouldThrowInvalidUserStatusException() {
+        Authentication authentication = mock(Authentication.class);
+        UserDetails userDetails = mock(UserDetails.class);
+
+        User deactivatedUser = UserFactory.createDeletedUser();
+
+        when(authentication.getPrincipal()).thenReturn(userDetails);
+        when(userDetails.getUsername()).thenReturn(deactivatedUser.getPhone());
+        when(userService.findUserOrThrow(deactivatedUser.getPhone())).thenReturn(deactivatedUser);
+
+        assertThrows(InvalidUserStatusException.class, () -> authService.verify(authentication));
+
+        verify(userService).findUserOrThrow(deactivatedUser.getPhone());
+    }
 }
