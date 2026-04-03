@@ -64,6 +64,8 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userService.findUserOrThrow(phone);
 
+        validateAccount(user);
+
         log.info("[AuthService] Successfully verify user with phone={}", phone);
 
         return buildSignInResponse(user);
