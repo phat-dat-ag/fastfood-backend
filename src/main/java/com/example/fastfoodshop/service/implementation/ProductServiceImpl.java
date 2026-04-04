@@ -149,7 +149,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductResponse createProduct(ProductCreateRequest productCreateRequest) {
-        Category category = categoryService.findCategoryOrThrow(productCreateRequest.categoryId());
+        Category category = categoryService.findCategoryByIdOrThrow(productCreateRequest.categoryId());
 
         String slug = generateUniqueSlug(productCreateRequest.name());
 
@@ -180,7 +180,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductPageResponse getProductPage(ProductGetByCategoryRequest productGetByCategoryRequest) {
-        Category category = categoryService.findCategoryOrThrow(
+        Category category = categoryService.findCategoryBySlugOrThrow(
                 productGetByCategoryRequest.getCategorySlug()
         );
         if (category.isDeleted()) {
@@ -269,7 +269,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductDisplayResponse getAllDisplayableProducts(String categorySlug) {
-        Category category = categoryService.findCategoryOrThrow(categorySlug);
+        Category category = categoryService.findCategoryBySlugOrThrow(categorySlug);
         List<Product> products = productRepository.findByCategoryAndIsDeletedFalseAndIsActivatedTrue(category);
 
         List<Long> productIds = products.stream().map(Product::getId).toList();

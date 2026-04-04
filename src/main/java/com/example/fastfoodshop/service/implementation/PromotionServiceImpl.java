@@ -97,7 +97,7 @@ public class PromotionServiceImpl implements PromotionService {
         validateUniqueCode(promotionCreateRequest.code());
 
         Category category = promotionCreateRequest.categoryId() != null
-                ? categoryService.findCategoryOrThrow(promotionCreateRequest.categoryId())
+                ? categoryService.findCategoryByIdOrThrow(promotionCreateRequest.categoryId())
                 : null;
 
         Product product = promotionCreateRequest.productId() != null

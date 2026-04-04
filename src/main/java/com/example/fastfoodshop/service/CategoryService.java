@@ -5,12 +5,17 @@ import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.request.CategoryUpdateRequest;
-import com.example.fastfoodshop.response.category.*;
+import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
+import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
+import com.example.fastfoodshop.response.category.CategoryStatsResponse;
+import com.example.fastfoodshop.response.category.CategoryPageResponse;
+import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 
 public interface CategoryService {
-    Category findCategoryOrThrow(Long categoryId);
+    Category findCategoryByIdOrThrow(Long categoryId);
 
-    Category findCategoryOrThrow(String categorySlug);
+    Category findCategoryBySlugOrThrow(String categorySlug);
 
     PromotionResult applyPromotion(Product product, Category category);
 

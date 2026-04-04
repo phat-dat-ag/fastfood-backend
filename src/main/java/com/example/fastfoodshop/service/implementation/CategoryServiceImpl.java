@@ -58,13 +58,13 @@ public class CategoryServiceImpl implements CategoryService {
         return uniqueSlug;
     }
 
-    public Category findCategoryOrThrow(Long categoryId) {
+    public Category findCategoryByIdOrThrow(Long categoryId) {
         return categoryRepository.findById(categoryId).orElseThrow(
                 () -> new CategoryNotFoundException(categoryId)
         );
     }
 
-    public Category findCategoryOrThrow(String categorySlug) {
+    public Category findCategoryBySlugOrThrow(String categorySlug) {
         return categoryRepository.findBySlug(categorySlug).orElseThrow(
                 () -> new CategoryNotFoundException(categorySlug)
         );
@@ -164,7 +164,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     public CategoryResponse updateCategory(Long categoryId, CategoryUpdateRequest categoryUpdateRequest) {
-        Category category = findCategoryOrThrow(categoryId);
+        Category category = findCategoryByIdOrThrow(categoryId);
 
         updateCategoryFields(category, categoryUpdateRequest);
 
@@ -201,7 +201,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     public CategoryUpdateResponse updateCategoryActivation(Long categoryId, boolean activated) {
-        Category category = findCategoryOrThrow(categoryId);
+        Category category = findCategoryByIdOrThrow(categoryId);
 
         if (category.isActivated() == activated) {
             throw new InvalidCategoryStatusException();
@@ -223,7 +223,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     public CategoryUpdateResponse deleteCategory(Long categoryId) {
-        Category category = findCategoryOrThrow(categoryId);
+        Category category = findCategoryByIdOrThrow(categoryId);
         if (category.isDeleted()) {
             throw new DeletedCategoryException(categoryId);
         }
