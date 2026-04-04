@@ -50,8 +50,9 @@ public class CartServiceImplTest {
     @InjectMocks
     CartServiceImpl cartService;
 
-    private final static String USER_PHONE = "0999999999";
+    private static final String USER_PHONE = "0999999999";
     private static final Long PRODUCT_ID = 100L;
+    private static final int NEW_VALID_QUANTITY = 1;
 
     @Test
     void addProductToCart_existedValidCart_shouldReturnCartResponse() {
@@ -189,6 +190,117 @@ public class CartServiceImplTest {
         verify(userService).findUserOrThrow(user.getPhone());
         verify(productService).findProductOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
+        verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void updateCartItem_validRequest_shouldReturnCartResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+
+        Cart cart = CartFactory.createValidCart(user, product);
+
+        when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.of(cart));
+
+        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+
+        CartResponse cartResponse = cartService.updateCartItem(
+                user.getPhone(), product.getId(), NEW_VALID_QUANTITY
+        );
+
+        assertNotNull(cartResponse);
+        assertNotNull(cartResponse.cart());
+
+        assertEquals(user.getPhone(), cartResponse.cart().user().phone());
+        assertEquals(product.getId(), cartResponse.cart().product().id());
+        assertEquals(NEW_VALID_QUANTITY, cartResponse.cart().quantity());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(product.getId());
+        verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void updateCartItem_notFoundUser_shouldThrowUserNotFoundException() {
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> cartService.updateCartItem(USER_PHONE, PRODUCT_ID, NEW_VALID_QUANTITY)
+        );
+
+        verify(userService).findUserOrThrow(USER_PHONE);
+    }
+
+    @Test
+    void updateCartItem_notFoundProduct_shouldThrowProductNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(productService.findProductOrThrow(PRODUCT_ID))
+                .thenThrow(new ProductNotFoundException(PRODUCT_ID));
+
+        assertThrows(
+                ProductNotFoundException.class,
+                () -> cartService.updateCartItem(user.getPhone(), PRODUCT_ID, NEW_VALID_QUANTITY)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(PRODUCT_ID);
+    }
+
+    @Test
+    void updateCartItem_notFoundCart_shouldThrowCartNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+
+        when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.empty());
+
+        assertThrows(
+                CartNotFoundException.class,
+                () -> cartService.updateCartItem(user.getPhone(), product.getId(), NEW_VALID_QUANTITY)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(product.getId());
+        verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void updateCartItem_newQuantityExceeded_shouldThrowQuantityExceededException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+
+        Cart cart = CartFactory.createValidCart(user, product);
+
+        when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.of(cart));
+
+        assertThrows(
+                QuantityExceededException.class,
+                () -> cartService.updateCartItem(
+                        user.getPhone(), product.getId(), CartConstant.MAX_QUANTITY_PER_PRODUCT * 2
+                )
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
     }
 

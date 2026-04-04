@@ -57,13 +57,6 @@ public class CartServiceImpl implements CartService {
         cart.setQuantity(newQuantity);
     }
 
-    private void updateNewProductQuantityOrThrow(Cart cart, int newQuantity) {
-        if (newQuantity > CartConstant.MAX_QUANTITY_PER_PRODUCT) {
-            throw new QuantityExceededException();
-        }
-        cart.setQuantity(newQuantity);
-    }
-
     public CartResponse addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
         User user = userService.findUserOrThrow(userPhone);
         Product product = productService.findProductOrThrow(cartCreateRequest.productId());
@@ -156,6 +149,13 @@ public class CartServiceImpl implements CartService {
         PromotionDTO promotionDTO = promotion == null ? null : PromotionDTO.from(promotion);
 
         return CartDetailResponse.from(cartDTOs, promotionDTO, deliveryInformation, totalPrice);
+    }
+
+    private void updateNewProductQuantityOrThrow(Cart cart, int newQuantity) {
+        if (newQuantity > CartConstant.MAX_QUANTITY_PER_PRODUCT) {
+            throw new QuantityExceededException();
+        }
+        cart.setQuantity(newQuantity);
     }
 
     public CartResponse updateCartItem(String userPhone, Long productId, int quantity) {
