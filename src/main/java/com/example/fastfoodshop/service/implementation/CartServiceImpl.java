@@ -139,7 +139,7 @@ public class CartServiceImpl implements CartService {
         return totalPrice + delivery.fee();
     }
 
-    public CartDetailResponse getCartResponse(String phone, String promotionCode, Long addressId) {
+    public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId) {
         User user = userService.findUserOrThrow(phone);
         List<Cart> carts = cartRepository.findByUser(user);
 
@@ -156,10 +156,6 @@ public class CartServiceImpl implements CartService {
         PromotionDTO promotionDTO = promotion == null ? null : PromotionDTO.from(promotion);
 
         return CartDetailResponse.from(cartDTOs, promotionDTO, deliveryInformation, totalPrice);
-    }
-
-    public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId) {
-        return getCartResponse(phone, promotionCode, addressId);
     }
 
     public CartResponse updateCartItem(String userPhone, Long productId, int quantity) {

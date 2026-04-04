@@ -8,8 +8,6 @@ import com.example.fastfoodshop.response.cart.CartUpdateResponse;
 public interface CartService {
     CartResponse addProductToCart(String userPhone, CartCreateRequest cartCreateRequest);
 
-    CartDetailResponse getCartResponse(String phone, String promotionCode, Long addressId);
-
     CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId);
 
     CartResponse updateCartItem(String userPhone, Long productId, int quantity);

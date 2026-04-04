@@ -98,7 +98,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private CartDetailResponse prepareCart(String phone, OrderCreateRequest orderCreateRequest) {
-        CartDetailResponse cartDetailResponse = cartService.getCartResponse(
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
                 phone, orderCreateRequest.promotionCode(), orderCreateRequest.addressId()
         );
 
