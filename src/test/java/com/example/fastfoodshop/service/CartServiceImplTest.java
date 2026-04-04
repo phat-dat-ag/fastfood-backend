@@ -1,20 +1,29 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.constant.CartConstant;
+import com.example.fastfoodshop.dto.PromotionResult;
+import com.example.fastfoodshop.dto.DeliveryDTO;
 import com.example.fastfoodshop.entity.Cart;
+import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.exception.cart.CartNotFoundException;
 import com.example.fastfoodshop.exception.cart.ProductAmountExceededException;
 import com.example.fastfoodshop.exception.cart.QuantityExceededException;
 import com.example.fastfoodshop.exception.product.ProductNotFoundException;
 import com.example.fastfoodshop.exception.user.UserNotFoundException;
+import com.example.fastfoodshop.exception.address.AddressNotFoundException;
 import com.example.fastfoodshop.factory.cart.CartCreateRequestFactory;
 import com.example.fastfoodshop.factory.cart.CartFactory;
+import com.example.fastfoodshop.factory.delivery.DeliveryDTOFactory;
 import com.example.fastfoodshop.factory.product.ProductFactory;
+import com.example.fastfoodshop.factory.promotion.PromotionFactory;
+import com.example.fastfoodshop.factory.promotion.PromotionResultFactory;
 import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.repository.CartRepository;
 import com.example.fastfoodshop.request.CartCreateRequest;
+import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.response.cart.CartResponse;
 import com.example.fastfoodshop.response.cart.CartUpdateResponse;
 import com.example.fastfoodshop.service.implementation.CartServiceImpl;
@@ -30,9 +39,13 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.doNothing;
 
@@ -47,12 +60,28 @@ public class CartServiceImplTest {
     @Mock
     CartRepository cartRepository;
 
+    @Mock
+    CategoryService categoryService;
+
+    @Mock
+    PromotionService promotionService;
+
+    @Mock
+    DeliveryService deliveryService;
+
     @InjectMocks
     CartServiceImpl cartService;
 
     private static final String USER_PHONE = "0999999999";
     private static final Long PRODUCT_ID = 100L;
     private static final int NEW_VALID_QUANTITY = 1;
+
+    private static final Long ADDRESS_ID = 1111L;
+    private static final Long NULL_ADDRESS_ID = null;
+
+    private static final String PROMOTION_CODE = "KM-123-TraSua";
+    private static final String NULL_PROMOTION_CODE = null;
+    private static final String BLANK_PROMOTION_CODE = "           ";
 
     @Test
     void addProductToCart_existedValidCart_shouldReturnCartResponse() {
@@ -191,6 +220,244 @@ public class CartServiceImplTest {
         verify(productService).findProductOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void getCartDetailByUser_withValidPromotion_shouldReturnCartDetailResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = CartFactory.createCartsForUser(user);
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        Promotion promotion = PromotionFactory.createActivatedPromotion();
+
+        PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
+
+        when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
+                .thenReturn(promotionResult);
+
+        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+
+        DeliveryDTO deliveryInformation = DeliveryDTOFactory.createAcceptedDelivery();
+
+        when(deliveryService.calculateDelivery(any(Long.class))).thenReturn(deliveryInformation);
+
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
+                user.getPhone(), PROMOTION_CODE, ADDRESS_ID
+        );
+
+        assertNotNull(cartDetailResponse);
+        assertNotNull(cartDetailResponse.carts());
+        assertNotNull(cartDetailResponse.deliveryInformation());
+
+        assertFalse(cartDetailResponse.carts().isEmpty());
+
+        assertEquals(carts.size(), cartDetailResponse.carts().size());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
+        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(deliveryService).calculateDelivery(any(Long.class));
+    }
+
+    @Test
+    void getCartDetailByUser_withNullPromotionCode_shouldReturnCartDetailResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = CartFactory.createCartsForUser(user);
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        PromotionResult promotionResult = PromotionResultFactory.createValid(null);
+
+        when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
+                .thenReturn(promotionResult);
+
+        DeliveryDTO deliveryInformation = DeliveryDTOFactory.createAcceptedDelivery();
+
+        when(deliveryService.calculateDelivery(any(Long.class))).thenReturn(deliveryInformation);
+
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
+                user.getPhone(), NULL_PROMOTION_CODE, ADDRESS_ID
+        );
+
+        assertNotNull(cartDetailResponse);
+        assertNotNull(cartDetailResponse.carts());
+        assertNotNull(cartDetailResponse.deliveryInformation());
+
+        assertFalse(cartDetailResponse.carts().isEmpty());
+
+        assertEquals(carts.size(), cartDetailResponse.carts().size());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
+        verify(deliveryService).calculateDelivery(any(Long.class));
+    }
+
+    @Test
+    void getCartDetailByUser_withBlankPromotionCode_shouldReturnCartDetailResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = CartFactory.createCartsForUser(user);
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        PromotionResult promotionResult = PromotionResultFactory.createValid(null);
+
+        when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
+                .thenReturn(promotionResult);
+
+
+        DeliveryDTO deliveryInformation = DeliveryDTOFactory.createAcceptedDelivery();
+
+        when(deliveryService.calculateDelivery(any(Long.class))).thenReturn(deliveryInformation);
+
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
+                user.getPhone(), BLANK_PROMOTION_CODE, ADDRESS_ID
+        );
+
+        assertNotNull(cartDetailResponse);
+        assertNotNull(cartDetailResponse.carts());
+        assertNotNull(cartDetailResponse.deliveryInformation());
+
+        assertFalse(cartDetailResponse.carts().isEmpty());
+
+        assertEquals(carts.size(), cartDetailResponse.carts().size());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
+        verify(deliveryService).calculateDelivery(any(Long.class));
+    }
+
+    @Test
+    void getCartDetailByUser_withEmptyCart_shouldReturnCartDetailResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = List.of();
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        DeliveryDTO deliveryInformation = DeliveryDTOFactory.createAcceptedDelivery();
+
+        when(deliveryService.calculateDelivery(any(Long.class))).thenReturn(deliveryInformation);
+
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
+                user.getPhone(), BLANK_PROMOTION_CODE, ADDRESS_ID
+        );
+
+        assertNotNull(cartDetailResponse);
+        assertNotNull(cartDetailResponse.carts());
+        assertNotNull(cartDetailResponse.deliveryInformation());
+
+        assertTrue(cartDetailResponse.carts().isEmpty());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(deliveryService).calculateDelivery(any(Long.class));
+    }
+
+    @Test
+    void getCartDetailByUser_withNullAddressId_shouldReturnCartDetailResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = CartFactory.createCartsForUser(user);
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        Promotion promotion = PromotionFactory.createActivatedPromotion();
+
+        PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
+
+        when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
+                .thenReturn(promotionResult);
+
+        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+
+        DeliveryDTO rejectedDelivery = DeliveryDTOFactory.createRejectedDelivery();
+
+        when(deliveryService.calculateDelivery(NULL_ADDRESS_ID)).thenReturn(rejectedDelivery);
+
+        CartDetailResponse cartDetailResponse = cartService.getCartDetailByUser(
+                user.getPhone(), PROMOTION_CODE, NULL_ADDRESS_ID
+        );
+
+        assertNotNull(cartDetailResponse);
+        assertNotNull(cartDetailResponse.carts());
+        assertNotNull(cartDetailResponse.deliveryInformation());
+
+        assertFalse(cartDetailResponse.carts().isEmpty());
+
+        assertEquals(carts.size(), cartDetailResponse.carts().size());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
+        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(deliveryService).calculateDelivery(NULL_ADDRESS_ID);
+    }
+
+    @Test
+    void getCartDetailByUser_notFoundUser_shouldThrowUserNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone()))
+                .thenThrow(new UserNotFoundException(user.getPhone()));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> cartService.getCartDetailByUser(user.getPhone(), BLANK_PROMOTION_CODE, ADDRESS_ID)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void getCartDetailByUser_notFoundAddress_shouldThrowAddressNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        List<Cart> carts = CartFactory.createCartsForUser(user);
+
+        when(cartRepository.findByUser(user)).thenReturn(carts);
+
+        Promotion promotion = PromotionFactory.createActivatedPromotion();
+
+        PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
+
+        when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
+                .thenReturn(promotionResult);
+
+        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+
+        when(deliveryService.calculateDelivery(any(Long.class))).thenThrow(new AddressNotFoundException());
+
+        assertThrows(
+                AddressNotFoundException.class,
+                () -> cartService.getCartDetailByUser(
+                        user.getPhone(), PROMOTION_CODE, ADDRESS_ID
+                )
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).findByUser(user);
+        verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
+        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(deliveryService).calculateDelivery(any(Long.class));
     }
 
     @Test

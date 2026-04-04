@@ -103,17 +103,17 @@ public class CartServiceImpl implements CartService {
     }
 
     private int calculateSubtotalPrice(List<CartDTO> cartDTOs) {
-        int subtotalPrice = 0;
-
-        for (CartDTO cartDTO : cartDTOs) {
-            subtotalPrice += cartDTO.quantity() * cartDTO.product().discountedPrice();
-        }
-
-        return subtotalPrice;
+        return cartDTOs.stream()
+                .mapToInt(
+                        cartDTO -> cartDTO.quantity() * cartDTO.product().discountedPrice()
+                )
+                .sum();
     }
 
     private Promotion applyPromotion(String promotionCode, int subtotalPrice) {
-        if (promotionCode == null || promotionCode.isBlank()) return null;
+        if (promotionCode == null) return null;
+
+        if (promotionCode.isBlank()) return null;
 
         return promotionService.checkPromotionCode(promotionCode, subtotalPrice);
     }
