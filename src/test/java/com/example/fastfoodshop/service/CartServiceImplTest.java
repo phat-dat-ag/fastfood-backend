@@ -79,6 +79,7 @@ public class CartServiceImplTest {
     private static final Long ADDRESS_ID = 1111L;
     private static final Long NULL_ADDRESS_ID = null;
 
+    private static final Long PROMOTION_ID = 888L;
     private static final String PROMOTION_CODE = "KM-123-TraSua";
     private static final String NULL_PROMOTION_CODE = null;
     private static final String BLANK_PROMOTION_CODE = "           ";
@@ -232,7 +233,7 @@ public class CartServiceImplTest {
 
         when(cartRepository.findByUser(user)).thenReturn(carts);
 
-        Promotion promotion = PromotionFactory.createActivatedPromotion();
+        Promotion promotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
 
         PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
 
@@ -378,7 +379,7 @@ public class CartServiceImplTest {
 
         when(cartRepository.findByUser(user)).thenReturn(carts);
 
-        Promotion promotion = PromotionFactory.createActivatedPromotion();
+        Promotion promotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
 
         PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
 
@@ -435,7 +436,7 @@ public class CartServiceImplTest {
 
         when(cartRepository.findByUser(user)).thenReturn(carts);
 
-        Promotion promotion = PromotionFactory.createActivatedPromotion();
+        Promotion promotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
 
         PromotionResult promotionResult = PromotionResultFactory.createValid(promotion.getId());
 
