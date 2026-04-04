@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.service.implementation;
 
+import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.dto.CategoryDTO;
 import com.example.fastfoodshop.dto.CategoryStatsDTO;
 import com.example.fastfoodshop.dto.CategorySelectionDTO;
@@ -44,20 +45,6 @@ public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
 
-    private String generateUniqueSlug(String name) {
-        String baseSlug = SlugUtils.toSlug(name);
-        String uniqueSlug = baseSlug;
-        int counter = 1;
-
-        while (categoryRepository.existsBySlug((uniqueSlug))) {
-            uniqueSlug = baseSlug + "-" + counter++;
-        }
-
-        log.debug("[CategoryService] Successfully generated slug: {}", uniqueSlug);
-
-        return uniqueSlug;
-    }
-
     public Category findCategoryByIdOrThrow(Long categoryId) {
         return categoryRepository.findById(categoryId).orElseThrow(
                 () -> new CategoryNotFoundException(categoryId)
@@ -68,26 +55,6 @@ public class CategoryServiceImpl implements CategoryService {
         return categoryRepository.findBySlug(categorySlug).orElseThrow(
                 () -> new CategoryNotFoundException(categorySlug)
         );
-    }
-
-    private void handleCategoryImage(Category category, MultipartFile imageFile) {
-        if (imageFile == null || imageFile.isEmpty())
-            return;
-
-        String oldPublicId = category.getImagePublicId();
-        Map<?, ?> result = cloudinaryService.uploadImage(imageFile, "category");
-
-        category.setImageUrl((String) result.get("secure_url"));
-        category.setImagePublicId((String) result.get("public_id"));
-
-        if (oldPublicId != null && !oldPublicId.isEmpty()) {
-            try {
-                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
-                log.debug("[CategoryService] Successfully deleted category image publicId={}", oldPublicId);
-            } catch (Exception e) {
-                log.warn("[CategoryService] Failed to delete category image publicId={}", oldPublicId, e);
-            }
-        }
     }
 
     private boolean isValidPromotion(PromotionDTO promotionDTO) {
@@ -133,6 +100,20 @@ public class CategoryServiceImpl implements CategoryService {
         return new PromotionResult(discountedPrice, promotion.id());
     }
 
+    private String generateUniqueSlug(String name) {
+        String baseSlug = SlugUtils.toSlug(name);
+        String uniqueSlug = baseSlug;
+        int counter = 1;
+
+        while (categoryRepository.existsBySlug((uniqueSlug))) {
+            uniqueSlug = baseSlug + "-" + counter++;
+        }
+
+        log.debug("[CategoryService] Successfully generated slug: {}", uniqueSlug);
+
+        return uniqueSlug;
+    }
+
     private Category buildCategory(CategoryCreateRequest categoryCreateRequest, String slug) {
         Category category = new Category();
         category.setSlug(slug);
@@ -141,6 +122,26 @@ public class CategoryServiceImpl implements CategoryService {
         category.setActivated(categoryCreateRequest.activated());
 
         return category;
+    }
+
+    private void handleCategoryImage(Category category, MultipartFile imageFile) {
+        if (imageFile == null || imageFile.isEmpty())
+            return;
+
+        String oldPublicId = category.getImagePublicId();
+        Map<?, ?> result = cloudinaryService.uploadImage(imageFile, FolderNameConstants.categoryFolderName);
+
+        category.setImageUrl((String) result.get("secure_url"));
+        category.setImagePublicId((String) result.get("public_id"));
+
+        if (oldPublicId != null && !oldPublicId.isEmpty()) {
+            try {
+                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
+                log.debug("[CategoryService] Successfully deleted category image publicId={}", oldPublicId);
+            } catch (Exception e) {
+                log.warn("[CategoryService] Failed to delete category image publicId={}", oldPublicId, e);
+            }
+        }
     }
 
     public CategoryResponse createCategory(CategoryCreateRequest categoryCreateRequest) {

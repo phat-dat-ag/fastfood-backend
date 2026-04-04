@@ -1,28 +1,42 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
+import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.repository.CategoryRepository;
+import com.example.fastfoodshop.request.CategoryCreateRequest;
+import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.service.implementation.CategoryServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 public class CategoryServiceImplTest {
     @Mock
     CategoryRepository categoryRepository;
+
+    @Mock
+    CloudinaryService cloudinaryService;
 
     @InjectMocks
     CategoryServiceImpl categoryService;
@@ -82,5 +96,97 @@ public class CategoryServiceImplTest {
         );
 
         verify(categoryRepository).findBySlug(CATEGORY_SLUG);
+    }
+
+    @Test
+    void createCategory_validRequest_shouldReturnCategoryResponse() {
+        when(cloudinaryService.uploadImage(
+                any(MultipartFile.class), eq(FolderNameConstants.categoryFolderName)
+        )).thenReturn(new HashMap<>());
+
+        CategoryCreateRequest validRequest = CategoryCreateRequestFactory.createValidWithImageFile();
+
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.createCategory(validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(CATEGORY_ID, categoryResponse.category().id());
+
+        verify(cloudinaryService).uploadImage(
+                any(MultipartFile.class), eq(FolderNameConstants.categoryFolderName)
+        );
+
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void createCategory_duplicatedSlug_shouldReturnCategoryResponse() {
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.existsBySlug(anyString())).thenReturn(true).thenReturn(false);
+
+        when(cloudinaryService.uploadImage(
+                any(MultipartFile.class), eq(FolderNameConstants.categoryFolderName)
+        )).thenReturn(new HashMap<>());
+
+        CategoryCreateRequest validRequest = CategoryCreateRequestFactory.createValidWithImageFile();
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.createCategory(validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(CATEGORY_ID, categoryResponse.category().id());
+
+        verify(categoryRepository, times(2)).existsBySlug(anyString());
+
+        verify(cloudinaryService).uploadImage(
+                any(MultipartFile.class), eq(FolderNameConstants.categoryFolderName)
+        );
+
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void createCategory_nullImageFile_shouldReturnCategoryResponse() {
+        CategoryCreateRequest validRequest = CategoryCreateRequestFactory.createValidWithNullImageFile();
+
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.createCategory(validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(CATEGORY_ID, categoryResponse.category().id());
+
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void createCategory_emptyImageFile_shouldReturnCategoryResponse() {
+        CategoryCreateRequest validRequest = CategoryCreateRequestFactory.createValidWithEmptyImageFile();
+
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.createCategory(validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(CATEGORY_ID, categoryResponse.category().id());
+
+        verify(categoryRepository).save(any(Category.class));
     }
 }
