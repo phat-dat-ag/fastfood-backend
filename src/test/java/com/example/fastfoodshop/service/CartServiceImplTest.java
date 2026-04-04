@@ -4,8 +4,11 @@ import com.example.fastfoodshop.constant.CartConstant;
 import com.example.fastfoodshop.entity.Cart;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.cart.CartNotFoundException;
 import com.example.fastfoodshop.exception.cart.ProductAmountExceededException;
 import com.example.fastfoodshop.exception.cart.QuantityExceededException;
+import com.example.fastfoodshop.exception.product.ProductNotFoundException;
+import com.example.fastfoodshop.exception.user.UserNotFoundException;
 import com.example.fastfoodshop.factory.cart.CartCreateRequestFactory;
 import com.example.fastfoodshop.factory.cart.CartFactory;
 import com.example.fastfoodshop.factory.product.ProductFactory;
@@ -13,6 +16,7 @@ import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.repository.CartRepository;
 import com.example.fastfoodshop.request.CartCreateRequest;
 import com.example.fastfoodshop.response.cart.CartResponse;
+import com.example.fastfoodshop.response.cart.CartUpdateResponse;
 import com.example.fastfoodshop.service.implementation.CartServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doNothing;
 
 @ExtendWith(MockitoExtension.class)
 public class CartServiceImplTest {
@@ -45,6 +50,7 @@ public class CartServiceImplTest {
     @InjectMocks
     CartServiceImpl cartService;
 
+    private final static String USER_PHONE = "0999999999";
     private static final Long PRODUCT_ID = 100L;
 
     @Test
@@ -184,5 +190,115 @@ public class CartServiceImplTest {
         verify(productService).findProductOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void deleteProductFromCart_valiRequest_shouldReturnCartUpdateResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+
+        Cart cart = CartFactory.createValidCart(user, product);
+
+        when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.of(cart));
+
+        doNothing().when(cartRepository).delete(cart);
+
+        CartUpdateResponse cartUpdateResponse =
+                cartService.deleteProductFromCart(user.getPhone(), product.getId());
+
+        assertNotNull(cartUpdateResponse);
+        assertNotNull(cartUpdateResponse.message());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(product.getId());
+        verify(cartRepository).findByUserAndProduct(user, product);
+        verify(cartRepository).delete(cart);
+    }
+
+    @Test
+    void deleteProductFromCart_notFoundUser_shouldThrowUserNotFoundException() {
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> cartService.deleteProductFromCart(USER_PHONE, PRODUCT_ID)
+        );
+
+        verify(userService).findUserOrThrow(USER_PHONE);
+    }
+
+    @Test
+    void deleteProductFromCart_notFoundProduct_shouldThrowProductNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(productService.findProductOrThrow(PRODUCT_ID))
+                .thenThrow(new ProductNotFoundException(PRODUCT_ID));
+
+        assertThrows(
+                ProductNotFoundException.class,
+                () -> cartService.deleteProductFromCart(user.getPhone(), PRODUCT_ID)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(PRODUCT_ID);
+    }
+
+    @Test
+    void deleteProductFromCart_notFoundCart_shouldThrowCartNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+
+        when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.empty());
+
+        assertThrows(
+                CartNotFoundException.class,
+                () -> cartService.deleteProductFromCart(user.getPhone(), product.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(productService).findProductOrThrow(product.getId());
+        verify(cartRepository).findByUserAndProduct(user, product);
+    }
+
+    @Test
+    void deleteAllProductFromCart_validRequest_shouldBeSuccessful() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        doNothing().when(cartRepository).deleteAllByUser(user);
+
+        cartService.deleteAllProductFromCart(user.getPhone());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(cartRepository).deleteAllByUser(user);
+    }
+
+    @Test
+    void deleteAllProductFromCart_notFoundUser_shouldThrowUserNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone()))
+                .thenThrow(new UserNotFoundException(user.getPhone()));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> cartService.deleteAllProductFromCart(user.getPhone())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
     }
 }

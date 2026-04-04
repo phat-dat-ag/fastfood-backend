@@ -13,6 +13,16 @@ import java.util.Optional;
 public class CartFactory {
     private static final int VALID_QUANTITY = 3;
 
+    public static Cart createValidCart(User user, Product product) {
+        Cart cart = new Cart();
+
+        cart.setQuantity(VALID_QUANTITY);
+        cart.setUser(user);
+        cart.setProduct(product);
+
+        return cart;
+    }
+
     public static Cart createValidCartForUser(User user) {
         Product product = ProductFactory.createActivatedProduct(111L);
 
