@@ -26,8 +26,7 @@ import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.util.PromotionUtils;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,13 +37,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
     private final CategoryRepository categoryRepository;
     private final CloudinaryService cloudinaryService;
-
-    private static final Logger log = LoggerFactory.getLogger(CategoryServiceImpl.class);
 
     private String generateUniqueSlug(String name) {
         String baseSlug = SlugUtils.toSlug(name);
@@ -54,6 +52,9 @@ public class CategoryServiceImpl implements CategoryService {
         while (categoryRepository.existsBySlug((uniqueSlug))) {
             uniqueSlug = baseSlug + "-" + counter++;
         }
+
+        log.debug("[CategoryService] Successfully generated slug: {}", uniqueSlug);
+
         return uniqueSlug;
     }
 
@@ -82,9 +83,9 @@ public class CategoryServiceImpl implements CategoryService {
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
                 boolean deleted = cloudinaryService.deleteImage(oldPublicId);
-                log.info("Old category image deleted successfully: {}", oldPublicId);
+                log.debug("[CategoryService] Successfully deleted category image publicId={}", oldPublicId);
             } catch (Exception e) {
-                log.warn("Failed to delete old category image: {}", oldPublicId, e);
+                log.warn("[CategoryService] Failed to delete category image publicId={}", oldPublicId, e);
             }
         }
     }
@@ -117,10 +118,17 @@ public class CategoryServiceImpl implements CategoryService {
         int originalPrice = product.getPrice();
 
         if (promotion == null) {
+            log.debug("[CategoryService] Did not apply promotion for product id={}", product.getId());
+
             return new PromotionResult(originalPrice, null);
         }
 
         int discountedPrice = PromotionUtils.calculateDiscountedPrice(originalPrice, promotion);
+
+        log.debug(
+                "[CategoryService] Successfully applied promotion id={} for product id={}",
+                promotion.id(), product.getId()
+        );
 
         return new PromotionResult(discountedPrice, promotion.id());
     }
@@ -143,6 +151,9 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryCreateRequest.imageUrl());
 
         Category savedCategory = categoryRepository.save(category);
+
+        log.info("[CategoryService] Successfully created new category id={}", savedCategory.getId());
+
         return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
@@ -160,12 +171,17 @@ public class CategoryServiceImpl implements CategoryService {
         handleCategoryImage(category, categoryUpdateRequest.imageUrl());
 
         Category savedCategory = categoryRepository.save(category);
+
+        log.info("[CategoryService] Successfully updated category id={}", savedCategory.getId());
+
         return new CategoryResponse(CategoryDTO.from(savedCategory));
     }
 
     public CategoryPageResponse getCategoryPage(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Category> categoryPage = categoryRepository.findByIsDeletedFalse(pageable);
+
+        log.info("[CategoryService] Successfully got category page");
 
         return CategoryPageResponse.from(categoryPage);
     }
@@ -178,6 +194,8 @@ public class CategoryServiceImpl implements CategoryService {
                         category.getId(), category.getName()
                 ))
                 .toList();
+
+        log.info("[CategoryService] Successfully got selective categories, size={}", categoryDTOs.size());
 
         return new CategorySelectionResponse(categoryDTOs);
     }
@@ -196,6 +214,11 @@ public class CategoryServiceImpl implements CategoryService {
                 ? "Đã kích hoạt danh mục: " + categoryId
                 : "Đã hủy kích hoạt danh mục: " + categoryId;
 
+        log.info(
+                "[CategoryService] Successfully updated new status for category id={}, activated={}",
+                categoryId, activated
+        );
+
         return new CategoryUpdateResponse(message);
     }
 
@@ -207,6 +230,9 @@ public class CategoryServiceImpl implements CategoryService {
         category.setDeleted(true);
 
         categoryRepository.save(category);
+
+        log.info("[CategoryService] Successfully deleted category id={}", categoryId);
+
         return new CategoryUpdateResponse("Đã xóa danh mục sản phẩm: " + categoryId);
     }
 
@@ -216,6 +242,11 @@ public class CategoryServiceImpl implements CategoryService {
                 .stream()
                 .map(CategoryDTO::from)
                 .toList();
+
+        log.info(
+                "[CategoryService] Successfully got displayable categories, size={}",
+                categoryDTOs.size()
+        );
 
         return new CategoryDisplayResponse(categoryDTOs);
     }
@@ -230,6 +261,8 @@ public class CategoryServiceImpl implements CategoryService {
                         categoryStatsProjection.getTotalRevenue(),
                         categoryStatsProjection.getTotalQuantitySold()
                 )).toList();
+
+        log.info("[CategoryService] Successfully got category stats");
 
         return new CategoryStatsResponse(categoryStatsDTOs);
     }
