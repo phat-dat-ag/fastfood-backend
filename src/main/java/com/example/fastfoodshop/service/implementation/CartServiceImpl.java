@@ -27,12 +27,14 @@ import com.example.fastfoodshop.service.DeliveryService;
 import com.example.fastfoodshop.service.CartService;
 import com.example.fastfoodshop.util.PromotionUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
@@ -55,6 +57,11 @@ public class CartServiceImpl implements CartService {
             throw new QuantityExceededException();
         }
         cart.setQuantity(newQuantity);
+
+        log.debug(
+                "[CartService] Successfully set quantity for product id={} to {}",
+                cart.getProduct().getId(), newQuantity
+        );
     }
 
     public CartResponse addProductToCart(String userPhone, CartCreateRequest cartCreateRequest) {
@@ -80,6 +87,12 @@ public class CartServiceImpl implements CartService {
         setNewProductQuantityOrThrow(cart, cartCreateRequest.quantity());
 
         Cart savedCart = cartRepository.save(cart);
+
+        log.info(
+                "[CartService] Successfully created cart for user phone={}: product id={}, quantity={}",
+                userPhone, product.getId(), cartCreateRequest.quantity()
+        );
+
         return new CartResponse(CartDTO.from(savedCart));
     }
 
@@ -103,11 +116,15 @@ public class CartServiceImpl implements CartService {
     }
 
     private int calculateSubtotalPrice(List<CartDTO> cartDTOs) {
-        return cartDTOs.stream()
+        int subtotalPrice = cartDTOs.stream()
                 .mapToInt(
                         cartDTO -> cartDTO.quantity() * cartDTO.product().discountedPrice()
                 )
                 .sum();
+
+        log.debug("[CartService] Calculated subtotal price: {}", subtotalPrice);
+
+        return subtotalPrice;
     }
 
     private Promotion applyPromotion(String promotionCode, int subtotalPrice) {
@@ -129,7 +146,11 @@ public class CartServiceImpl implements CartService {
             totalPrice = PromotionUtils.calculateDiscountedPrice(subtotalPrice, PromotionDTO.from(promotion));
         }
 
-        return totalPrice + delivery.fee();
+        int total = totalPrice + delivery.fee();
+
+        log.debug("[CartService] Calculated total price: {}", total);
+
+        return total;
     }
 
     public CartDetailResponse getCartDetailByUser(String phone, String promotionCode, Long addressId) {
@@ -148,6 +169,12 @@ public class CartServiceImpl implements CartService {
 
         PromotionDTO promotionDTO = promotion == null ? null : PromotionDTO.from(promotion);
 
+        log.info(
+                "[CartService] Successfully got cart detail, items={}, totalPrice={}, "
+                        + "had delivery information={}, applied promotion: {}",
+                cartDTOs.size(), totalPrice, deliveryInformation.success(), promotionDTO != null
+        );
+
         return CartDetailResponse.from(cartDTOs, promotionDTO, deliveryInformation, totalPrice);
     }
 
@@ -156,6 +183,11 @@ public class CartServiceImpl implements CartService {
             throw new QuantityExceededException();
         }
         cart.setQuantity(newQuantity);
+
+        log.debug(
+                "[CartService] Set new quantity for product id={} to {}",
+                cart.getProduct().getId(), newQuantity
+        );
     }
 
     public CartResponse updateCartItem(String userPhone, Long productId, int quantity) {
@@ -166,6 +198,12 @@ public class CartServiceImpl implements CartService {
         updateNewProductQuantityOrThrow(cart, quantity);
 
         Cart updatedCart = cartRepository.save(cart);
+
+        log.info(
+                "[CartService] Successfully updated cart for user phone={}, product id={}, quantity={}",
+                userPhone, productId, quantity
+        );
+
         return new CartResponse(CartDTO.from(updatedCart));
     }
 
@@ -175,11 +213,19 @@ public class CartServiceImpl implements CartService {
         Cart cart = findCartOrThrow(user, product);
 
         cartRepository.delete(cart);
+
+        log.info(
+                "[CartService] Successfully deleted product id={} from cart of user phone={}",
+                productId, phone
+        );
+
         return new CartUpdateResponse("Xóa sản phẩm khỏi giỏ hàng thành công: " + product);
     }
 
     public void deleteAllProductFromCart(String phone) {
         User user = userService.findUserOrThrow(phone);
         cartRepository.deleteAllByUser(user);
+
+        log.info("[CartService] Successfully deleted all cart for user phone={}", phone);
     }
 }
