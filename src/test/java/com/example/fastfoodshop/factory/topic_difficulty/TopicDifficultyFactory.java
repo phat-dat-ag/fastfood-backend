@@ -12,8 +12,8 @@ public class TopicDifficultyFactory {
         return topicDifficulty;
     }
 
-    public static TopicDifficulty createActivatedDifficulty(Long topicDifficulty) {
-        TopicDifficulty activatedDifficulty = createDifficulty(topicDifficulty);
+    public static TopicDifficulty createActivatedDifficulty(Long topicDifficultyId) {
+        TopicDifficulty activatedDifficulty = createDifficulty(topicDifficultyId);
 
         activatedDifficulty.setActivated(true);
         activatedDifficulty.setDeleted(false);

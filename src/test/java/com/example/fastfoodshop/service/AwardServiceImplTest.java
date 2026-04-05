@@ -46,13 +46,23 @@ public class AwardServiceImplTest {
     @InjectMocks
     AwardServiceImpl awardService;
 
+    private static final Long TOPIC_DIFFICULTY_ID = 109L;
+    private static final String TOPIC_DIFFICULTY_SLUG = "hong-tra";
+
+    private static final int PAGE = 5;
+    private static final int SIZE = 5;
+
+    private static final Long AWARD_ID = 888L;
+
     @Test
     void getRandomAwardByTopicDifficulty_availableAwards_shouldReturnAward() {
         List<Award> availableAwards = AwardFactory.createAvailableAwards();
 
-        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class))).thenReturn(availableAwards);
+        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class)))
+                .thenReturn(availableAwards);
 
-        TopicDifficulty activatedDifficulty = TopicDifficultyFactory.createActivatedDifficulty(100L);
+        TopicDifficulty activatedDifficulty =
+                TopicDifficultyFactory.createActivatedDifficulty(TOPIC_DIFFICULTY_ID);
 
         Award awardResponse = awardService.getRandomAwardByTopicDifficulty(activatedDifficulty);
 
@@ -71,11 +81,13 @@ public class AwardServiceImplTest {
     void getRandomAwardByTopicDifficulty_fallbackAwards_shouldReturnAward() {
         List<Award> availableAwards = List.of();
 
-        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class))).thenReturn(availableAwards);
+        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class)))
+                .thenReturn(availableAwards);
 
-        TopicDifficulty activatedDifficulty = TopicDifficultyFactory.createActivatedDifficulty(100L);
+        TopicDifficulty activatedDifficulty =
+                TopicDifficultyFactory.createActivatedDifficulty(TOPIC_DIFFICULTY_ID);
 
-        Award deactivatedAward = AwardFactory.createDeactivatedAward(101L);
+        Award deactivatedAward = AwardFactory.createDeactivatedAward(AWARD_ID);
 
         when(awardRepository.findAnyAvailableAwardAsFallback(activatedDifficulty.getId()))
                 .thenReturn(Optional.of(deactivatedAward));
@@ -92,9 +104,11 @@ public class AwardServiceImplTest {
     void getRandomAwardByTopicDifficulty_unavailableAwards_shouldThrowAwardNotFoundException() {
         List<Award> availableAwards = List.of();
 
-        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class))).thenReturn(availableAwards);
+        when(awardRepository.findAvailableByTopicDifficulty(any(Long.class)))
+                .thenReturn(availableAwards);
 
-        TopicDifficulty activatedDifficulty = TopicDifficultyFactory.createActivatedDifficulty(100L);
+        TopicDifficulty activatedDifficulty =
+                TopicDifficultyFactory.createActivatedDifficulty(TOPIC_DIFFICULTY_ID);
 
         when(awardRepository.findAnyAvailableAwardAsFallback(activatedDifficulty.getId()))
                 .thenReturn(Optional.empty());
@@ -109,12 +123,13 @@ public class AwardServiceImplTest {
 
     @Test
     void createAward_validRequest_shouldReturnAwardUpdateResponse() {
-        TopicDifficulty activatedDifficulty = TopicDifficultyFactory.createActivatedDifficulty(100L);
+        TopicDifficulty activatedDifficulty =
+                TopicDifficultyFactory.createActivatedDifficulty(TOPIC_DIFFICULTY_ID);
 
         when(topicDifficultyService.findValidTopicDifficultyOrThrow(activatedDifficulty.getSlug()))
                 .thenReturn(activatedDifficulty);
 
-        Award deactivatedAward = AwardFactory.createDeactivatedAward(101L);
+        Award deactivatedAward = AwardFactory.createDeactivatedAward(AWARD_ID);
 
         when(awardRepository.save(any(Award.class))).thenReturn(deactivatedAward);
 
@@ -132,37 +147,36 @@ public class AwardServiceImplTest {
 
     @Test
     void createAward_notFoundDifficulty_shouldThrowTopicDifficultyNotFoundException() {
-        String difficultySlug = "hong-tra";
-
-        when(topicDifficultyService.findValidTopicDifficultyOrThrow(difficultySlug))
-                .thenThrow(new TopicDifficultyNotFoundException(difficultySlug));
+        when(topicDifficultyService.findValidTopicDifficultyOrThrow(TOPIC_DIFFICULTY_SLUG))
+                .thenThrow(new TopicDifficultyNotFoundException(TOPIC_DIFFICULTY_SLUG));
 
         AwardCreateRequest validRequest = AwardCreateRequestFactory.createValid();
 
         assertThrows(
                 TopicDifficultyNotFoundException.class,
-                () -> awardService.createAward(difficultySlug, validRequest)
+                () -> awardService.createAward(TOPIC_DIFFICULTY_SLUG, validRequest)
         );
 
-        verify(topicDifficultyService).findValidTopicDifficultyOrThrow(difficultySlug);
+        verify(topicDifficultyService).findValidTopicDifficultyOrThrow(TOPIC_DIFFICULTY_SLUG);
     }
 
     @Test
     void getAllAwardsByTopicDifficulty_validDifficulty_shouldReturnAwardPageResponse() {
-        TopicDifficulty activatedDifficulty = TopicDifficultyFactory.createActivatedDifficulty(100L);
+        TopicDifficulty activatedDifficulty =
+                TopicDifficultyFactory.createActivatedDifficulty(TOPIC_DIFFICULTY_ID);
 
         when(topicDifficultyService.findValidTopicDifficultyOrThrow(activatedDifficulty.getSlug()))
                 .thenReturn(activatedDifficulty);
 
-        int page = 5, size = 5;
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(PAGE, SIZE);
 
         Page<Award> awardPage = AwardPageFactory.createAwardPage();
 
-        when(awardRepository.findByTopicDifficultyAndIsDeletedFalse(activatedDifficulty, pageable)).thenReturn(awardPage);
+        when(awardRepository.findByTopicDifficultyAndIsDeletedFalse(activatedDifficulty, pageable))
+                .thenReturn(awardPage);
 
         AwardPageResponse awardPageResponse =
-                awardService.getAllAwardsByTopicDifficulty(activatedDifficulty.getSlug(), page, size);
+                awardService.getAllAwardsByTopicDifficulty(activatedDifficulty.getSlug(), PAGE, SIZE);
 
         assertNotNull(awardPageResponse);
         assertNotNull(awardPageResponse.awards());
@@ -173,24 +187,20 @@ public class AwardServiceImplTest {
 
     @Test
     void getAllAwardsByTopicDifficulty_notFoundDifficulty_shouldThrowTopicDifficultyNotFoundException() {
-        String difficultySlug = "hong-tra";
-
-        when(topicDifficultyService.findValidTopicDifficultyOrThrow(difficultySlug))
-                .thenThrow(new TopicDifficultyNotFoundException(difficultySlug));
-
-        int page = 5, size = 5;
+        when(topicDifficultyService.findValidTopicDifficultyOrThrow(TOPIC_DIFFICULTY_SLUG))
+                .thenThrow(new TopicDifficultyNotFoundException(TOPIC_DIFFICULTY_SLUG));
 
         assertThrows(
                 TopicDifficultyNotFoundException.class,
-                () -> awardService.getAllAwardsByTopicDifficulty(difficultySlug, page, size)
+                () -> awardService.getAllAwardsByTopicDifficulty(TOPIC_DIFFICULTY_SLUG, PAGE, SIZE)
         );
 
-        verify(topicDifficultyService).findValidTopicDifficultyOrThrow(difficultySlug);
+        verify(topicDifficultyService).findValidTopicDifficultyOrThrow(TOPIC_DIFFICULTY_SLUG);
     }
 
     @Test
     void updateAwardActivation_deactivated_shouldReturnAwardUpdateResponse() {
-        Award activatedAward = AwardFactory.createActivatedAward(1L);
+        Award activatedAward = AwardFactory.createActivatedAward(AWARD_ID);
 
         when(awardRepository.findById(activatedAward.getId())).thenReturn(Optional.of(activatedAward));
 
@@ -198,7 +208,8 @@ public class AwardServiceImplTest {
 
         boolean activated = false;
 
-        AwardUpdateResponse awardUpdateResponse = awardService.updateAwardActivation(activatedAward.getId(), activated);
+        AwardUpdateResponse awardUpdateResponse =
+                awardService.updateAwardActivation(activatedAward.getId(), activated);
 
         assertNotNull(awardUpdateResponse);
         assertNotNull(awardUpdateResponse.message());
@@ -211,7 +222,7 @@ public class AwardServiceImplTest {
 
     @Test
     void updateAwardActivation_activated_shouldReturnAwardUpdateResponse() {
-        Award deactivatedAward = AwardFactory.createDeactivatedAward(1L);
+        Award deactivatedAward = AwardFactory.createDeactivatedAward(AWARD_ID);
 
         when(awardRepository.findById(deactivatedAward.getId())).thenReturn(Optional.of(deactivatedAward));
 
@@ -219,7 +230,8 @@ public class AwardServiceImplTest {
 
         boolean activated = true;
 
-        AwardUpdateResponse awardUpdateResponse = awardService.updateAwardActivation(deactivatedAward.getId(), activated);
+        AwardUpdateResponse awardUpdateResponse =
+                awardService.updateAwardActivation(deactivatedAward.getId(), activated);
 
         assertNotNull(awardUpdateResponse);
         assertNotNull(awardUpdateResponse.message());
@@ -232,7 +244,7 @@ public class AwardServiceImplTest {
 
     @Test
     void updateAwardActivation_invalidStatus_shouldThrowInvalidAwardStatusException() {
-        Award deactivatedAward = AwardFactory.createDeactivatedAward(1L);
+        Award deactivatedAward = AwardFactory.createDeactivatedAward(AWARD_ID);
 
         when(awardRepository.findById(deactivatedAward.getId())).thenReturn(Optional.of(deactivatedAward));
 
@@ -248,25 +260,24 @@ public class AwardServiceImplTest {
 
     @Test
     void updateAwardActivation_notFoundAward_shouldThrowAwardNotFoundException() {
-        Long awardId = 109L;
-
-        when(awardRepository.findById(awardId)).thenReturn(Optional.empty());
+        when(awardRepository.findById(AWARD_ID)).thenReturn(Optional.empty());
 
         boolean activated = true;
 
         assertThrows(
                 AwardNotFoundException.class,
-                () -> awardService.updateAwardActivation(awardId, activated)
+                () -> awardService.updateAwardActivation(AWARD_ID, activated)
         );
 
-        verify(awardRepository).findById(awardId);
+        verify(awardRepository).findById(AWARD_ID);
     }
 
     @Test
     void deleteAward_validAwardId_shouldReturnAwardUpdateResponse() {
-        Award deactivatedAward = AwardFactory.createDeactivatedAward(1L);
+        Award deactivatedAward = AwardFactory.createDeactivatedAward(AWARD_ID);
 
-        when(awardRepository.findById(deactivatedAward.getId())).thenReturn(Optional.of(deactivatedAward));
+        when(awardRepository.findById(deactivatedAward.getId()))
+                .thenReturn(Optional.of(deactivatedAward));
 
         when(awardRepository.save(any(Award.class))).thenReturn(deactivatedAward);
 
@@ -283,18 +294,16 @@ public class AwardServiceImplTest {
 
     @Test
     void deleteAward_notFoundAward_shouldThrowAwardNotFoundException() {
-        Long awardId = 108L;
+        when(awardRepository.findById(AWARD_ID)).thenReturn(Optional.empty());
 
-        when(awardRepository.findById(awardId)).thenReturn(Optional.empty());
+        assertThrows(AwardNotFoundException.class, () -> awardService.deleteAward(AWARD_ID));
 
-        assertThrows(AwardNotFoundException.class, () -> awardService.deleteAward(awardId));
-
-        verify(awardRepository).findById(awardId);
+        verify(awardRepository).findById(AWARD_ID);
     }
 
     @Test
     void deleteAward_deletedAward_shouldThrowDeletedAwardException() {
-        Award deletedAward = AwardFactory.createDeletedAward(108L);
+        Award deletedAward = AwardFactory.createDeletedAward(AWARD_ID);
 
         when(awardRepository.findById(deletedAward.getId())).thenReturn(Optional.of(deletedAward));
 
