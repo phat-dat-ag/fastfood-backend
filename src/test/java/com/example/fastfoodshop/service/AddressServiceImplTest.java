@@ -41,6 +41,9 @@ public class AddressServiceImplTest {
     @InjectMocks
     AddressServiceImpl addressService;
 
+    private static final Long ADDRESS_ID = 999L;
+    private static final String USER_PHONE = "0999998888";
+
     @Test
     void findAddressOrThrow_validAddressId_shouldReturnAddress() {
         User validUser = UserFactory.createActivatedUser();
@@ -61,13 +64,14 @@ public class AddressServiceImplTest {
 
     @Test
     void findAddressOrThrow_notFoundAddressId_shouldThrowException() {
-        Long notFoundAddressId = 123L;
+        when(addressRepository.findById(ADDRESS_ID)).thenReturn(Optional.empty());
 
-        when(addressRepository.findById(notFoundAddressId)).thenReturn(Optional.empty());
+        assertThrows(
+                AddressNotFoundException.class,
+                () -> addressService.findAddressOrThrow(ADDRESS_ID)
+        );
 
-        assertThrows(AddressNotFoundException.class, () -> addressService.findAddressOrThrow(notFoundAddressId));
-
-        verify(addressRepository).findById(notFoundAddressId);
+        verify(addressRepository).findById(ADDRESS_ID);
     }
 
     @Test
@@ -100,13 +104,14 @@ public class AddressServiceImplTest {
     void createAddress_userNotFound_shouldThrowException() {
         AddressCreateRequest validRequest = AddressCreateRequestFactory.createValid();
 
-        String notFoundPhone = "0999999999";
+        when(userService.findUserOrThrow(USER_PHONE)).thenThrow(new UserNotFoundException(USER_PHONE));
 
-        when(userService.findUserOrThrow(notFoundPhone)).thenThrow(new UserNotFoundException(notFoundPhone));
+        assertThrows(
+                UserNotFoundException.class,
+                () -> addressService.createAddress(USER_PHONE, validRequest)
+        );
 
-        assertThrows(UserNotFoundException.class, () -> addressService.createAddress(notFoundPhone, validRequest));
-
-        verify(userService).findUserOrThrow(notFoundPhone);
+        verify(userService).findUserOrThrow(USER_PHONE);
     }
 
     @Test
@@ -136,13 +141,11 @@ public class AddressServiceImplTest {
 
     @Test
     void getAddressesByUser_notFoundUser_shouldThrowException() {
-        String notFoundPhone = "0888888888";
+        when(userService.findUserOrThrow(USER_PHONE)).thenThrow(new UserNotFoundException(USER_PHONE));
 
-        when(userService.findUserOrThrow(notFoundPhone)).thenThrow(new UserNotFoundException(notFoundPhone));
+        assertThrows(UserNotFoundException.class, () -> addressService.getAddressesByUser(USER_PHONE));
 
-        assertThrows(UserNotFoundException.class, () -> addressService.getAddressesByUser(notFoundPhone));
-
-        verify(userService).findUserOrThrow(notFoundPhone);
+        verify(userService).findUserOrThrow(USER_PHONE);
     }
 
     @Test
@@ -173,30 +176,30 @@ public class AddressServiceImplTest {
 
     @Test
     void deleteAddress_userNotFound_shouldThrowException() {
-        String notFoundPhone = "0888888888";
+        when(userService.findUserOrThrow(USER_PHONE)).thenThrow(new UserNotFoundException(USER_PHONE));
 
-        Long addressId = 1L;
+        assertThrows(
+                UserNotFoundException.class,
+                () -> addressService.deleteAddress(USER_PHONE, ADDRESS_ID)
+        );
 
-        when(userService.findUserOrThrow(notFoundPhone)).thenThrow(new UserNotFoundException(notFoundPhone));
-
-        assertThrows(UserNotFoundException.class, () -> addressService.deleteAddress(notFoundPhone, addressId));
-
-        verify(userService).findUserOrThrow(notFoundPhone);
+        verify(userService).findUserOrThrow(USER_PHONE);
     }
 
     @Test
     void deleteAddress_addressNotFound_shouldThrowException() {
         User validUser = UserFactory.createActivatedUser();
 
-        Long notFoundAddressId = 1L;
-
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
-        when(addressRepository.findByUserAndId(validUser, notFoundAddressId)).thenReturn(Optional.empty());
+        when(addressRepository.findByUserAndId(validUser, ADDRESS_ID)).thenReturn(Optional.empty());
 
-        assertThrows(AddressNotFoundException.class, () -> addressService.deleteAddress(validUser.getPhone(), notFoundAddressId));
+        assertThrows(
+                AddressNotFoundException.class,
+                () -> addressService.deleteAddress(validUser.getPhone(), ADDRESS_ID)
+        );
 
         verify(userService).findUserOrThrow(validUser.getPhone());
-        verify(addressRepository).findByUserAndId(validUser, notFoundAddressId);
+        verify(addressRepository).findByUserAndId(validUser, ADDRESS_ID);
     }
 }
