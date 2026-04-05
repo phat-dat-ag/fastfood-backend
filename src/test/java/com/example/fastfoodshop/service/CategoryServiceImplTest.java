@@ -4,6 +4,7 @@ import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
+import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
 import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.repository.CategoryRepository;
@@ -26,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.anyString;
@@ -194,6 +196,73 @@ public class CategoryServiceImplTest {
     }
 
     @Test
+    void updateCategoryActivation_activate_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createDeactivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryUpdateResponse categoryUpdateResponse =
+                categoryService.updateCategoryActivation(category.getId(), true);
+
+        assertNotNull(categoryUpdateResponse);
+        assertNotNull(categoryUpdateResponse.message());
+
+        assertTrue(category.isActivated());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategoryActivation_deactivate_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryUpdateResponse categoryUpdateResponse =
+                categoryService.updateCategoryActivation(category.getId(), false);
+
+        assertNotNull(categoryUpdateResponse);
+        assertNotNull(categoryUpdateResponse.message());
+
+        assertFalse(category.isActivated());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategoryActivation_notFoundCategory_shouldThrowCategoryNotFoundException() {
+        when(categoryRepository.findById(CATEGORY_ID)).thenReturn(Optional.empty());
+
+        assertThrows(
+                CategoryNotFoundException.class,
+                () -> categoryService.updateCategoryActivation(CATEGORY_ID, true)
+        );
+
+        verify(categoryRepository).findById(CATEGORY_ID);
+    }
+
+    @Test
+    void updateCategoryActivation_invalidStatus_shouldReturnCategoryUpdateResponse() {
+        Category activatedCategory = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.findById(activatedCategory.getId()))
+                .thenReturn(Optional.of(activatedCategory));
+
+        assertThrows(
+                InvalidCategoryStatusException.class,
+                () -> categoryService.updateCategoryActivation(activatedCategory.getId(), true)
+        );
+
+        verify(categoryRepository).findById(activatedCategory.getId());
+    }
+
+    @Test
     void deleteCategory_existingCategory_shouldReturnCategoryUpdateResponse() {
         Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
 
@@ -215,7 +284,7 @@ public class CategoryServiceImplTest {
     @Test
     void deleteCategory_notFoundCategory_shouldThrowCategoryNotFoundException() {
         when(categoryRepository.findById(CATEGORY_ID))
-                .thenThrow(new CategoryNotFoundException(CATEGORY_ID));
+                .thenReturn(Optional.empty());
 
         assertThrows(
                 CategoryNotFoundException.class,
