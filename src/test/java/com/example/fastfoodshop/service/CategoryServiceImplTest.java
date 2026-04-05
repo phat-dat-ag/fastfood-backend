@@ -3,11 +3,13 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
+import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
 import com.example.fastfoodshop.service.implementation.CategoryServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +25,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.anyString;
@@ -188,5 +191,52 @@ public class CategoryServiceImplTest {
         assertEquals(CATEGORY_ID, categoryResponse.category().id());
 
         verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void deleteCategory_existingCategory_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryUpdateResponse categoryUpdateResponse = categoryService.deleteCategory(category.getId());
+
+        assertNotNull(categoryUpdateResponse);
+        assertNotNull(categoryUpdateResponse.message());
+
+        assertTrue(category.isDeleted());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void deleteCategory_notFoundCategory_shouldThrowCategoryNotFoundException() {
+        when(categoryRepository.findById(CATEGORY_ID))
+                .thenThrow(new CategoryNotFoundException(CATEGORY_ID));
+
+        assertThrows(
+                CategoryNotFoundException.class,
+                () -> categoryService.deleteCategory(CATEGORY_ID)
+        );
+
+        verify(categoryRepository).findById(CATEGORY_ID);
+    }
+
+    @Test
+    void deleteCategory_deletedCategory_shouldThrowDeletedCategoryException() {
+        Category deletedCategory = CategoryFactory.createDeletedCategory(CATEGORY_ID);
+
+        when(categoryRepository.findById(deletedCategory.getId()))
+                .thenReturn(Optional.of(deletedCategory));
+
+        assertThrows(
+                DeletedCategoryException.class,
+                () -> categoryService.deleteCategory(CATEGORY_ID)
+        );
+
+        verify(categoryRepository).findById(CATEGORY_ID);
     }
 }

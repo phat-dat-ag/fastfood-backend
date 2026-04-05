@@ -24,4 +24,15 @@ public class CategoryFactory {
 
         return category;
     }
+
+    public static Category createDeletedCategory(Long categoryId) {
+        Category category = createCategory();
+
+        category.setId(categoryId);
+        category.setSlug("Trai-cay" + categoryId);
+        category.setActivated(true);
+        category.setDeleted(true);
+
+        return category;
+    }
 }
