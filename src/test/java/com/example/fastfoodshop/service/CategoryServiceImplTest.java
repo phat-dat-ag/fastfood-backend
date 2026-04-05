@@ -9,6 +9,7 @@ import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
+import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
 import com.example.fastfoodshop.service.implementation.CategoryServiceImpl;
@@ -21,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -307,5 +309,47 @@ public class CategoryServiceImplTest {
         );
 
         verify(categoryRepository).findById(CATEGORY_ID);
+    }
+
+    @Test
+    void getAllDisplayableCategories_shouldReturnCategoryDisplayResponse() {
+        List<Category> displayableCategories =
+                CategoryFactory.createDisplayableCategories();
+
+        when(categoryRepository.findByIsDeletedFalseAndIsActivatedTrue())
+                .thenReturn(displayableCategories);
+
+        CategoryDisplayResponse categoryDisplayResponse =
+                categoryService.getAllDisplayableCategories();
+
+        assertNotNull(categoryDisplayResponse);
+        assertNotNull(categoryDisplayResponse.displayableCategories());
+
+        assertEquals(
+                displayableCategories.size(),
+                categoryDisplayResponse.displayableCategories().size()
+        );
+        assertEquals(
+                displayableCategories.get(0).getId(),
+                categoryDisplayResponse.displayableCategories().get(0).id()
+        );
+
+        verify(categoryRepository).findByIsDeletedFalseAndIsActivatedTrue();
+    }
+
+    @Test
+    void getAllDisplayableCategories_emptyList_shouldReturnCategoryDisplayResponse() {
+        when(categoryRepository.findByIsDeletedFalseAndIsActivatedTrue())
+                .thenReturn(List.of());
+
+        CategoryDisplayResponse categoryDisplayResponse =
+                categoryService.getAllDisplayableCategories();
+
+        assertNotNull(categoryDisplayResponse);
+        assertNotNull(categoryDisplayResponse.displayableCategories());
+
+        assertTrue(categoryDisplayResponse.displayableCategories().isEmpty());
+
+        verify(categoryRepository).findByIsDeletedFalseAndIsActivatedTrue();
     }
 }

@@ -3,6 +3,7 @@ package com.example.fastfoodshop.factory.category;
 import com.example.fastfoodshop.entity.Category;
 
 import java.time.Instant;
+import java.util.List;
 
 public class CategoryFactory {
     private static Category createCategory(Long categoryId) {
@@ -42,5 +43,13 @@ public class CategoryFactory {
         category.setDeleted(true);
 
         return category;
+    }
+
+    public static List<Category> createDisplayableCategories() {
+        return List.of(
+                createActivatedCategory(100L),
+                createActivatedCategory(200L),
+                createActivatedCategory(300L)
+        );
     }
 }
