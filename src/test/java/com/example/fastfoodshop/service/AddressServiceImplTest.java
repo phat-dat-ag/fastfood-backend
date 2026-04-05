@@ -156,11 +156,14 @@ public class AddressServiceImplTest {
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
-        when(addressRepository.findByUserAndId(validUser, validAddress.getId())).thenReturn(Optional.of(validAddress));
+        when(addressRepository.findByUserAndId(validUser, validAddress.getId()))
+                .thenReturn(Optional.of(validAddress));
 
         when(addressRepository.save(validAddress)).thenReturn(validAddress);
 
-        AddressResponse addressResponse = addressService.deleteAddress(validUser.getPhone(), validAddress.getId());
+        AddressResponse addressResponse = addressService.deleteAddress(
+                validUser.getPhone(), validAddress.getId()
+        );
 
         assertNotNull(addressResponse);
         assertNotNull(addressResponse.address());

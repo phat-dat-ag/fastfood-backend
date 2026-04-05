@@ -43,6 +43,8 @@ public class AuthServiceImplTest {
     @InjectMocks
     AuthServiceImpl authService;
 
+    private static final String USER_PHONE = "0999991111";
+
     @BeforeEach
     void setup() {
         ReflectionTestUtils.setField(
@@ -61,7 +63,9 @@ public class AuthServiceImplTest {
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
-        when(passwordEncoder.matches(signInRequest.password(), validUser.getPasswordHash())).thenReturn(true);
+        when(passwordEncoder.matches(
+                signInRequest.password(), validUser.getPasswordHash())
+        ).thenReturn(true);
 
         SignInResponse signInResponse = authService.signIn(signInRequest);
 
@@ -77,9 +81,7 @@ public class AuthServiceImplTest {
 
     @Test
     void signIn_userNotFound_shouldThrowUserNotFoundException() {
-        String phone = "0999999999";
-
-        SignInRequest signInRequest = SignInRequestFactory.createValid(phone);
+        SignInRequest signInRequest = SignInRequestFactory.createValid(USER_PHONE);
 
         when(userService.findUserOrThrow(signInRequest.phone()))
                 .thenThrow(new UserNotFoundException(signInRequest.phone()));
@@ -123,7 +125,9 @@ public class AuthServiceImplTest {
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
-        when(passwordEncoder.matches(signInRequest.password(), validUser.getPasswordHash())).thenReturn(false);
+        when(passwordEncoder.matches(
+                signInRequest.password(), validUser.getPasswordHash())
+        ).thenReturn(false);
 
         assertThrows(InvalidPasswordException.class, () -> authService.signIn(signInRequest));
 
@@ -158,16 +162,14 @@ public class AuthServiceImplTest {
         Authentication authentication = mock(Authentication.class);
         UserDetails userDetails = mock(UserDetails.class);
 
-        String phone = "0999999999";
-
         when(authentication.getPrincipal()).thenReturn(userDetails);
-        when(userDetails.getUsername()).thenReturn(phone);
-        when(userService.findUserOrThrow(phone))
-                .thenThrow(new UserNotFoundException(phone));
+        when(userDetails.getUsername()).thenReturn(USER_PHONE);
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
 
         assertThrows(UserNotFoundException.class, () -> authService.verify(authentication));
 
-        verify(userService).findUserOrThrow(phone);
+        verify(userService).findUserOrThrow(USER_PHONE);
     }
 
     @Test
