@@ -8,6 +8,7 @@ import com.example.fastfoodshop.exception.category.InvalidCategoryStatusExceptio
 import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.factory.category.CategoryPageFactory;
+import com.example.fastfoodshop.projection.CategoryStatsProjection;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
@@ -15,6 +16,7 @@ import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.response.category.CategoryPageResponse;
 import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
+import com.example.fastfoodshop.response.category.CategoryStatsResponse;
 import com.example.fastfoodshop.service.implementation.CategoryServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -42,6 +45,7 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class CategoryServiceImplTest {
@@ -438,5 +442,50 @@ public class CategoryServiceImplTest {
         assertTrue(categoryDisplayResponse.displayableCategories().isEmpty());
 
         verify(categoryRepository).findByIsDeletedFalseAndIsActivatedTrue();
+    }
+
+    @Test
+    void getCategoryStats_shouldReturnCategoryStatsResponse() {
+        CategoryStatsProjection categoryStatsProjection = mock(CategoryStatsProjection.class);
+
+        String categoryName = "Tau Hu";
+        Long totalQuantitySold = 10000L;
+        BigDecimal totalRevenue = BigDecimal.valueOf(999999999);
+
+        when(categoryStatsProjection.getName()).thenReturn(categoryName);
+        when(categoryStatsProjection.getTotalQuantitySold()).thenReturn(totalQuantitySold);
+        when(categoryStatsProjection.getTotalRevenue()).thenReturn(totalRevenue);
+
+        List<CategoryStatsProjection> categoryStatsProjectionList = List.of(categoryStatsProjection);
+
+        when(categoryRepository.getStats()).thenReturn(categoryStatsProjectionList);
+
+        CategoryStatsResponse categoryStatsResponse = categoryService.getCategoryStats();
+
+        assertNotNull(categoryStatsResponse);
+
+        assertFalse(categoryStatsResponse.categoryStats().isEmpty());
+
+        assertEquals(
+                categoryStatsProjectionList.size(),
+                categoryStatsResponse.categoryStats().size()
+        );
+
+        verify(categoryRepository).getStats();
+    }
+
+    @Test
+    void getCategoryStats_emptyList_shouldReturnCategoryStatsResponse() {
+        List<CategoryStatsProjection> categoryStatsProjectionList = List.of();
+
+        when(categoryRepository.getStats()).thenReturn(categoryStatsProjectionList);
+
+        CategoryStatsResponse categoryStatsResponse = categoryService.getCategoryStats();
+
+        assertNotNull(categoryStatsResponse);
+
+        assertTrue(categoryStatsResponse.categoryStats().isEmpty());
+
+        verify(categoryRepository).getStats();
     }
 }
