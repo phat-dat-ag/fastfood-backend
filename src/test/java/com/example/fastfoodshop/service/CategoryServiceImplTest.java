@@ -7,10 +7,13 @@ import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
 import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
+import com.example.fastfoodshop.factory.category.CategoryPageFactory;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
 import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
+import com.example.fastfoodshop.response.category.CategoryPageResponse;
+import com.example.fastfoodshop.response.category.CategorySelectionResponse;
 import com.example.fastfoodshop.response.category.CategoryUpdateResponse;
 import com.example.fastfoodshop.service.implementation.CategoryServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
@@ -50,6 +56,13 @@ public class CategoryServiceImplTest {
 
     private static final Long CATEGORY_ID = 888L;
     private static final String CATEGORY_SLUG = "Tra-sua";
+
+    private static final int PAGE = 5;
+    private static final int SIZE = 5;
+
+    private Pageable createPageRequest() {
+        return PageRequest.of(PAGE, SIZE);
+    }
 
     @Test
     void findCategoryByIdOrThrow_existingCategory_shouldReturnCategory() {
@@ -195,6 +208,80 @@ public class CategoryServiceImplTest {
         assertEquals(CATEGORY_ID, categoryResponse.category().id());
 
         verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void getCategoryPage_shouldReturnCategoryPageResponse() {
+        Pageable pageable = createPageRequest();
+
+        Page<Category> categoryPage = CategoryPageFactory.createCategoryPage();
+
+        when(categoryRepository.findByIsDeletedFalse(pageable)).thenReturn(categoryPage);
+
+        CategoryPageResponse categoryPageResponse = categoryService.getCategoryPage(PAGE, SIZE);
+
+        assertNotNull(categoryPageResponse);
+
+        assertFalse(categoryPageResponse.categories().isEmpty());
+
+        assertEquals(
+                categoryPage.getContent().size(),
+                categoryPageResponse.categories().size()
+        );
+
+        verify(categoryRepository).findByIsDeletedFalse(pageable);
+    }
+
+    @Test
+    void getCategoryPage_emptyPageResponse_shouldReturnCategoryPageResponse() {
+        Pageable pageable = createPageRequest();
+
+        Page<Category> categoryPage = CategoryPageFactory.createEmptyCategoryPage();
+
+        when(categoryRepository.findByIsDeletedFalse(pageable)).thenReturn(categoryPage);
+
+        CategoryPageResponse categoryPageResponse = categoryService.getCategoryPage(PAGE, SIZE);
+
+        assertNotNull(categoryPageResponse);
+
+        assertTrue(categoryPageResponse.categories().isEmpty());
+
+        verify(categoryRepository).findByIsDeletedFalse(pageable);
+    }
+
+    @Test
+    void getCategorySelections_shouldReturnCategorySelectionResponse() {
+        List<Category> categories = CategoryFactory.createDisplayableCategories();
+
+        when(categoryRepository.findByIsDeletedFalseAndIsActivatedTrue()).thenReturn(categories);
+
+        CategorySelectionResponse categorySelectionResponse = categoryService.getCategorySelections();
+
+        assertNotNull(categorySelectionResponse);
+
+        assertFalse(categorySelectionResponse.selectiveCategories().isEmpty());
+
+        assertEquals(
+                categories.size(),
+                categorySelectionResponse.selectiveCategories().size()
+        );
+
+        verify(categoryRepository).findByIsDeletedFalseAndIsActivatedTrue();
+    }
+
+    @Test
+    void getCategorySelections_emptyList_shouldReturnCategorySelectionResponse() {
+        List<Category> categories = List.of();
+
+        when(categoryRepository.findByIsDeletedFalseAndIsActivatedTrue()).thenReturn(categories);
+
+        CategorySelectionResponse categorySelectionResponse = categoryService.getCategorySelections();
+
+        assertNotNull(categorySelectionResponse);
+
+        assertTrue(categorySelectionResponse.selectiveCategories().isEmpty());
+
+        verify(categoryRepository).findByIsDeletedFalseAndIsActivatedTrue();
     }
 
     @Test
