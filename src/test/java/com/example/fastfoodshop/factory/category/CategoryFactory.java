@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.List;
 
 public class CategoryFactory {
+    private static final String IMAGE_PUBLIC_ID = "public-id";
+
     private static Category createCategory(Long categoryId) {
         Category category = new Category();
 
@@ -51,5 +53,29 @@ public class CategoryFactory {
                 createActivatedCategory(200L),
                 createActivatedCategory(300L)
         );
+    }
+
+    public static Category createWithPublicIdField(Long categoryId) {
+        Category category = createActivatedCategory(categoryId);
+
+        category.setImagePublicId(IMAGE_PUBLIC_ID);
+
+        return category;
+    }
+
+    public static Category createWithoutPublicIdField(Long categoryId) {
+        Category category = createActivatedCategory(categoryId);
+
+        category.setImagePublicId(null);
+
+        return category;
+    }
+
+    public static Category createWithEmptyPublicIdField(Long categoryId) {
+        Category category = createActivatedCategory(categoryId);
+
+        category.setImagePublicId("");
+
+        return category;
     }
 }

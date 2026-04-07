@@ -1,16 +1,21 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.CloudinaryResult;
 import com.example.fastfoodshop.constant.FolderNameConstants;
 import com.example.fastfoodshop.entity.Category;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
+import com.example.fastfoodshop.exception.cloudinary.ImageDeleteException;
 import com.example.fastfoodshop.factory.category.CategoryCreateRequestFactory;
 import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.factory.category.CategoryPageFactory;
+import com.example.fastfoodshop.factory.category.CategoryUpdateRequestFactory;
+import com.example.fastfoodshop.factory.file.CloudinaryUpdateResultFactory;
 import com.example.fastfoodshop.projection.CategoryStatsProjection;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
+import com.example.fastfoodshop.request.CategoryUpdateRequest;
 import com.example.fastfoodshop.response.category.CategoryDisplayResponse;
 import com.example.fastfoodshop.response.category.CategoryResponse;
 import com.example.fastfoodshop.response.category.CategoryPageResponse;
@@ -32,6 +37,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.anyString;
@@ -212,6 +219,204 @@ public class CategoryServiceImplTest {
         assertEquals(CATEGORY_ID, categoryResponse.category().id());
 
         verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_validRequest_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createWithPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithFile();
+
+        Map<String, Object> mockResult = CloudinaryUpdateResultFactory.createValidResult();
+
+        when(cloudinaryService.uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName))
+        ).thenReturn((Map) mockResult);
+
+        when(cloudinaryService.deleteImage(anyString())).thenReturn(true);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        assertEquals(mockResult.get(CloudinaryResult.SECURE_URL), categoryResponse.category().imageUrl());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(cloudinaryService).uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName));
+        verify(cloudinaryService).deleteImage(anyString());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_withoutOldPublicId_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createWithoutPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithFile();
+
+        Map<String, Object> mockResult = CloudinaryUpdateResultFactory.createValidResult();
+
+        when(cloudinaryService.uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName))
+        ).thenReturn((Map) mockResult);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        assertEquals(mockResult.get(CloudinaryResult.SECURE_URL), categoryResponse.category().imageUrl());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(cloudinaryService).uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName));
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_withoutEmptyOldPublicId_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createWithEmptyPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithFile();
+
+        Map<String, Object> mockResult = CloudinaryUpdateResultFactory.createValidResult();
+
+        when(cloudinaryService.uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName))
+        ).thenReturn((Map) mockResult);
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        assertEquals(mockResult.get(CloudinaryResult.SECURE_URL), categoryResponse.category().imageUrl());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(cloudinaryService).uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName));
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+
+    @Test
+    void updateCategory_withEmptyImageFile_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createWithPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithEmptyFile();
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_withoutFile_shouldReturnCategoryUpdateResponse() {
+        Category category = CategoryFactory.createWithPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithNullFile();
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(categoryRepository).save(any(Category.class));
+    }
+
+    @Test
+    void updateCategory_withImageUpdatingException_shouldThrowImageDeleteException() {
+        Category category = CategoryFactory.createWithPublicIdField(CATEGORY_ID);
+
+        when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithFile();
+
+        Map<String, Object> mockResult = CloudinaryUpdateResultFactory.createValidResult();
+
+        when(cloudinaryService.uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName))
+        ).thenReturn((Map) mockResult);
+
+        when(cloudinaryService.deleteImage(anyString()))
+                .thenThrow(new ImageDeleteException("Exception"));
+
+        when(categoryRepository.save(any(Category.class))).thenReturn(category);
+
+        CategoryResponse categoryResponse = categoryService.updateCategory(category.getId(), validRequest);
+
+        assertNotNull(categoryResponse);
+        assertNotNull(categoryResponse.category());
+
+        assertEquals(validRequest.name(), categoryResponse.category().name());
+        assertEquals(validRequest.description(), categoryResponse.category().description());
+        assertEquals(validRequest.activated(), categoryResponse.category().activated());
+
+        verify(categoryRepository).findById(category.getId());
+        verify(cloudinaryService).uploadImage(
+                eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName));
+        verify(categoryRepository).save(any(Category.class));
+        verify(cloudinaryService).deleteImage(anyString());
+    }
+
+    @Test
+    void updateCategory_notFoundCategory_shouldThrowCategoryNotFoundException() {
+        when(categoryRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        CategoryUpdateRequest validRequest = CategoryUpdateRequestFactory.createValidWithFile();
+
+        assertThrows(
+                CategoryNotFoundException.class,
+                () -> categoryService.updateCategory(CATEGORY_ID, validRequest)
+        );
+
+        verify(categoryRepository).findById(anyLong());
     }
 
     @Test

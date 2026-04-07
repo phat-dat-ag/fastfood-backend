@@ -1,5 +1,6 @@
 package com.example.fastfoodshop.factory.answer;
 
+import com.example.fastfoodshop.factory.file.MediaFileFactory;
 import com.example.fastfoodshop.request.AnswerCreateRequest;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -13,24 +14,6 @@ public class AnswerCreateRequestFactory {
         return new AnswerCreateRequest(content, file, correct);
     }
 
-    private static MockMultipartFile createEmptyFile() {
-        return new MockMultipartFile(
-                "image",
-                "test.jpg",
-                "image/jpeg",
-                new byte[]{}
-        );
-    }
-
-    private static MockMultipartFile createValidFile() {
-        return new MockMultipartFile(
-                "image",
-                "test.jpg",
-                "image/jpeg",
-                "data".getBytes()
-        );
-    }
-
     private static AnswerCreateRequest createCorrectTextAnswer() {
         return answer(CORRECT_CONTENT, null, true);
     }
@@ -40,15 +23,15 @@ public class AnswerCreateRequestFactory {
     }
 
     private static AnswerCreateRequest createIncorrectTextAnswerWithEmptyImage() {
-        return answer(INCORRECT_CONTENT, createEmptyFile(), false);
+        return answer(INCORRECT_CONTENT, MediaFileFactory.createEmptyFile(), false);
     }
 
     private static AnswerCreateRequest createCorrectImageAnswer() {
-        return answer(null, createValidFile(), true);
+        return answer(null, MediaFileFactory.createValidFile(), true);
     }
 
     private static AnswerCreateRequest createIncorrectImageAnswer() {
-        return answer(null, createValidFile(), false);
+        return answer(null, MediaFileFactory.createValidFile(), false);
     }
 
     public static List<AnswerCreateRequest> createValidTextAnswers() {
