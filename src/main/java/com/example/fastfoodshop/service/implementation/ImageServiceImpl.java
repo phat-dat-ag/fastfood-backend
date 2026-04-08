@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.entity.Image;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.image.FileNotFoundException;
 import com.example.fastfoodshop.exception.image.ImageNotFoundException;
 import com.example.fastfoodshop.repository.ImageRepository;
 import com.example.fastfoodshop.request.ImageCreateRequest;
@@ -25,8 +26,9 @@ public class ImageServiceImpl implements ImageService {
     private final ImageRepository imageRepository;
 
     private void handleUploadImage(Image image, MultipartFile imageFile) {
-        if (imageFile == null || imageFile.isEmpty())
-            return;
+        if (imageFile == null || imageFile.isEmpty()) {
+            throw new FileNotFoundException();
+        }
 
         String folderName = image.getPageType().name() + "/" + image.getSectionType().name();
         Map<?, ?> result = cloudinaryService.uploadImage(imageFile, folderName);
