@@ -10,11 +10,13 @@ import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ImageService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ImageServiceImpl implements ImageService {
@@ -44,6 +46,9 @@ public class ImageServiceImpl implements ImageService {
         handleUploadImage(image, imageCreateRequest.imageFile());
 
         imageRepository.save(image);
+
+        log.info("[ImageService] Successfully uploaded image");
+
         return new ImageUpdateResponse("Đã lưu ảnh thành công");
     }
 
@@ -56,6 +61,7 @@ public class ImageServiceImpl implements ImageService {
         cloudinaryService.deleteImage(image.getPublicId());
         imageRepository.delete(image);
 
+        log.info("[ImageService] Successfully deleted image id={}", imageId);
         return new ImageUpdateResponse("Xóa ảnh thành công: " + imageId);
     }
 }
