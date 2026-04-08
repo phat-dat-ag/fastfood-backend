@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.factory.category;
 
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Promotion;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,6 +35,16 @@ public class CategoryFactory {
 
         category.setActivated(true);
         category.setDeleted(false);
+
+        return category;
+    }
+
+    public static Category createActivatedCategoryWithPromotions(
+            Long categoryId, List<Promotion> promotions
+    ) {
+        Category category = createActivatedCategory(categoryId);
+
+        category.setPromotions(promotions);
 
         return category;
     }

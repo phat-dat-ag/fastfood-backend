@@ -2,7 +2,10 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.constant.CloudinaryResult;
 import com.example.fastfoodshop.constant.FolderNameConstants;
+import com.example.fastfoodshop.dto.PromotionResult;
 import com.example.fastfoodshop.entity.Category;
+import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.exception.category.CategoryNotFoundException;
 import com.example.fastfoodshop.exception.category.DeletedCategoryException;
 import com.example.fastfoodshop.exception.category.InvalidCategoryStatusException;
@@ -12,6 +15,8 @@ import com.example.fastfoodshop.factory.category.CategoryFactory;
 import com.example.fastfoodshop.factory.category.CategoryPageFactory;
 import com.example.fastfoodshop.factory.category.CategoryUpdateRequestFactory;
 import com.example.fastfoodshop.factory.file.CloudinaryUpdateResultFactory;
+import com.example.fastfoodshop.factory.product.ProductFactory;
+import com.example.fastfoodshop.factory.promotion.PromotionFactory;
 import com.example.fastfoodshop.projection.CategoryStatsProjection;
 import com.example.fastfoodshop.repository.CategoryRepository;
 import com.example.fastfoodshop.request.CategoryCreateRequest;
@@ -42,6 +47,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -64,6 +70,10 @@ public class CategoryServiceImplTest {
 
     @InjectMocks
     CategoryServiceImpl categoryService;
+
+    private static final Long PROMOTION_ID = 333L;
+
+    private static final Long PRODUCT_ID = 777L;
 
     private static final Long CATEGORY_ID = 888L;
     private static final String CATEGORY_SLUG = "Tra-sua";
@@ -127,6 +137,173 @@ public class CategoryServiceImplTest {
         );
 
         verify(categoryRepository).findBySlug(CATEGORY_SLUG);
+    }
+
+    @Test
+    void applyPromotion_withProductPromotion_shouldReturnPromotionResult() {
+        Promotion validPromotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
+
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of(validPromotion)
+        );
+
+        Category category = CategoryFactory.createActivatedCategory(CATEGORY_ID);
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertEquals(validPromotion.getId(), promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_withCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion validPromotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(validPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertEquals(validPromotion.getId(), promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_withoutPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of()
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_deactivatedCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion deactivatedPromotion = PromotionFactory.createDeactivatedPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(deactivatedPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_deletedCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion deletedPromotion = PromotionFactory.createDeletedPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(deletedPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_globalCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion globalPromotion = PromotionFactory.createGlobalPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(globalPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_notStartedYetCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion notStartedYetPromotion = PromotionFactory.createPromotionNotStartedYet(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(notStartedYetPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_ExpiredCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion expiredPromotion = PromotionFactory.createExpiredPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(expiredPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
+    }
+
+    @Test
+    void applyPromotion_ExhaustedCategoryPromotion_shouldReturnPromotionResult() {
+        Product product = ProductFactory.createActivatedProductWithPromotions(
+                PRODUCT_ID, List.of()
+        );
+
+        Promotion exhaustedPromotion = PromotionFactory.createExhaustedPromotion(PROMOTION_ID);
+
+        Category category = CategoryFactory.createActivatedCategoryWithPromotions(
+                CATEGORY_ID, List.of(exhaustedPromotion)
+        );
+
+        PromotionResult promotionResult = categoryService.applyPromotion(product, category);
+
+        assertNotNull(promotionResult);
+
+        assertNull(promotionResult.promotionId());
     }
 
     @Test
@@ -322,7 +499,6 @@ public class CategoryServiceImplTest {
                 eq(validRequest.imageUrl()), eq(FolderNameConstants.categoryFolderName));
         verify(categoryRepository).save(any(Category.class));
     }
-
 
     @Test
     void updateCategory_withEmptyImageFile_shouldReturnCategoryUpdateResponse() {

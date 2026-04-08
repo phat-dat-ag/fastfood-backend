@@ -28,4 +28,57 @@ public class PromotionFactory {
 
         return promotion;
     }
+
+    public static Promotion createDeactivatedPromotion(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        promotion.setActivated(false);
+
+        return promotion;
+    }
+
+    public static Promotion createDeletedPromotion(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        promotion.setDeleted(true);
+
+        return promotion;
+    }
+
+    public static Promotion createGlobalPromotion(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        promotion.setGlobal(true);
+
+        return promotion;
+    }
+
+    public static Promotion createPromotionNotStartedYet(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        LocalDateTime now = LocalDateTime.now();
+        promotion.setStartAt(now.plusDays(1));
+        promotion.setEndAt(now.plusDays(2));
+
+        return promotion;
+    }
+
+    public static Promotion createExpiredPromotion(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        LocalDateTime now = LocalDateTime.now();
+        promotion.setStartAt(now.minusMonths(2));
+        promotion.setEndAt(now.minusMonths(1));
+
+        return promotion;
+    }
+
+    public static Promotion createExhaustedPromotion(Long promotionId) {
+        Promotion promotion = createValidPromotion(promotionId);
+
+        promotion.setUsedQuantity(101);
+        promotion.setQuantity(100);
+
+        return promotion;
+    }
 }
