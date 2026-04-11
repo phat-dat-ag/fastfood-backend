@@ -38,6 +38,7 @@ public class OrderDetailServiceImplTest {
     OrderDetailServiceImpl orderDetailService;
 
     private static final Long PRODUCT_ID = 234L;
+    private static final Long ORDER_ID = 123L;
 
     @Test
     void createOrderDetail_validRequest_shouldBeSuccessful() {
@@ -47,7 +48,7 @@ public class OrderDetailServiceImplTest {
 
         CartDTO cartDTO = CartDTO.from(cart);
 
-        Order order = OrderFactory.createpPendingOrder();
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
 
         when(productService.findProductOrThrow(cartDTO.product().id())).thenReturn(product);
 
@@ -78,7 +79,7 @@ public class OrderDetailServiceImplTest {
 
         CartDTO cartDTO = CartDTO.from(cart);
 
-        Order order = OrderFactory.createpPendingOrder();
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
 
         when(productService.findProductOrThrow(cartDTO.product().id()))
                 .thenThrow(new ProductNotFoundException(product.getId()));

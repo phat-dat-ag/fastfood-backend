@@ -2,10 +2,12 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.entity.OrderNote;
+import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.enums.NoteType;
 import com.example.fastfoodshop.factory.order.OrderFactory;
 import com.example.fastfoodshop.factory.order.OrderNoteFactory;
+import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.repository.OrderNoteRepository;
 import com.example.fastfoodshop.service.implementation.OrderNoteServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -26,13 +28,17 @@ public class OrderNoteServiceImplTest {
     @InjectMocks
     OrderNoteServiceImpl orderNoteService;
 
+    private static final Long ORDER_ID = 789L;
+
     private static final String NOTE_MESSAGE = "Giao nhanh chong";
     private static final NoteType NOTE_TYPE = NoteType.USER_NOTE;
     private static final AuthorType AUTHOR_TYPE = AuthorType.USER;
 
     @Test
     void createOrderNote_validRequest_shouldBeSuccessful() {
-        Order order = OrderFactory.createpPendingOrder();
+        User user = UserFactory.createActivatedUser();
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
 
         OrderNote orderNote = OrderNoteFactory.createValid(order, NOTE_MESSAGE, NOTE_TYPE, AUTHOR_TYPE);
 
