@@ -8,8 +8,10 @@ import com.example.fastfoodshop.repository.OrderDetailRepository;
 import com.example.fastfoodshop.service.OrderDetailService;
 import com.example.fastfoodshop.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderDetailServiceImpl implements OrderDetailService {
@@ -24,6 +26,11 @@ public class OrderDetailServiceImpl implements OrderDetailService {
         orderDetail.setProduct(product);
         orderDetail.setQuantity(cartDTO.quantity());
         orderDetail.setDiscountedPrice(cartDTO.product().discountedPrice());
+
+        log.info(
+                "[OrderDetailService] Successfully created order detail for order id={}, product id={}",
+                order.getId(), product.getId()
+        );
 
         orderDetailRepository.save(orderDetail);
     }
