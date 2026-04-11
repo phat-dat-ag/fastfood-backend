@@ -46,6 +46,7 @@ import com.example.fastfoodshop.service.PaymentService;
 import com.example.fastfoodshop.service.OrderService;
 import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -56,6 +57,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -75,9 +77,11 @@ public class OrderServiceImpl implements OrderService {
 
     private Order findOrderForUpdate(Long orderId) {
         Order order = findOrderOrThrow(orderId);
+
         if (order.getOrderStatus() == OrderStatus.CANCELLED) {
             throw new OrderAlreadyCancelledException();
         }
+
         return order;
     }
 
@@ -132,14 +136,23 @@ public class OrderServiceImpl implements OrderService {
             Promotion promotion = promotionService.findPromotionOrThrow(
                     cartDetailResponse.promotion().id()
             );
+
             promotionService.increasePromotionUsageCount(promotion.getId());
+
+            log.debug(
+                    "[OrderService] Applied promotion id={} to order id={}",
+                    promotion.getId(), order.getId()
+            );
 
             order.setPromotion(promotion);
         }
+
+        log.debug("[OrderService] Did not apply promotion for order id={}", order.getId());
     }
 
     private Order buildOrderEntity(
-            User user, Address address, OrderCreateRequest orderCreateRequest, CartDetailResponse cartDetailResponse
+            User user, Address address,
+            OrderCreateRequest orderCreateRequest, CartDetailResponse cartDetailResponse
     ) {
         Order order = new Order();
 
@@ -153,14 +166,19 @@ public class OrderServiceImpl implements OrderService {
 
     private void addUserNoteIfPresent(Order order, String userNote) {
         if (userNote != null && !userNote.isBlank()) {
+            log.debug("[OrderService] Added note for order id={}", order.getId());
             orderNoteService.createOrderNote(order, NoteType.USER_NOTE, userNote, AuthorType.USER);
         }
+
+        log.debug("[OrderService] Did not write note for order id={}", order.getId());
     }
 
     private void createOrderDetails(Order order, CartDetailResponse cartDetailResponse) {
         List<CartDTO> cartDTOs = cartDetailResponse.carts();
+
         for (CartDTO cartDTO : cartDTOs) {
             orderDetailService.createOrderDetail(cartDTO, order);
+
             if (cartDTO.product().promotionId() != null) {
                 promotionService.increasePromotionUsageCount(cartDTO.product().promotionId());
             }
@@ -211,6 +229,8 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = saveOrder(order, cartDetailResponse, orderCreateRequest);
 
+        log.info("[OrderService] Successfully created order for user phone={}", phone);
+
         return handlePayment(savedOrder, orderCreateRequest);
     }
 
@@ -226,6 +246,7 @@ public class OrderServiceImpl implements OrderService {
         if (order.getOrderStatus() != OrderStatus.PENDING) {
             throw new InvalidOrderStatusException();
         }
+
         if (order.getPaymentMethod() != PaymentMethod.BANK_TRANSFER
                 || order.getPaymentStatus() == PaymentStatus.PAID
         ) {
@@ -234,6 +255,7 @@ public class OrderServiceImpl implements OrderService {
 
         try {
             String setClientSecret = paymentService.createPaymentIntent(order.getTotalPrice(), order);
+
             return new OrderResponse(OrderDTO.from(order, setClientSecret));
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
@@ -242,7 +264,13 @@ public class OrderServiceImpl implements OrderService {
 
     public void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {
         Order order = findOrderForUpdate(orderId);
+
         order.setPaymentStatus(paymentStatus);
+
+        log.debug(
+                "[OrderService] Updated payment status {} for order id={}",
+                paymentStatus, orderId
+        );
 
         orderRepository.save(order);
     }
@@ -257,7 +285,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void handleConfirm(Order order) {
-        if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER && order.getPaymentStatus() != PaymentStatus.PAID) {
+        if (order.getPaymentMethod() == PaymentMethod.BANK_TRANSFER
+                && order.getPaymentStatus() != PaymentStatus.PAID
+        ) {
             throw new PaymentNotCompletedException();
         }
 
@@ -267,6 +297,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setOrderStatus(OrderStatus.CONFIRMED);
         order.setConfirmedAt(LocalDateTime.now());
+
+        log.debug("[OrderService] Confirmed order id={}", order.getId());
     }
 
     private void handleDelivering(Order order) {
@@ -276,6 +308,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setOrderStatus(OrderStatus.DELIVERING);
         order.setDeliveringAt(LocalDateTime.now());
+
+        log.debug("[OrderService] Marked order id={} as delivering", order.getId());
     }
 
     private void handleDelivered(Order order) {
@@ -285,6 +319,8 @@ public class OrderServiceImpl implements OrderService {
 
         order.setOrderStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
+
+        log.debug("[OrderService] Marked order id={} as delivered", order.getId());
 
         if (order.getPaymentMethod() == PaymentMethod.CASH_ON_DELIVERY) {
             order.setPaymentStatus(PaymentStatus.PAID);
@@ -314,6 +350,11 @@ public class OrderServiceImpl implements OrderService {
 
         order.setCancelledAt(LocalDateTime.now());
         order.setOrderStatus(OrderStatus.CANCELLED);
+
+        log.debug(
+                "[OrderService] Cancelled order id={} by role={}",
+                order.getId(), user.getRole()
+        );
     }
 
     private void validatePermission(User user, OrderStatus newStatus) {
@@ -344,6 +385,9 @@ public class OrderServiceImpl implements OrderService {
         }
 
         orderRepository.save(order);
+
+        log.info("[OrderService] Successfully updated order id={}", orderId);
+
         return new OrderUpdateResponse("Đã cập nhật trạng thái cho đơn hàng: " + order.getId());
     }
 
@@ -382,13 +426,19 @@ public class OrderServiceImpl implements OrderService {
 
         validateOrderAccess(user, order);
 
+        log.info("[OrderService] Successfully retrieved order id={}", orderId);
+
         return new OrderResponse(OrderDTO.from(order));
     }
 
     private OrderPageResponse getAllActiveOrders(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
-        Page<Order> orderPage = orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
+
+        Page<Order> orderPage =
+                orderRepository.findByUserAndDeliveredAtIsNullAndCancelledAtIsNull(user, pageable);
+
+        log.info("[OrderService] Successfully retrieved all active order page");
 
         return OrderPageResponse.from(orderPage);
     }
@@ -396,21 +446,30 @@ public class OrderServiceImpl implements OrderService {
     private OrderPageResponse getAllOrderHistory(String phone, int page, int size) {
         User user = userService.findUserOrThrow(phone);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+
         Page<Order> orderPage = orderRepository.findCompletedOrCancelledOrdersByUser(user, pageable);
+
+        log.info("[OrderService] Successfully retrieved all order history");
 
         return OrderPageResponse.from(orderPage);
     }
 
     private OrderPageResponse getAllUnfinishedOrders(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+
         Page<Order> orderPage = orderRepository.findByDeliveredAtIsNullAndCancelledAtIsNull(pageable);
+
+        log.info("[OrderService] Successfully retrieved all unfinished orders");
 
         return OrderPageResponse.from(orderPage);
     }
 
     private OrderPageResponse getAllOrdersByAdmin(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Order.Field.placedAt).descending());
+
         Page<Order> orderPage = orderRepository.findAll(pageable);
+
+        log.info("[OrderService] Successfully retrieved all order for admin");
 
         return OrderPageResponse.from(orderPage);
     }
@@ -462,6 +521,8 @@ public class OrderServiceImpl implements OrderService {
                 statsProjection.getBankTransferRevenue(),
                 statsProjection.getTotalRevenue()
         );
+
+        log.info("[OrderService] Successfully retrieved order stats");
 
         return new OrderStatsResponse(orderStatsDTO);
     }
