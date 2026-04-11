@@ -72,17 +72,9 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
 
     public Order findOrderOrThrow(Long orderId) {
-        return orderRepository.findById(orderId).orElseThrow(() -> new OrderNotFoundException(orderId));
-    }
-
-    private Order findOrderForUpdate(Long orderId) {
-        Order order = findOrderOrThrow(orderId);
-
-        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
-            throw new OrderAlreadyCancelledException();
-        }
-
-        return order;
+        return orderRepository.findById(orderId).orElseThrow(
+                () -> new OrderNotFoundException(orderId)
+        );
     }
 
     private void checkAllActivatedProducts(List<CartDTO> cartDTOs) {
@@ -260,6 +252,16 @@ public class OrderServiceImpl implements OrderService {
         } catch (StripeException e) {
             throw new PaymentFailedException(e.getMessage());
         }
+    }
+
+    private Order findOrderForUpdate(Long orderId) {
+        Order order = findOrderOrThrow(orderId);
+
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new OrderAlreadyCancelledException();
+        }
+
+        return order;
     }
 
     public void updatePaymentStatus(Long orderId, PaymentStatus paymentStatus) {

@@ -32,4 +32,13 @@ public class OrderFactory {
 
         return order;
     }
+
+    public static Order createCancelledOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        order.setCancelledAt(LocalDateTime.now());
+
+        return order;
+    }
 }
