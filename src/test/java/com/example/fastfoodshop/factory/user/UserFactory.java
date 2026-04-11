@@ -1,6 +1,7 @@
 package com.example.fastfoodshop.factory.user;
 
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.enums.UserRole;
 
 import java.time.Instant;
 
@@ -24,6 +25,14 @@ public class UserFactory {
 
         user.setActivated(true);
         user.setDeleted(false);
+
+        return user;
+    }
+
+    public static User createActivatedUserWithRole(UserRole userRole) {
+        User user = createActivatedUser();
+
+        user.setRole(userRole);
 
         return user;
     }
