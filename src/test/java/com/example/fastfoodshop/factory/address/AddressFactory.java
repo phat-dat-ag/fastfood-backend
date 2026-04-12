@@ -6,10 +6,10 @@ import com.example.fastfoodshop.entity.User;
 import java.time.Instant;
 
 public class AddressFactory {
-    public static Address createValidAddress(User validUser) {
+    public static Address createValidAddress(Long addressId, User validUser) {
         Address address = new Address();
 
-        address.setId(99L);
+        address.setId(addressId);
         address.setName("Nhà riêng");
         address.setDetail("Gần công viên");
 

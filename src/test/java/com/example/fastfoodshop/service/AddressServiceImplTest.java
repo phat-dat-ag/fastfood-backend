@@ -48,7 +48,7 @@ public class AddressServiceImplTest {
     void findAddressOrThrow_validAddressId_shouldReturnAddress() {
         User validUser = UserFactory.createActivatedUser();
 
-        Address address = AddressFactory.createValidAddress(validUser);
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, validUser);
 
         when(addressRepository.findById(address.getId())).thenReturn(Optional.of(address));
 
@@ -82,7 +82,7 @@ public class AddressServiceImplTest {
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
-        Address savedAddress = AddressFactory.createValidAddress(validUser);
+        Address savedAddress = AddressFactory.createValidAddress(ADDRESS_ID, validUser);
 
         when(addressRepository.save(any(Address.class))).thenReturn(savedAddress);
 
@@ -119,8 +119,8 @@ public class AddressServiceImplTest {
         User validUser = UserFactory.createActivatedUser();
 
         List<Address> addresses = List.of(
-                AddressFactory.createValidAddress(validUser),
-                AddressFactory.createValidAddress(validUser)
+                AddressFactory.createValidAddress(ADDRESS_ID, validUser),
+                AddressFactory.createValidAddress(ADDRESS_ID, validUser)
         );
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
@@ -152,7 +152,7 @@ public class AddressServiceImplTest {
     void deleteAddress_valid_shouldReturnAddressResponse() {
         User validUser = UserFactory.createActivatedUser();
 
-        Address validAddress = AddressFactory.createValidAddress(validUser);
+        Address validAddress = AddressFactory.createValidAddress(ADDRESS_ID, validUser);
 
         when(userService.findUserOrThrow(validUser.getPhone())).thenReturn(validUser);
 
