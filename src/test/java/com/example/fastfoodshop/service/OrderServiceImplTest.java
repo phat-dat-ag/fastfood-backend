@@ -1,11 +1,19 @@
 package com.example.fastfoodshop.service;
 
+import com.example.fastfoodshop.constant.OrderConstant;
+import com.example.fastfoodshop.dto.CartDTO;
+import com.example.fastfoodshop.dto.PromotionDTO;
+import com.example.fastfoodshop.entity.Address;
 import com.example.fastfoodshop.entity.Order;
+import com.example.fastfoodshop.entity.Promotion;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.OrderQueryType;
 import com.example.fastfoodshop.enums.PaymentStatus;
+import com.example.fastfoodshop.enums.NoteType;
+import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.UserRole;
+import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
 import com.example.fastfoodshop.exception.order.AccessDeniedException;
 import com.example.fastfoodshop.exception.order.PaymentNotAllowedException;
 import com.example.fastfoodshop.exception.order.PaymentFailedException;
@@ -15,14 +23,25 @@ import com.example.fastfoodshop.exception.order.ForbiddenException;
 import com.example.fastfoodshop.exception.order.OrderCannotBeCancelledException;
 import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
 import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
+import com.example.fastfoodshop.exception.order.OrderAmountExceededException;
+import com.example.fastfoodshop.exception.order.CODPaymentLimitException;
+import com.example.fastfoodshop.exception.order.CartEmptyException;
+import com.example.fastfoodshop.exception.product.UnavailableProductException;
+import com.example.fastfoodshop.exception.promotion.PromotionNotFoundException;
 import com.example.fastfoodshop.exception.user.UserNotFoundException;
+import com.example.fastfoodshop.factory.address.AddressFactory;
+import com.example.fastfoodshop.factory.cart.CartDTOFactory;
+import com.example.fastfoodshop.factory.order.OrderCreateRequestFactory;
 import com.example.fastfoodshop.factory.order.OrderFactory;
 import com.example.fastfoodshop.factory.order.OrderPageFactory;
 import com.example.fastfoodshop.factory.order.OrderStatusUpdateRequestFactory;
+import com.example.fastfoodshop.factory.promotion.PromotionFactory;
 import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.projection.OrderStatsProjection;
 import com.example.fastfoodshop.repository.OrderRepository;
+import com.example.fastfoodshop.request.OrderCreateRequest;
 import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
+import com.example.fastfoodshop.response.cart.CartDetailResponse;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.order.OrderResponse;
 import com.example.fastfoodshop.response.order.OrderStatsResponse;
@@ -50,10 +69,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceImplTest {
@@ -69,6 +91,21 @@ public class OrderServiceImplTest {
     @Mock
     PaymentService paymentService;
 
+    @Mock
+    AddressService addressService;
+
+    @Mock
+    CartService cartService;
+
+    @Mock
+    ProductService productService;
+
+    @Mock
+    OrderDetailService orderDetailService;
+
+    @Mock
+    PromotionService promotionService;
+
     @InjectMocks
     OrderServiceImpl orderService;
 
@@ -80,8 +117,16 @@ public class OrderServiceImplTest {
     private static final Long STAFF_ID = 222L;
     private static final Long ADMIN_ID = 333L;
 
+    private static final Long ADDRESS_ID = 768L;
+
     private static final int PAGE = 5;
     private static final int SIZE = 5;
+
+    private static final Long PROMOTION_ID = 989L;
+
+    private static final int VALID_AMOUNT = 500000;
+    private static final int INVALID_AMOUNT = OrderConstant.MAX_ORDER_TOTAL_AMOUNT + 1;
+    private static final int COD_LIMIT_EXCEEDED = OrderConstant.CASH_ON_DELIVERY_MAX_AMOUNT + 1;
 
     private static final Pageable PAGEABLE = PageRequest.of(
             PAGE,
@@ -90,6 +135,513 @@ public class OrderServiceImplTest {
     );
 
     private static final String CLIENT_SECRET = "payment-intent";
+
+    @Test
+    void createOrder_CODOrder_withoutNote_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+    }
+
+    @Test
+    void createOrder_CODOrder_withBlankNote_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequestWithBlankNote(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+    }
+
+    @Test
+    void createOrder_CODOrder_withNote_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequestWithNote(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderNoteService)
+                .createOrderNote(order, NoteType.USER_NOTE, request.userNote(), AuthorType.USER);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderNoteService)
+                .createOrderNote(order, NoteType.USER_NOTE, request.userNote(), AuthorType.USER);
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+    }
+
+    @Test
+    void createOrder_CODOrder_withProductPromotions_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOsWithProductPromotions();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(promotionService).increasePromotionUsageCount(anyLong());
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(promotionService, times(cartsDTOs.size()))
+                .increasePromotionUsageCount(anyLong());
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+    }
+
+    @Test
+    void createOrder_CODOrder_withOrderPromotion_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        Promotion promotion = PromotionFactory.createValidPromotion(PROMOTION_ID);
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, PromotionDTO.from(promotion), VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        when(promotionService.findPromotionOrThrow(anyLong())).thenReturn(promotion);
+
+        doNothing().when(promotionService).increasePromotionUsageCount(promotion.getId());
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(promotionService).findPromotionOrThrow(anyLong());
+        verify(promotionService).increasePromotionUsageCount(promotion.getId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+    }
+
+    @Test
+    void createOrder_CODOrder_notFoundOrderPromotion_shouldThrowPromotionNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        Promotion deletedPromotion = PromotionFactory.createDeletedPromotion(PROMOTION_ID);
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, PromotionDTO.from(deletedPromotion), VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        when(promotionService.findPromotionOrThrow(anyLong()))
+                .thenThrow(new PromotionNotFoundException(deletedPromotion.getId()));
+
+        assertThrows(
+                PromotionNotFoundException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(promotionService).findPromotionOrThrow(anyLong());
+    }
+
+    @Test
+    void createOrder_CODOrder_exceededAmount_shouldThrowOrderAmountExceededException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, INVALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        assertThrows(
+                OrderAmountExceededException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+    }
+
+    @Test
+    void createOrder_CODOrder_exceedCODPaymentLimitation_shouldThrowCODPaymentLimitException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, COD_LIMIT_EXCEEDED));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        assertThrows(
+                CODPaymentLimitException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+    }
+
+    @Test
+    void createOrder_CODOrder_emptyCart_shouldThrowCartEmptyException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = List.of();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        assertThrows(
+                CartEmptyException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+    }
+
+    @Test
+    void createOrder_CODOrder_deactivatedProduct_shouldThrowUnavailableProductException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        String productName = "ten_san_pham";
+
+        doThrow(new UnavailableProductException(productName))
+                .when(productService)
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        assertThrows(
+                UnavailableProductException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+    }
+
+    @Test
+    void createOrder_CODOrder_deactivatedCategory_shouldThrowUnavailableCategoryException() {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createCODOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        String categoryName = "ten_san_pham";
+
+        doThrow(new UnavailableCategoryException(categoryName))
+                .when(productService)
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        assertThrows(
+                UnavailableCategoryException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+    }
+
+    @Test
+    void createOrder_onlineOrder_withoutNote_shouldReturnOrderResponse() throws StripeException {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createOnlineOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        when(paymentService.createPaymentIntent(order)).thenReturn(CLIENT_SECRET);
+
+        OrderResponse orderResponse = orderService.createOrder(user.getPhone(), request);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(CLIENT_SECRET, orderResponse.order().clientSecret());
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+        verify(paymentService).createPaymentIntent(order);
+    }
+
+    @Test
+    void createOrder_onlineOrder_paymentException_shouldThrowPaymentFailedException() throws StripeException {
+        User user = UserFactory.createActivatedUser();
+
+        OrderCreateRequest request = OrderCreateRequestFactory.createOnlineOrderRequest(ADDRESS_ID);
+
+        List<CartDTO> cartsDTOs = CartDTOFactory.createValidCartDTOs();
+
+        when(cartService.getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId())
+        ).thenReturn(CartDetailResponse.from(cartsDTOs, VALID_AMOUNT));
+
+        doNothing().when(productService).checkActivatedCategoryAndActivatedProduct(anyLong());
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Address address = AddressFactory.createValidAddress(ADDRESS_ID, user);
+
+        when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        doNothing().when(orderDetailService).createOrderDetail(any(CartDTO.class), any(Order.class));
+
+        doNothing().when(cartService).deleteAllProductFromCart(user.getPhone());
+
+        when(paymentService.createPaymentIntent(order))
+                .thenThrow(new ApiException("Stripe error", null, null, 500, null));
+
+        assertThrows(
+                PaymentFailedException.class,
+                () -> orderService.createOrder(user.getPhone(), request)
+        );
+
+        verify(cartService).getCartDetailByUser(
+                user.getPhone(), request.promotionCode(), request.addressId());
+        verify(productService, times(cartsDTOs.size()))
+                .checkActivatedCategoryAndActivatedProduct(anyLong());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(addressService).findAddressOrThrow(request.addressId());
+        verify(orderRepository).save(any(Order.class));
+        verify(orderDetailService, times(cartsDTOs.size()))
+                .createOrderDetail(any(CartDTO.class), any(Order.class));
+        verify(cartService).deleteAllProductFromCart(user.getPhone());
+        verify(paymentService).createPaymentIntent(order);
+    }
 
     @Test
     void getPaymentIntent_pendingAndUnpaidOnlineOrder_shouldReturnOrderResponse() throws StripeException {

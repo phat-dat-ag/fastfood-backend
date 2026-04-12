@@ -45,8 +45,12 @@ public record CartDetailResponse(
         );
     }
 
-    public static CartDetailResponse from(List<CartDTO> cartDTOs) {
-        return create(cartDTOs, null, null, 0);
+    public static CartDetailResponse from(List<CartDTO> cartDTOs, int totalPrice) {
+        return create(cartDTOs, null, null, totalPrice);
+    }
+
+    public static CartDetailResponse from(List<CartDTO> cartDTOs, PromotionDTO promotionDTO, int totalPrice) {
+        return create(cartDTOs, promotionDTO, null, totalPrice);
     }
 
     public static CartDetailResponse from(

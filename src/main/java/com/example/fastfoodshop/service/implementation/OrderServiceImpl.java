@@ -14,6 +14,7 @@ import com.example.fastfoodshop.enums.PaymentMethod;
 import com.example.fastfoodshop.enums.PaymentStatus;
 import com.example.fastfoodshop.enums.AuthorType;
 import com.example.fastfoodshop.enums.OrderQueryType;
+import com.example.fastfoodshop.exception.order.CartEmptyException;
 import com.example.fastfoodshop.exception.order.CODPaymentLimitException;
 import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
 import com.example.fastfoodshop.exception.order.ForbiddenException;
@@ -211,6 +212,10 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse createOrder(String phone, OrderCreateRequest orderCreateRequest) {
         CartDetailResponse cartDetailResponse = prepareCart(phone, orderCreateRequest);
+
+        if (cartDetailResponse.carts().isEmpty()) {
+            throw new CartEmptyException();
+        }
 
         User user = userService.findUserOrThrow(phone);
         Address address = addressService.findAddressOrThrow(orderCreateRequest.addressId());
