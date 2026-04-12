@@ -33,6 +33,15 @@ public class OrderFactory {
         return order;
     }
 
+    public static Order createDeliveredOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.DELIVERED);
+        order.setDeliveredAt(LocalDateTime.now());
+
+        return order;
+    }
+
     public static Order createCancelledOrder(User user, Long orderId) {
         Order order = createpPendingOrder(user, orderId);
 

@@ -397,13 +397,9 @@ public class OrderServiceImpl implements OrderService {
         UserRole userRole = user.getRole();
 
         boolean isOwner = order.getUser().getId().equals(user.getId());
-        boolean isCompleted = order.getDeliveredAt() != null || order.getCancelledAt() != null;
+        boolean isCompleted = !(order.getDeliveredAt() == null && order.getCancelledAt() == null);
 
         switch (userRole) {
-            case ADMIN -> {
-                return;
-            }
-
             case USER -> {
                 if (!isOwner) {
                     throw new AccessDeniedException("Không có quyền truy cập đơn hàng này");
@@ -418,6 +414,10 @@ public class OrderServiceImpl implements OrderService {
                 if (isCompleted) {
                     throw new AccessDeniedException("Bạn chỉ được xem đơn hàng chưa hoàn thành của người khác");
                 }
+            }
+
+            default -> {
+                return;
             }
         }
     }

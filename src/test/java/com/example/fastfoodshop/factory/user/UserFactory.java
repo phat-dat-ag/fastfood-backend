@@ -29,9 +29,10 @@ public class UserFactory {
         return user;
     }
 
-    public static User createActivatedUserWithRole(UserRole userRole) {
+    public static User createActivatedUserWithRole(Long userId, UserRole userRole) {
         User user = createActivatedUser();
 
+        user.setId(userId);
         user.setRole(userRole);
 
         return user;
