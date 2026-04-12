@@ -12,9 +12,11 @@ import com.example.fastfoodshop.exception.user.UserNotFoundException;
 import com.example.fastfoodshop.factory.order.OrderFactory;
 import com.example.fastfoodshop.factory.order.OrderPageFactory;
 import com.example.fastfoodshop.factory.user.UserFactory;
+import com.example.fastfoodshop.projection.OrderStatsProjection;
 import com.example.fastfoodshop.repository.OrderRepository;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.order.OrderResponse;
+import com.example.fastfoodshop.response.order.OrderStatsResponse;
 import com.example.fastfoodshop.service.implementation.OrderServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -38,6 +41,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
 
 @ExtendWith(MockitoExtension.class)
 public class OrderServiceImplTest {
@@ -538,5 +542,36 @@ public class OrderServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void getOrderStats_shouldReturnOrderStatsResponse() {
+        OrderStatsProjection orderStatsProjection = mock(OrderStatsProjection.class);
+
+        Long amount = 1000L;
+        BigDecimal revenue = BigDecimal.valueOf(amount);
+
+        when(orderStatsProjection.getPendingOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getConfirmedOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getDeliveringOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getDeliveredOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getCancelledOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getCashOnDeliveryOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getBankTransferOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getDiscountedOrderAmount()).thenReturn(amount);
+        when(orderStatsProjection.getCashOnDeliveryRevenue()).thenReturn(revenue);
+        when(orderStatsProjection.getBankTransferRevenue()).thenReturn(revenue);
+        when(orderStatsProjection.getTotalRevenue()).thenReturn(revenue);
+
+        when(orderRepository.getStats()).thenReturn(orderStatsProjection);
+
+        OrderStatsResponse orderStatsResponse = orderService.getOrderStats();
+
+        assertNotNull(orderStatsResponse);
+
+        assertEquals(amount, orderStatsResponse.orderStats().pendingOrderAmount());
+        assertEquals(revenue, orderStatsResponse.orderStats().totalRevenue());
+
+        verify(orderRepository).getStats();
     }
 }
