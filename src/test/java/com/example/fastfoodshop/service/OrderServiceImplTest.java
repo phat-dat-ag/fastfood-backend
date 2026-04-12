@@ -7,6 +7,8 @@ import com.example.fastfoodshop.enums.PaymentStatus;
 import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.exception.order.AccessDeniedException;
+import com.example.fastfoodshop.exception.order.PaymentNotAllowedException;
+import com.example.fastfoodshop.exception.order.PaymentFailedException;
 import com.example.fastfoodshop.exception.order.OrderAlreadyCancelledException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
 import com.example.fastfoodshop.exception.order.ForbiddenException;
@@ -26,6 +28,8 @@ import com.example.fastfoodshop.response.order.OrderResponse;
 import com.example.fastfoodshop.response.order.OrderStatsResponse;
 import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 import com.example.fastfoodshop.service.implementation.OrderServiceImpl;
+import com.stripe.exception.ApiException;
+import com.stripe.exception.StripeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -62,6 +66,9 @@ public class OrderServiceImplTest {
     @Mock
     OrderNoteService orderNoteService;
 
+    @Mock
+    PaymentService paymentService;
+
     @InjectMocks
     OrderServiceImpl orderService;
 
@@ -81,6 +88,160 @@ public class OrderServiceImplTest {
             SIZE,
             Sort.by(Order.Field.placedAt).descending()
     );
+
+    private static final String CLIENT_SECRET = "payment-intent";
+
+    @Test
+    void getPaymentIntent_pendingAndUnpaidOnlineOrder_shouldReturnOrderResponse() throws StripeException {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order pendingOrder = OrderFactory.createUnpaidOnlineAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                pendingOrder.getId(), user
+        )).thenReturn(Optional.of(pendingOrder));
+
+        when(paymentService.createPaymentIntent(pendingOrder)).thenReturn(CLIENT_SECRET);
+
+        OrderResponse orderResponse = orderService.getPaymentIntent(user.getPhone(), pendingOrder.getId());
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(CLIENT_SECRET, orderResponse.order().clientSecret());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(pendingOrder.getId(), user);
+        verify(paymentService).createPaymentIntent(pendingOrder);
+    }
+
+    @Test
+    void getPaymentIntent_notFoundUser_shouldThrowUserNotFoundException() {
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> orderService.getPaymentIntent(USER_PHONE, ORDER_ID)
+        );
+
+        verify(userService).findUserOrThrow(USER_PHONE);
+    }
+
+    @Test
+    void getPaymentIntent_notFoundOrder_shouldThrowOrderNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                ORDER_ID, user
+        )).thenReturn(Optional.empty());
+
+        assertThrows(
+                OrderNotFoundException.class,
+                () -> orderService.getPaymentIntent(user.getPhone(), ORDER_ID)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(ORDER_ID, user);
+    }
+
+    @Test
+    void getPaymentIntent_cancelledOrder_shouldThrowInvalidOrderStatusException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order cancelledOrder = OrderFactory.createCancelledOrder(user, ORDER_ID);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                ORDER_ID, user
+        )).thenReturn(Optional.of(cancelledOrder));
+
+        assertThrows(
+                InvalidOrderStatusException.class,
+                () -> orderService.getPaymentIntent(user.getPhone(), cancelledOrder.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(cancelledOrder.getId(), user);
+    }
+
+    @Test
+    void getPaymentIntent_pendingAndUnpaidCODOrder_shouldThrowPaymentNotAllowedException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order order = OrderFactory.createUnpaidCODAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                ORDER_ID, user
+        )).thenReturn(Optional.of(order));
+
+        assertThrows(
+                PaymentNotAllowedException.class,
+                () -> orderService.getPaymentIntent(user.getPhone(), order.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(order.getId(), user);
+    }
+
+    @Test
+    void getPaymentIntent_pendingAndPaidOnlineOrder_shouldThrowPaymentNotAllowedException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order order = OrderFactory.createPaidOnlineAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                ORDER_ID, user
+        )).thenReturn(Optional.of(order));
+
+        assertThrows(
+                PaymentNotAllowedException.class,
+                () -> orderService.getPaymentIntent(user.getPhone(), order.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(order.getId(), user);
+    }
+
+    @Test
+    void getPaymentIntent_withStripeException_shouldThrowPaymentFailedException() throws StripeException {
+        User user = UserFactory.createActivatedUser();
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order pendingOrder = OrderFactory.createUnpaidOnlineAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(
+                pendingOrder.getId(), user
+        )).thenReturn(Optional.of(pendingOrder));
+
+        when(paymentService.createPaymentIntent(pendingOrder))
+                .thenThrow(new ApiException("Stripe error", null, null, 500, null));
+
+        assertThrows(
+                PaymentFailedException.class,
+                () -> orderService.getPaymentIntent(user.getPhone(), pendingOrder.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository)
+                .findByIdAndUserAndDeliveredAtIsNullAndCancelledAtIsNull(pendingOrder.getId(), user);
+        verify(paymentService).createPaymentIntent(pendingOrder);
+    }
 
     @Test
     void updatePaymentStatus_validRequest_shouldBeSuccessful() {
