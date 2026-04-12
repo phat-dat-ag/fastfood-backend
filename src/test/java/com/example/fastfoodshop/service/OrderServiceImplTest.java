@@ -4,19 +4,27 @@ import com.example.fastfoodshop.entity.Order;
 import com.example.fastfoodshop.entity.User;
 import com.example.fastfoodshop.enums.OrderQueryType;
 import com.example.fastfoodshop.enums.PaymentStatus;
+import com.example.fastfoodshop.enums.OrderStatus;
 import com.example.fastfoodshop.enums.UserRole;
 import com.example.fastfoodshop.exception.order.AccessDeniedException;
 import com.example.fastfoodshop.exception.order.OrderAlreadyCancelledException;
 import com.example.fastfoodshop.exception.order.OrderNotFoundException;
+import com.example.fastfoodshop.exception.order.ForbiddenException;
+import com.example.fastfoodshop.exception.order.OrderCannotBeCancelledException;
+import com.example.fastfoodshop.exception.order.InvalidOrderStatusException;
+import com.example.fastfoodshop.exception.order.PaymentNotCompletedException;
 import com.example.fastfoodshop.exception.user.UserNotFoundException;
 import com.example.fastfoodshop.factory.order.OrderFactory;
 import com.example.fastfoodshop.factory.order.OrderPageFactory;
+import com.example.fastfoodshop.factory.order.OrderStatusUpdateRequestFactory;
 import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.projection.OrderStatsProjection;
 import com.example.fastfoodshop.repository.OrderRepository;
+import com.example.fastfoodshop.request.OrderStatusUpdateRequest;
 import com.example.fastfoodshop.response.order.OrderPageResponse;
 import com.example.fastfoodshop.response.order.OrderResponse;
 import com.example.fastfoodshop.response.order.OrderStatsResponse;
+import com.example.fastfoodshop.response.order.OrderUpdateResponse;
 import com.example.fastfoodshop.service.implementation.OrderServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +58,9 @@ public class OrderServiceImplTest {
 
     @Mock
     UserService userService;
+
+    @Mock
+    OrderNoteService orderNoteService;
 
     @InjectMocks
     OrderServiceImpl orderService;
@@ -305,6 +316,447 @@ public class OrderServiceImplTest {
         );
 
         verify(orderRepository).findById(cancelledOrder.getId());
+    }
+
+    @Test
+    void updateOrder_notFoundOrder_shouldThrowOrderNotFoundException() {
+        when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.empty());
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(
+                OrderNotFoundException.class,
+                () -> orderService.updateOrder(ORDER_ID, USER_PHONE, cancelRequest)
+        );
+
+        verify(orderRepository).findById(ORDER_ID);
+    }
+
+    @Test
+    void updateOrder_cancelledOrder_shouldThrowOrderAlreadyCancelledException() {
+        User user = UserFactory.createActivatedUser();
+
+        Order order = OrderFactory.createCancelledOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(OrderAlreadyCancelledException.class, () -> orderService.updateOrder(
+                order.getId(), USER_PHONE, cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void updateOrder_notFoundUser_shouldThrowUserNotFoundException() {
+        User user = UserFactory.createActivatedUser();
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> orderService.updateOrder(order.getId(), USER_PHONE, cancelRequest)
+        );
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(USER_PHONE);
+    }
+
+    @Test
+    void updateOrder_notAllowedRole_shouldThrowForbiddenException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createConfirmRequest();
+
+        assertThrows(ForbiddenException.class, () -> orderService.updateOrder(
+                order.getId(), user.getPhone(), cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void updateOrder_invalidNewStatus_shouldThrowInvalidOrderStatusException() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createDeliveredOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createMarkAsDeliveredRequest();
+
+        assertThrows(InvalidOrderStatusException.class, () -> orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+    }
+
+    @Test
+    void updateOrder_confirmRequest_paidOnlineOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createPaidOnlineAndPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createConfirmRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CONFIRMED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_confirmRequest_unpaidCODOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidCODAndPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createConfirmRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CONFIRMED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_confirmRequest_unpaidOnlineOrder_shouldThrowPaymentNotCompletedException() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidOnlineAndPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        OrderStatusUpdateRequest cancelRequest = OrderStatusUpdateRequestFactory.createConfirmRequest();
+
+        assertThrows(PaymentNotCompletedException.class, () -> orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+    }
+
+    @Test
+    void updateOrder_deliveringRequest_unpaidCODOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidCODAndConfirmedOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createMarkAsDeliveringRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.DELIVERING, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_deliveredRequest_unpaidCODOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidCODAndDeliveringOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createMarkAsDeliveredRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.DELIVERED, order.getOrderStatus());
+        assertEquals(PaymentStatus.PAID, order.getPaymentStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_deliveredRequest_paidOnlineOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createPaidOnlineAndDeliveringOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createMarkAsDeliveredRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.DELIVERED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_cancelRequestByUser_unpaidCODAndPendingOrder_shouldReturnOrderUpdateResponse() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createUnpaidCODAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), user.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CANCELLED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_cancelRequestByUser_paidCODAndPendingOrder_shouldReturnOrderUpdateResponse() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createPaidCODAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), user.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CANCELLED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_cancelRequestByUser_unpaidCODAndDeliveringOrder_shouldThrowInvalidOrderStatusException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createUnpaidCODAndDeliveringOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(InvalidOrderStatusException.class, () -> orderService.updateOrder(
+                order.getId(), user.getPhone(), cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void updateOrder_cancelRequestByUser_paidOnlineAndPendingOrder_shouldThrowOrderCannotBeCancelledException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createPaidOnlineAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(OrderCannotBeCancelledException.class, () -> orderService.updateOrder(
+                order.getId(), user.getPhone(), cancelRequest
+        ));
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void updateOrder_cancelRequestByStaff_unpaidCODAndPendingOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidCODAndPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CANCELLED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_cancelRequestByStaff_confirmedOrder_shouldReturnOrderUpdateResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createUnpaidCODAndConfirmedOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        when(orderRepository.save(any(Order.class))).thenReturn(order);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        OrderUpdateResponse orderUpdateResponse = orderService.updateOrder(
+                order.getId(), staff.getPhone(), cancelRequest
+        );
+
+        assertNotNull(orderUpdateResponse);
+        assertNotNull(orderUpdateResponse.message());
+
+        assertEquals(OrderStatus.CANCELLED, order.getOrderStatus());
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).save(any(Order.class));
+    }
+
+    @Test
+    void updateOrder_cancelRequestByAdmin_shouldThrowForbiddenException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createUnpaidCODAndPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        User admin = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.ADMIN);
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(admin);
+
+        OrderStatusUpdateRequest cancelRequest =
+                OrderStatusUpdateRequestFactory.createCancelRequest();
+
+        assertThrows(
+                ForbiddenException.class,
+                () -> orderService.updateOrder(order.getId(), admin.getPhone(), cancelRequest)
+        );
+
+        verify(orderRepository).findById(order.getId());
+        verify(userService).findUserOrThrow(user.getPhone());
     }
 
     @Test

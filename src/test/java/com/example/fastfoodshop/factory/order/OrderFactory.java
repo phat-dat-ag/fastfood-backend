@@ -50,4 +50,74 @@ public class OrderFactory {
 
         return order;
     }
+
+    public static Order createUnpaidCODAndPendingOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+
+        return order;
+    }
+
+    public static Order createPaidCODAndPendingOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
+        order.setPaymentStatus(PaymentStatus.PAID);
+
+        return order;
+    }
+
+    public static Order createUnpaidCODAndConfirmedOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.CONFIRMED);
+        order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+
+        return order;
+    }
+
+    public static Order createUnpaidCODAndDeliveringOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.DELIVERING);
+        order.setPaymentMethod(PaymentMethod.CASH_ON_DELIVERY);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+
+        return order;
+    }
+
+    public static Order createPaidOnlineAndPendingOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        order.setPaymentStatus(PaymentStatus.PAID);
+
+        return order;
+    }
+
+    public static Order createPaidOnlineAndDeliveringOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.DELIVERING);
+        order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        order.setPaymentStatus(PaymentStatus.PAID);
+
+        return order;
+    }
+
+    public static Order createUnpaidOnlineAndPendingOrder(User user, Long orderId) {
+        Order order = createpPendingOrder(user, orderId);
+
+        order.setOrderStatus(OrderStatus.PENDING);
+        order.setPaymentMethod(PaymentMethod.BANK_TRANSFER);
+        order.setPaymentStatus(PaymentStatus.PENDING);
+
+        return order;
+    }
 }

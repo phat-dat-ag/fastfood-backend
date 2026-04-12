@@ -293,10 +293,6 @@ public class OrderServiceImpl implements OrderService {
             throw new PaymentNotCompletedException();
         }
 
-        if (order.getOrderStatus() != OrderStatus.PENDING) {
-            throw new InvalidOrderStatusException();
-        }
-
         order.setOrderStatus(OrderStatus.CONFIRMED);
         order.setConfirmedAt(LocalDateTime.now());
 
@@ -304,10 +300,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void handleDelivering(Order order) {
-        if (order.getOrderStatus() != OrderStatus.CONFIRMED) {
-            throw new InvalidOrderStatusException();
-        }
-
         order.setOrderStatus(OrderStatus.DELIVERING);
         order.setDeliveringAt(LocalDateTime.now());
 
@@ -315,10 +307,6 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private void handleDelivered(Order order) {
-        if (order.getOrderStatus() != OrderStatus.DELIVERING) {
-            throw new InvalidOrderStatusException();
-        }
-
         order.setOrderStatus(OrderStatus.DELIVERED);
         order.setDeliveredAt(LocalDateTime.now());
 
@@ -343,8 +331,12 @@ public class OrderServiceImpl implements OrderService {
     private void handleCancel(Order order, User user, String reason) {
         if (user.getRole() == UserRole.USER) {
             validateUserCancelPermission(order);
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(LocalDateTime.now());
             orderNoteService.createOrderNote(order, NoteType.CANCEL_REASON, reason, AuthorType.USER);
         } else if (user.getRole() == UserRole.STAFF) {
+            order.setOrderStatus(OrderStatus.CANCELLED);
+            order.setCancelledAt(LocalDateTime.now());
             orderNoteService.createOrderNote(order, NoteType.CANCEL_REASON, reason, AuthorType.STAFF);
         } else {
             throw new ForbiddenException();
@@ -373,10 +365,6 @@ public class OrderServiceImpl implements OrderService {
         OrderStatus newStatus = request.status();
         validatePermission(user, newStatus);
         validateTransition(order.getOrderStatus(), newStatus);
-
-        if (order.getOrderStatus() == newStatus) {
-            return new OrderUpdateResponse("Trạng thái đơn hàng không đổi");
-        }
 
         switch (newStatus) {
             case CONFIRMED -> handleConfirm(order);
