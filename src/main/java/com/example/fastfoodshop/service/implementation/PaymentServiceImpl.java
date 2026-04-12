@@ -15,10 +15,10 @@ import com.stripe.param.PaymentIntentCreateParams;
 public class PaymentServiceImpl implements PaymentService {
     private final CartService cartService;
 
-    public String createPaymentIntent(int totalPrice, Order order) throws StripeException {
+    public String createPaymentIntent(Order order) throws StripeException {
         PaymentIntentCreateParams params =
                 PaymentIntentCreateParams.builder()
-                        .setAmount((long) totalPrice)
+                        .setAmount((long) order.getTotalPrice())
                         .setCurrency("vnd")
                         .setDescription("Thanh toán đơn hàng")
                         .putMetadata("orderId", order.getId().toString())

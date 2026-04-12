@@ -199,9 +199,7 @@ public class OrderServiceImpl implements OrderService {
 
             case BANK_TRANSFER -> {
                 try {
-                    String clientSecret = paymentService.createPaymentIntent(
-                            order.getTotalPrice(), order
-                    );
+                    String clientSecret = paymentService.createPaymentIntent(order);
                     yield new OrderResponse(OrderDTO.from(order, clientSecret));
                 } catch (StripeException e) {
                     throw new PaymentFailedException(e.getMessage());
@@ -246,7 +244,7 @@ public class OrderServiceImpl implements OrderService {
         }
 
         try {
-            String setClientSecret = paymentService.createPaymentIntent(order.getTotalPrice(), order);
+            String setClientSecret = paymentService.createPaymentIntent(order);
 
             return new OrderResponse(OrderDTO.from(order, setClientSecret));
         } catch (StripeException e) {
