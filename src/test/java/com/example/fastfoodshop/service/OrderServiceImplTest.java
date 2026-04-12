@@ -83,189 +83,6 @@ public class OrderServiceImplTest {
     );
 
     @Test
-    void getOrder_notFoundUser_shouldThrowUserNotFoundException() {
-        when(userService.findUserOrThrow(USER_PHONE))
-                .thenThrow(new UserNotFoundException(USER_PHONE));
-
-        assertThrows(
-                UserNotFoundException.class,
-                () -> orderService.getOrder(USER_PHONE, ORDER_ID)
-        );
-
-        verify(userService).findUserOrThrow(USER_PHONE);
-    }
-
-    @Test
-    void getOrder_notFoundOrder_shouldThrowOrderNotFoundException() {
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
-
-        when(orderRepository.findById(ORDER_ID)).thenThrow(new OrderNotFoundException(ORDER_ID));
-        assertThrows(
-                OrderNotFoundException.class,
-                () -> orderService.getOrder(user.getPhone(), ORDER_ID)
-        );
-
-        verify(userService).findUserOrThrow(user.getPhone());
-        verify(orderRepository).findById(ORDER_ID);
-    }
-
-    @Test
-    void getOrder_byAdmin_shouldReturnOrderResponse() {
-        User admin = UserFactory.createActivatedUserWithRole(ADMIN_ID, UserRole.ADMIN);
-
-        when(userService.findUserOrThrow(admin.getPhone())).thenReturn(admin);
-
-        Order order = OrderFactory.createpPendingOrder(admin, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        OrderResponse orderResponse = orderService.getOrder(admin.getPhone(), ORDER_ID);
-
-        assertNotNull(orderResponse);
-        assertNotNull(orderResponse.order());
-
-        assertEquals(ORDER_ID, orderResponse.order().id());
-        assertEquals(admin.getId(), orderResponse.order().user().id());
-
-        verify(userService).findUserOrThrow(admin.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byUser_shouldReturnOrderResponse() {
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
-
-        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        OrderResponse orderResponse = orderService.getOrder(user.getPhone(), ORDER_ID);
-
-        assertNotNull(orderResponse);
-        assertNotNull(orderResponse.order());
-
-        assertEquals(ORDER_ID, orderResponse.order().id());
-        assertEquals(user.getId(), orderResponse.order().user().id());
-
-        verify(userService).findUserOrThrow(user.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byUser_whenNotOwner_shouldThrowAccessDeniedException() {
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
-
-        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
-
-        Order order = OrderFactory.createpPendingOrder(staff, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        assertThrows(
-                AccessDeniedException.class,
-                () -> orderService.getOrder(user.getPhone(), order.getId())
-        );
-
-        verify(userService).findUserOrThrow(user.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byStaff_shouldReturnOrderResponse() {
-        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
-
-        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
-
-        Order order = OrderFactory.createpPendingOrder(staff, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        OrderResponse orderResponse = orderService.getOrder(staff.getPhone(), ORDER_ID);
-
-        assertNotNull(orderResponse);
-        assertNotNull(orderResponse.order());
-
-        assertEquals(ORDER_ID, orderResponse.order().id());
-        assertEquals(staff.getId(), orderResponse.order().user().id());
-
-        verify(userService).findUserOrThrow(staff.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byStaff_whenNotOwnerAndIncompletedOrder_shouldReturnOrderResponse() {
-        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
-
-        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
-
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        OrderResponse orderResponse = orderService.getOrder(staff.getPhone(), ORDER_ID);
-
-        assertNotNull(orderResponse);
-        assertNotNull(orderResponse.order());
-
-        assertEquals(ORDER_ID, orderResponse.order().id());
-
-        assertNotEquals(staff.getId(), orderResponse.order().user().id());
-
-        verify(userService).findUserOrThrow(staff.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byStaff_whenNotOwnerAndDeliveredOrder_shouldThrowAccessDeniedException() {
-        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
-
-        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
-
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        Order order = OrderFactory.createDeliveredOrder(user, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        assertThrows(
-                AccessDeniedException.class,
-                () -> orderService.getOrder(staff.getPhone(), order.getId())
-        );
-
-        verify(userService).findUserOrThrow(staff.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
-    void getOrder_byStaff_whenNotOwnerAndCancelledOrder_shouldThrowAccessDeniedException() {
-        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
-
-        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
-
-        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
-
-        Order order = OrderFactory.createCancelledOrder(user, ORDER_ID);
-
-        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
-
-        assertThrows(
-                AccessDeniedException.class,
-                () -> orderService.getOrder(staff.getPhone(), order.getId())
-        );
-
-        verify(userService).findUserOrThrow(staff.getPhone());
-        verify(orderRepository).findById(order.getId());
-    }
-
-    @Test
     void updatePaymentStatus_validRequest_shouldBeSuccessful() {
         User user = UserFactory.createActivatedUser();
 
@@ -757,6 +574,189 @@ public class OrderServiceImplTest {
 
         verify(orderRepository).findById(order.getId());
         verify(userService).findUserOrThrow(user.getPhone());
+    }
+
+    @Test
+    void getOrder_notFoundUser_shouldThrowUserNotFoundException() {
+        when(userService.findUserOrThrow(USER_PHONE))
+                .thenThrow(new UserNotFoundException(USER_PHONE));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> orderService.getOrder(USER_PHONE, ORDER_ID)
+        );
+
+        verify(userService).findUserOrThrow(USER_PHONE);
+    }
+
+    @Test
+    void getOrder_notFoundOrder_shouldThrowOrderNotFoundException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        when(orderRepository.findById(ORDER_ID)).thenThrow(new OrderNotFoundException(ORDER_ID));
+        assertThrows(
+                OrderNotFoundException.class,
+                () -> orderService.getOrder(user.getPhone(), ORDER_ID)
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository).findById(ORDER_ID);
+    }
+
+    @Test
+    void getOrder_byAdmin_shouldReturnOrderResponse() {
+        User admin = UserFactory.createActivatedUserWithRole(ADMIN_ID, UserRole.ADMIN);
+
+        when(userService.findUserOrThrow(admin.getPhone())).thenReturn(admin);
+
+        Order order = OrderFactory.createpPendingOrder(admin, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        OrderResponse orderResponse = orderService.getOrder(admin.getPhone(), ORDER_ID);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(ORDER_ID, orderResponse.order().id());
+        assertEquals(admin.getId(), orderResponse.order().user().id());
+
+        verify(userService).findUserOrThrow(admin.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byUser_shouldReturnOrderResponse() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        OrderResponse orderResponse = orderService.getOrder(user.getPhone(), ORDER_ID);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(ORDER_ID, orderResponse.order().id());
+        assertEquals(user.getId(), orderResponse.order().user().id());
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byUser_whenNotOwner_shouldThrowAccessDeniedException() {
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
+
+        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
+
+        Order order = OrderFactory.createpPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> orderService.getOrder(user.getPhone(), order.getId())
+        );
+
+        verify(userService).findUserOrThrow(user.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byStaff_shouldReturnOrderResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        Order order = OrderFactory.createpPendingOrder(staff, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        OrderResponse orderResponse = orderService.getOrder(staff.getPhone(), ORDER_ID);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(ORDER_ID, orderResponse.order().id());
+        assertEquals(staff.getId(), orderResponse.order().user().id());
+
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byStaff_whenNotOwnerAndIncompletedOrder_shouldReturnOrderResponse() {
+        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        OrderResponse orderResponse = orderService.getOrder(staff.getPhone(), ORDER_ID);
+
+        assertNotNull(orderResponse);
+        assertNotNull(orderResponse.order());
+
+        assertEquals(ORDER_ID, orderResponse.order().id());
+
+        assertNotEquals(staff.getId(), orderResponse.order().user().id());
+
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byStaff_whenNotOwnerAndDeliveredOrder_shouldThrowAccessDeniedException() {
+        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createDeliveredOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> orderService.getOrder(staff.getPhone(), order.getId())
+        );
+
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).findById(order.getId());
+    }
+
+    @Test
+    void getOrder_byStaff_whenNotOwnerAndCancelledOrder_shouldThrowAccessDeniedException() {
+        User staff = UserFactory.createActivatedUserWithRole(STAFF_ID, UserRole.STAFF);
+
+        when(userService.findUserOrThrow(staff.getPhone())).thenReturn(staff);
+
+        User user = UserFactory.createActivatedUserWithRole(USER_ID, UserRole.USER);
+
+        Order order = OrderFactory.createCancelledOrder(user, ORDER_ID);
+
+        when(orderRepository.findById(order.getId())).thenReturn(Optional.of(order));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> orderService.getOrder(staff.getPhone(), order.getId())
+        );
+
+        verify(userService).findUserOrThrow(staff.getPhone());
+        verify(orderRepository).findById(order.getId());
     }
 
     @Test
