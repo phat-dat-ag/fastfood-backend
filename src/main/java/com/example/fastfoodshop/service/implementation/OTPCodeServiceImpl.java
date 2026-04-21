@@ -8,11 +8,13 @@ import com.example.fastfoodshop.repository.OTPCodeRepository;
 import com.example.fastfoodshop.service.EmailService;
 import com.example.fastfoodshop.service.OTPCodeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OTPCodeServiceImpl implements OTPCodeService {
@@ -20,11 +22,18 @@ public class OTPCodeServiceImpl implements OTPCodeService {
     private final EmailService emailService;
 
     public List<OTPCode> getOTPCodeByUserAndIsUsedFalse(User user) {
+        log.info(
+                "[OTPCode Service]: Retrieved all unused OTP code for user phone={}",
+                user.getPhone()
+        );
         return otpCodeRepository.findByUserAndIsUsedFalse(user);
     }
 
     private String generateOTP() {
         int number = (int) (Math.random() * 900000) + 100000;
+
+        log.debug("[OTPCode Service]: Generated OTP code: {}", number);
+
         return String.valueOf(number);
     }
 
@@ -51,9 +60,18 @@ public class OTPCodeServiceImpl implements OTPCodeService {
                     emailTitle,
                     emailMessage + otp.getCode()
             );
+
+            log.info(
+                    "[OTPCode Service]: Successfully sent OTP: {} to user phone={}, email={}",
+                    otp, user.getPhone(), user.getEmail()
+            );
+
             return otp;
         } catch (Exception e) {
             otpCodeRepository.delete(otp);
+
+            log.error("[OTPCode Service]: Sent OTP with exception {}", e.getMessage());
+
             throw new SendOTPException(e.getMessage());
         }
     }
@@ -61,10 +79,14 @@ public class OTPCodeServiceImpl implements OTPCodeService {
     public void updateOTPCode(OTPCode otpCode, boolean isUsed) {
         otpCode.setUsed(isUsed);
         otpCodeRepository.save(otpCode);
+
+        log.info("[OTPCode Service]: Successfully set OTP id={} to be used", otpCode.getId());
     }
 
     public OTPCode findValidOTPOrNull(User user) {
         LocalDateTime now = LocalDateTime.now();
+
+        log.info("[OTPCode Service]: Retrieved valid OTP code or null");
 
         return getOTPCodeByUserAndIsUsedFalse(user)
                 .stream()
@@ -75,6 +97,8 @@ public class OTPCodeServiceImpl implements OTPCodeService {
 
     public OTPCode findMatchingValidOTP(User user, String otp) {
         LocalDateTime now = LocalDateTime.now();
+
+        log.info("[OTPCode Service]: Found matching valid OTP");
 
         return getOTPCodeByUserAndIsUsedFalse(user)
                 .stream()
