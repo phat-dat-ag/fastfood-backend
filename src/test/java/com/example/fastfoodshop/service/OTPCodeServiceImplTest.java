@@ -12,7 +12,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,6 +27,23 @@ public class OTPCodeServiceImplTest {
 
     @InjectMocks
     OTPCodeServiceImpl otpCodeService;
+
+    @Test
+    void getOTPCodeByUserAndIsUsedFalse_shouldReturnOTPCodeList() {
+        User user = UserFactory.createActivatedUser();
+
+        List<OTPCode> otpCodes = OTPCodeFactory.createUnusedOTPCodeList(user);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(otpCodes);
+
+        List<OTPCode> otpCodeResponse = otpCodeService.getOTPCodeByUserAndIsUsedFalse(user);
+
+        assertNotNull(otpCodeResponse);
+
+        assertEquals(otpCodes.size(), otpCodeResponse.size());
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
 
     @Test
     void markOTPAsUsed_usedStatus_shouldBeSuccessful() {

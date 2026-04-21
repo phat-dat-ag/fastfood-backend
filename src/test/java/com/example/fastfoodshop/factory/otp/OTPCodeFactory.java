@@ -4,6 +4,7 @@ import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class OTPCodeFactory {
     private static final Long OTP_CODE_ID = 1789L;
@@ -20,5 +21,11 @@ public class OTPCodeFactory {
         otpCode.setExpiredAt(LocalDateTime.now().plusMinutes(OTP_CODE_DURATION_MINUTES));
 
         return otpCode;
+    }
+
+    public static List<OTPCode> createUnusedOTPCodeList(User user) {
+        return List.of(
+                createUnusedOTPCode(user)
+        );
     }
 }
