@@ -42,4 +42,21 @@ public class OTPCodeFactory {
                 createUnusedAndExpiredOTPCode(user)
         );
     }
+
+    public static OTPCode createUnusedWithCode(User user, String code) {
+        OTPCode otpCode = createUnusedOTPCode(user);
+
+        otpCode.setCode(code);
+
+        return otpCode;
+    }
+
+    public static OTPCode createUnusedAndExpiredWithCode(User user, String code) {
+        OTPCode otpCode = createUnusedOTPCode(user);
+
+        otpCode.setCode(code);
+        otpCode.setExpiredAt(LocalDateTime.now().minusMinutes(OTP_CODE_DURATION_MINUTES));
+
+        return otpCode;
+    }
 }

@@ -2,6 +2,7 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.OTPCode;
 import com.example.fastfoodshop.entity.User;
+import com.example.fastfoodshop.exception.auth.InvalidOTPCodeException;
 import com.example.fastfoodshop.factory.otp.OTPCodeFactory;
 import com.example.fastfoodshop.factory.user.UserFactory;
 import com.example.fastfoodshop.repository.OTPCodeRepository;
@@ -15,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -28,6 +30,8 @@ public class OTPCodeServiceImplTest {
 
     @InjectMocks
     OTPCodeServiceImpl otpCodeService;
+
+    private static final String CODE = "123321";
 
     @Test
     void getOTPCodeByUserAndIsUsedFalse_shouldReturnOTPCodeList() {
@@ -101,6 +105,72 @@ public class OTPCodeServiceImplTest {
         OTPCode otpCodeResponse = otpCodeService.findValidOTPOrNull(user);
 
         assertNull(otpCodeResponse);
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findMatchingValidOTP_shouldReturnOTPCode() {
+        User user = UserFactory.createActivatedUser();
+
+        OTPCode otpCode = OTPCodeFactory.createUnusedWithCode(user, CODE);
+
+        List<OTPCode> otpCodes = List.of(otpCode);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(otpCodes);
+
+        OTPCode otpCodeResponse = otpCodeService.findMatchingValidOTP(user, CODE);
+
+        assertNotNull(otpCodeResponse);
+        assertEquals(otpCodes.get(0).getCode(), otpCodeResponse.getCode());
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findMatchingValidOTP_emptyOTPCodes_shouldThrowInvalidOTPCodeException() {
+        User user = UserFactory.createActivatedUser();
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(List.of());
+
+        assertThrows(
+                InvalidOTPCodeException.class,
+                () -> otpCodeService.findMatchingValidOTP(user, CODE)
+        );
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findMatchingValidOTP_notMatching_shouldThrowInvalidOTPCodeException() {
+        User user = UserFactory.createActivatedUser();
+
+        List<OTPCode> otpCodes = OTPCodeFactory.createUnusedOTPCodeList(user);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(otpCodes);
+
+        assertThrows(
+                InvalidOTPCodeException.class,
+                () -> otpCodeService.findMatchingValidOTP(user, CODE)
+        );
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findMatchingValidOTP_expiredOTPCode_shouldThrowInvalidOTPCodeException() {
+        User user = UserFactory.createActivatedUser();
+
+        OTPCode expiredOTPCode = OTPCodeFactory.createUnusedAndExpiredWithCode(user, CODE);
+
+        List<OTPCode> otpCodes = List.of(expiredOTPCode);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(otpCodes);
+
+        assertThrows(
+                InvalidOTPCodeException.class,
+                () -> otpCodeService.findMatchingValidOTP(user, CODE)
+        );
 
         verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
     }
