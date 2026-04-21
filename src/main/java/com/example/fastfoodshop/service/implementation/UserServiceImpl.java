@@ -154,7 +154,7 @@ public class UserServiceImpl implements UserService {
         OTPCode validOtp = otpCodeService.findMatchingValidOTP(user, verifySignUpRequest.otp());
 
         activateAccount(user);
-        otpCodeService.updateOTPCode(validOtp, true);
+        otpCodeService.markOTPAsUsed(validOtp);
 
         return new VerifyResponse("Xác thực OTP đăng ký thành công");
     }

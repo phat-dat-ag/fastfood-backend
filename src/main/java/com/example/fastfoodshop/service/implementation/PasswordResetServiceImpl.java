@@ -71,7 +71,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
             if (isValid && isCorrect) {
                 userService.saveUserPassword(user, verifyForgetPasswordRequest.newPassword());
-                otpCodeService.updateOTPCode(otpCode, true);
+                otpCodeService.markOTPAsUsed(otpCode);
                 return new VerifyResponse("Xác thực OTP quên mật khẩu thành công");
             }
         }

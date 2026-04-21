@@ -10,7 +10,7 @@ public interface OTPCodeService {
 
     OTPCode sendOTP(User user, String emailTitle, String emailMessage);
 
-    void updateOTPCode(OTPCode otpCode, boolean isUsed);
+    void markOTPAsUsed(OTPCode otpCode);
 
     OTPCode findValidOTPOrNull(User user);
 

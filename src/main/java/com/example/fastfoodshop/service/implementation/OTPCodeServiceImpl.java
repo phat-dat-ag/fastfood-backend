@@ -76,8 +76,8 @@ public class OTPCodeServiceImpl implements OTPCodeService {
         }
     }
 
-    public void updateOTPCode(OTPCode otpCode, boolean isUsed) {
-        otpCode.setUsed(isUsed);
+    public void markOTPAsUsed(OTPCode otpCode) {
+        otpCode.setUsed(true);
         otpCodeRepository.save(otpCode);
 
         log.info("[OTPCode Service]: Successfully set OTP id={} to be used", otpCode.getId());
