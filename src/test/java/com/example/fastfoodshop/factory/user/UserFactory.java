@@ -10,6 +10,7 @@ public class UserFactory {
         User user = new User();
 
         user.setId(100L);
+        user.setEmail("dat@gmail.com");
         user.setPhone("0989898923");
         user.setPasswordHash("11111111");
         user.setActivated(true);
