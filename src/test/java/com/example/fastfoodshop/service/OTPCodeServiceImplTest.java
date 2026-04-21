@@ -17,6 +17,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -58,5 +59,49 @@ public class OTPCodeServiceImplTest {
         assertTrue(unusedOTP.isUsed());
 
         verify(otpCodeRepository).save(unusedOTP);
+    }
+
+    @Test
+    void findValidOTPOrNull_shouldReturnOTPCode() {
+        User user = UserFactory.createActivatedUser();
+
+        List<OTPCode> otpCodes = OTPCodeFactory.createUnusedOTPCodeList(user);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(otpCodes);
+
+        OTPCode otpCodeResponse = otpCodeService.findValidOTPOrNull(user);
+
+        assertNotNull(otpCodeResponse);
+        assertEquals(otpCodes.get(0).getCode(), otpCodeResponse.getCode());
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findValidOTPOrNull_emptyOTPCodes_shouldReturnNull() {
+        User user = UserFactory.createActivatedUser();
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(List.of());
+
+        OTPCode otpCodeResponse = otpCodeService.findValidOTPOrNull(user);
+
+        assertNull(otpCodeResponse);
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
+    }
+
+    @Test
+    void findValidOTPOrNull_notFoundValidOTPCode_shouldReturnNull() {
+        User user = UserFactory.createActivatedUser();
+
+        List<OTPCode> expiredOTPCodes = OTPCodeFactory.createUnusedAndExpiredOTPCodeList(user);
+
+        when(otpCodeRepository.findByUserAndIsUsedFalse(user)).thenReturn(expiredOTPCodes);
+
+        OTPCode otpCodeResponse = otpCodeService.findValidOTPOrNull(user);
+
+        assertNull(otpCodeResponse);
+
+        verify(otpCodeRepository).findByUserAndIsUsedFalse(user);
     }
 }

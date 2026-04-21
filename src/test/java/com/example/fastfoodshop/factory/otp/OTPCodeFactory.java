@@ -28,4 +28,18 @@ public class OTPCodeFactory {
                 createUnusedOTPCode(user)
         );
     }
+
+    private static OTPCode createUnusedAndExpiredOTPCode(User user) {
+        OTPCode otpCode = createUnusedOTPCode(user);
+
+        otpCode.setExpiredAt(LocalDateTime.now().minusMinutes(OTP_CODE_DURATION_MINUTES));
+
+        return otpCode;
+    }
+
+    public static List<OTPCode> createUnusedAndExpiredOTPCodeList(User user) {
+        return List.of(
+                createUnusedAndExpiredOTPCode(user)
+        );
+    }
 }
