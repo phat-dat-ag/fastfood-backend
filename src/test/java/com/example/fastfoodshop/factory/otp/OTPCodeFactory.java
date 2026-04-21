@@ -1,0 +1,24 @@
+package com.example.fastfoodshop.factory.otp;
+
+import com.example.fastfoodshop.entity.OTPCode;
+import com.example.fastfoodshop.entity.User;
+
+import java.time.LocalDateTime;
+
+public class OTPCodeFactory {
+    private static final Long OTP_CODE_ID = 1789L;
+    private static final String CODE = "898276";
+    private static final int OTP_CODE_DURATION_MINUTES = 5;
+
+    public static OTPCode createUnusedOTPCode(User user) {
+        OTPCode otpCode = new OTPCode();
+
+        otpCode.setUser(user);
+        otpCode.setId(OTP_CODE_ID);
+        otpCode.setCode(CODE);
+        otpCode.setUsed(false);
+        otpCode.setExpiredAt(LocalDateTime.now().plusMinutes(OTP_CODE_DURATION_MINUTES));
+
+        return otpCode;
+    }
+}
