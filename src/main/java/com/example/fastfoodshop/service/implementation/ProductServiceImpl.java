@@ -32,8 +32,7 @@ import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductServiceImpl implements ProductService {
@@ -52,14 +52,14 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final ReviewRepository reviewRepository;
 
-    private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
-
     public List<Product> findAllByIds(List<Long> productIds) {
         List<Product> products = productRepository.findAllById(productIds);
 
         if (products.size() != productIds.size()) {
             throw new ProductNotFoundException();
         }
+
+        log.info("[ProductService] Got {} products by IDs", products.size());
 
         return products;
     }
@@ -72,15 +72,20 @@ public class ProductServiceImpl implements ProductService {
         while (productRepository.existsBySlug((uniqueSlug))) {
             uniqueSlug = baseSlug + "-" + counter++;
         }
+
+        log.debug("[ProductService] Generated slug {} for product", uniqueSlug);
+
         return uniqueSlug;
     }
 
     public Product findProductOrThrow(Long productId) {
-        return productRepository.findById(productId).orElseThrow(() -> new ProductNotFoundException(productId));
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException(productId));
     }
 
     private Product findProductOrThrow(String productSlug) {
-        return productRepository.findBySlug(productSlug).orElseThrow(() -> new ProductNotFoundException(productSlug));
+        return productRepository.findBySlug(productSlug)
+                .orElseThrow(() -> new ProductNotFoundException(productSlug));
     }
 
     public void checkActivatedCategoryAndActivatedProduct(Long productId) {
@@ -89,10 +94,14 @@ public class ProductServiceImpl implements ProductService {
             throw new UnavailableProductException(product.getName());
         }
 
+        log.debug("[ProductService] Product id={} is activated", productId);
+
         Category category = product.getCategory();
         if (category.isDeleted() || !category.isActivated()) {
             throw new UnavailableCategoryException(category.getName());
         }
+
+        log.debug("[ProductService] Category id={} is activated", category.getId());
     }
 
     private void handleProductImage(Product product, MultipartFile imageFile) {
@@ -105,12 +114,20 @@ public class ProductServiceImpl implements ProductService {
         product.setImageUrl((String) result.get("secure_url"));
         product.setImagePublicId((String) result.get("public_id"));
 
+        log.debug(
+                "[ProductService] Successfully uploaded image for product id={}",
+                product.getId()
+        );
+
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
-                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
-                log.info("Old product image deleted successfully: {}", oldPublicId);
+                cloudinaryService.deleteImage(oldPublicId);
+                log.debug("[ProductService] Successfully deleted old public_id of image");
             } catch (Exception e) {
-                log.warn("Failed to delete old product image: {}", oldPublicId, e);
+                log.warn(
+                        "[ProductService] Deleted old public_id of an image with exception {}",
+                        e.getMessage()
+                );
             }
         }
     }
@@ -124,73 +141,88 @@ public class ProductServiceImpl implements ProductService {
         product.setModelUrl((String) result.get("secure_url"));
         product.setModelPublicId((String) result.get("public_id"));
 
+        log.debug(
+                "[ProductService] Successfully uploaded model for product id={}",
+                product.getId()
+        );
+
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
-                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
-                log.info("Old product 3D model deleted successfully: {}", oldPublicId);
+                cloudinaryService.deleteImage(oldPublicId);
+                log.debug("[ProductService] Successfully deleted old public_id of model");
             } catch (Exception e) {
-                log.warn("Failed to delete old product 3D model: {}", oldPublicId, e);
+                log.warn(
+                        "[ProductService] Deleted old public_id of model with exception {}",
+                        e.getMessage()
+                );
             }
         }
     }
 
     private Product buildProduct(
-            ProductCreateRequest productCreateRequest, Category category, String slug
+            ProductCreateRequest request, Category category, String slug
     ) {
         Product product = new Product();
         product.setCategory(category);
-        product.setName(productCreateRequest.name());
+        product.setName(request.name());
         product.setSlug(slug);
-        product.setDescription(productCreateRequest.description());
-        product.setPrice(productCreateRequest.price());
-        product.setActivated(productCreateRequest.activated());
+        product.setDescription(request.description());
+        product.setPrice(request.price());
+        product.setActivated(request.activated());
         product.setDeleted(false);
         return product;
     }
 
-    public ProductResponse createProduct(ProductCreateRequest productCreateRequest) {
-        Category category = categoryService.findCategoryByIdOrThrow(productCreateRequest.categoryId());
+    public ProductResponse createProduct(ProductCreateRequest request) {
+        Category category = categoryService.findCategoryByIdOrThrow(request.categoryId());
 
-        String slug = generateUniqueSlug(productCreateRequest.name());
+        String slug = generateUniqueSlug(request.name());
 
-        Product product = buildProduct(productCreateRequest, category, slug);
+        Product product = buildProduct(request, category, slug);
 
-        handleProductImage(product, productCreateRequest.imageUrl());
-        handleProductModel3D(product, productCreateRequest.modelUrl());
+        handleProductImage(product, request.imageUrl());
+        handleProductModel3D(product, request.modelUrl());
 
         Product savedProduct = productRepository.save(product);
+
+        log.info("[ProductService] Successfully created product id={}", savedProduct.getId());
+
         return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    private void updateProductFields(Product product, ProductUpdateRequest productUpdateRequest) {
-        product.setName(productUpdateRequest.name());
-        product.setDescription(productUpdateRequest.description());
-        product.setActivated(productUpdateRequest.activated());
+    private void updateProductFields(Product product, ProductUpdateRequest request) {
+        product.setName(request.name());
+        product.setDescription(request.description());
+        product.setActivated(request.activated());
     }
 
-    public ProductResponse updateProduct(Long productId, ProductUpdateRequest productUpdateRequest) {
+    public ProductResponse updateProduct(Long productId, ProductUpdateRequest request) {
         Product product = findProductOrThrow(productId);
 
-        updateProductFields(product, productUpdateRequest);
-        handleProductImage(product, productUpdateRequest.imageUrl());
-        handleProductModel3D(product, productUpdateRequest.modelUrl());
+        updateProductFields(product, request);
+        handleProductImage(product, request.imageUrl());
+        handleProductModel3D(product, request.modelUrl());
 
         Product savedProduct = productRepository.save(product);
+
+        log.info("[ProductService] Successfully updated product id={}", savedProduct.getId());
+
         return new ProductResponse(ProductDTO.from(savedProduct));
     }
 
-    public ProductPageResponse getProductPage(ProductGetByCategoryRequest productGetByCategoryRequest) {
+    public ProductPageResponse getProductPage(ProductGetByCategoryRequest request) {
         Category category = categoryService.findCategoryBySlugOrThrow(
-                productGetByCategoryRequest.getCategorySlug()
+                request.getCategorySlug()
         );
         if (category.isDeleted()) {
-            throw new DeletedCategoryException(productGetByCategoryRequest.getCategorySlug());
+            throw new DeletedCategoryException(request.getCategorySlug());
         }
 
-        Pageable pageable = PageRequest.of(
-                productGetByCategoryRequest.getPage(), productGetByCategoryRequest.getSize()
-        );
+        Pageable pageable = PageRequest.of(request.getPage(), request.getSize());
+
         Page<Product> productPage = productRepository.findByCategoryAndIsDeletedFalse(category, pageable);
+
+        log.info("[ProductService] Successfully got product page");
 
         return ProductPageResponse.from(productPage);
     }
@@ -199,8 +231,12 @@ public class ProductServiceImpl implements ProductService {
         List<ProductSelectionDTO> productSelectionDTOs = productRepository
                 .findByIsDeletedFalseAndIsActivatedTrue()
                 .stream()
-                .map(product -> new ProductSelectionDTO(product.getId(), product.getName()))
+                .map(
+                        product -> new ProductSelectionDTO(product.getId(), product.getName())
+                )
                 .toList();
+
+        log.info("[ProductService] Got {} selective products", productSelectionDTOs.size());
 
         return new ProductSelectionResponse(productSelectionDTOs);
     }
@@ -218,6 +254,11 @@ public class ProductServiceImpl implements ProductService {
                 ? "Kích hoạt sản phẩm thành công: " + productId
                 : "Hủy kích hoạt sản phẩm thành công: " + productId;
 
+        log.info(
+                "[ProductService] Successfully set new activated status: {} to product id={}",
+                activated, productId
+        );
+
         return new ProductUpdateResponse(message);
     }
 
@@ -229,19 +270,26 @@ public class ProductServiceImpl implements ProductService {
         product.setDeleted(true);
 
         productRepository.save(product);
+
+        log.info("[ProductService] Successfully deleted product id={}", productId);
+
         return new ProductUpdateResponse("Xóa sản phẩm thành công: " + productId);
     }
 
     private Map<Long, ProductRatingStatsProjection> getRatingMap(List<Long> ids) {
         return productRepository.getRatingStatsByProductIds(ids)
                 .stream()
-                .collect(Collectors.toMap(ProductRatingStatsProjection::getProductId, r -> r));
+                .collect(Collectors.toMap(
+                        ProductRatingStatsProjection::getProductId, r -> r)
+                );
     }
 
     private Map<Long, ProductSoldCountProjection> getSoldMap(List<Long> ids) {
         return productRepository.getSoldCountByProductIds(ids)
                 .stream()
-                .collect(Collectors.toMap(ProductSoldCountProjection::getProductId, s -> s));
+                .collect(Collectors.toMap(
+                        ProductSoldCountProjection::getProductId, s -> s)
+                );
     }
 
     private ProductDTO buildProductDTO(
@@ -288,6 +336,8 @@ public class ProductServiceImpl implements ProductService {
                 ))
                 .toList();
 
+        log.info("[ProductService] Successfully got {} displayable products", productDTOs.size());
+
         return new ProductDisplayResponse(productDTOs);
     }
 
@@ -322,6 +372,8 @@ public class ProductServiceImpl implements ProductService {
                 reviewDTOs
         );
 
+        log.info("[ProductService] Successfully got product slug={}", productSlug);
+
         return new ProductResponse(productDTO);
     }
 
@@ -335,6 +387,8 @@ public class ProductServiceImpl implements ProductService {
                         productStatsProjection.getTotalRevenue(),
                         productStatsProjection.getTotalQuantitySold()
                 )).toList();
+
+        log.info("[ProductService] Successfully got product stats");
 
         return new ProductStatsResponse(productStatsDTOs);
     }
