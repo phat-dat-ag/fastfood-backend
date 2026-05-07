@@ -164,7 +164,7 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     public ReviewProductsResponse getAllReviewsByProduct(Long productId) {
-        Product product = productService.findProductOrThrow(productId);
+        Product product = productService.findProductByIdOrThrow(productId);
 
         List<ReviewDTO> reviewDTOs = reviewRepository
                 .findByProductAndIsDeletedFalse(product)

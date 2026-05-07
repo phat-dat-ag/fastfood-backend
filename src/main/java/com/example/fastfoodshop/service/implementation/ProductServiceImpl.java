@@ -78,18 +78,18 @@ public class ProductServiceImpl implements ProductService {
         return uniqueSlug;
     }
 
-    public Product findProductOrThrow(Long productId) {
+    public Product findProductByIdOrThrow(Long productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new ProductNotFoundException(productId));
     }
 
-    private Product findProductOrThrow(String productSlug) {
+    private Product findProductBySlugOrThrow(String productSlug) {
         return productRepository.findBySlug(productSlug)
                 .orElseThrow(() -> new ProductNotFoundException(productSlug));
     }
 
     public void checkActivatedCategoryAndActivatedProduct(Long productId) {
-        Product product = findProductOrThrow(productId);
+        Product product = findProductByIdOrThrow(productId);
         if (product.isDeleted() || !product.isActivated()) {
             throw new UnavailableProductException(product.getName());
         }
@@ -197,7 +197,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductResponse updateProduct(Long productId, ProductUpdateRequest request) {
-        Product product = findProductOrThrow(productId);
+        Product product = findProductByIdOrThrow(productId);
 
         updateProductFields(product, request);
         handleProductImage(product, request.imageUrl());
@@ -242,7 +242,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductUpdateResponse updateProductActivation(Long productId, boolean activated) {
-        Product product = findProductOrThrow(productId);
+        Product product = findProductByIdOrThrow(productId);
         if (product.isActivated() == activated) {
             throw new InvalidStatusProductException(productId);
         }
@@ -263,7 +263,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductUpdateResponse deleteProduct(Long productId) {
-        Product product = findProductOrThrow(productId);
+        Product product = findProductByIdOrThrow(productId);
         if (product.isDeleted()) {
             throw new DeletedProductException(productId);
         }
@@ -342,7 +342,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     public ProductResponse getProductBySlug(String productSlug) {
-        Product product = findProductOrThrow(productSlug);
+        Product product = findProductBySlugOrThrow(productSlug);
 
         Long productId = product.getId();
         checkActivatedCategoryAndActivatedProduct(productId);

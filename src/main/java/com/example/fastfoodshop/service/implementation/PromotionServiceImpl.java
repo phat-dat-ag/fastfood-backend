@@ -110,7 +110,7 @@ public class PromotionServiceImpl implements PromotionService {
                 : null;
 
         Product product = promotionCreateRequest.productId() != null
-                ? productService.findProductOrThrow(promotionCreateRequest.productId())
+                ? productService.findProductByIdOrThrow(promotionCreateRequest.productId())
                 : null;
 
         Promotion promotion = promotionFactory.buildPromotionFromRequest(promotionCreateRequest, category, product);

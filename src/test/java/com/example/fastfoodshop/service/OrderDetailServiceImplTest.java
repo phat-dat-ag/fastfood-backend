@@ -50,7 +50,7 @@ public class OrderDetailServiceImplTest {
 
         Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
 
-        when(productService.findProductOrThrow(cartDTO.product().id())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(cartDTO.product().id())).thenReturn(product);
 
         OrderDetail orderDetail = OrderDetailFactory.createValid(
                 order,
@@ -67,7 +67,7 @@ public class OrderDetailServiceImplTest {
         assertEquals(product.getId(), orderDetail.getProduct().getId());
         assertEquals(cartDTO.quantity(), orderDetail.getQuantity());
 
-        verify(productService).findProductOrThrow(cartDTO.product().id());
+        verify(productService).findProductByIdOrThrow(cartDTO.product().id());
         verify(orderDetailRepository).save(any(OrderDetail.class));
     }
 
@@ -81,7 +81,7 @@ public class OrderDetailServiceImplTest {
 
         Order order = OrderFactory.createpPendingOrder(user, ORDER_ID);
 
-        when(productService.findProductOrThrow(cartDTO.product().id()))
+        when(productService.findProductByIdOrThrow(cartDTO.product().id()))
                 .thenThrow(new ProductNotFoundException(product.getId()));
 
         assertThrows(
@@ -89,6 +89,6 @@ public class OrderDetailServiceImplTest {
                 () -> orderDetailService.createOrderDetail(cartDTO, order)
         );
 
-        verify(productService).findProductOrThrow(cartDTO.product().id());
+        verify(productService).findProductByIdOrThrow(cartDTO.product().id());
     }
 }

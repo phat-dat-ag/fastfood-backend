@@ -19,7 +19,7 @@ public class OrderDetailServiceImpl implements OrderDetailService {
     private final OrderDetailRepository orderDetailRepository;
 
     public void createOrderDetail(CartDTO cartDTO, Order order) {
-        Product product = productService.findProductOrThrow(cartDTO.product().id());
+        Product product = productService.findProductByIdOrThrow(cartDTO.product().id());
 
         OrderDetail orderDetail = new OrderDetail();
         orderDetail.setOrder(order);

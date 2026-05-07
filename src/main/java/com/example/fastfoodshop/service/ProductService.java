@@ -16,7 +16,7 @@ import java.util.List;
 public interface ProductService {
     List<Product> findAllByIds(List<Long> productIds);
 
-    Product findProductOrThrow(Long productId);
+    Product findProductByIdOrThrow(Long productId);
 
     void checkActivatedCategoryAndActivatedProduct(Long productId);
 

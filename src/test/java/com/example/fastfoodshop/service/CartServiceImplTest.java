@@ -92,7 +92,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         List<Cart> carts = CartFactory.createCartsForUser(user);
 
@@ -117,7 +117,7 @@ public class CartServiceImplTest {
         assertEquals(user.getId(), cartResponse.cart().user().id());
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
         verify(cartRepository).save(any(Cart.class));
@@ -131,7 +131,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         List<Cart> carts = CartFactory.createCartsForUser(user);
 
@@ -155,7 +155,7 @@ public class CartServiceImplTest {
         assertNotNull(cartResponse.cart());
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
         verify(cartRepository).save(any(Cart.class));
@@ -169,7 +169,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         List<Cart> carts = CartFactory.createCartForUserWithProductAmountExceeded(user);
 
@@ -187,7 +187,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
     }
@@ -200,7 +200,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         List<Cart> carts = CartFactory.createCartsForUser(user);
 
@@ -218,7 +218,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUser(user);
         verify(cartRepository).findByUserAndProduct(user, product);
     }
@@ -469,7 +469,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         Cart cart = CartFactory.createValidCart(user, product);
 
@@ -489,7 +489,7 @@ public class CartServiceImplTest {
         assertEquals(NEW_VALID_QUANTITY, cartResponse.cart().quantity());
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
     }
 
@@ -512,7 +512,7 @@ public class CartServiceImplTest {
 
         when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
 
-        when(productService.findProductOrThrow(PRODUCT_ID))
+        when(productService.findProductByIdOrThrow(PRODUCT_ID))
                 .thenThrow(new ProductNotFoundException(PRODUCT_ID));
 
         assertThrows(
@@ -521,7 +521,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(PRODUCT_ID);
+        verify(productService).findProductByIdOrThrow(PRODUCT_ID);
     }
 
     @Test
@@ -532,7 +532,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.empty());
 
@@ -542,7 +542,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
     }
 
@@ -554,7 +554,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         Cart cart = CartFactory.createValidCart(user, product);
 
@@ -568,7 +568,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
     }
 
@@ -580,7 +580,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         Cart cart = CartFactory.createValidCart(user, product);
 
@@ -595,7 +595,7 @@ public class CartServiceImplTest {
         assertNotNull(cartUpdateResponse.message());
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
         verify(cartRepository).delete(cart);
     }
@@ -619,7 +619,7 @@ public class CartServiceImplTest {
 
         when(userService.findUserOrThrow(user.getPhone())).thenReturn(user);
 
-        when(productService.findProductOrThrow(PRODUCT_ID))
+        when(productService.findProductByIdOrThrow(PRODUCT_ID))
                 .thenThrow(new ProductNotFoundException(PRODUCT_ID));
 
         assertThrows(
@@ -628,7 +628,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(PRODUCT_ID);
+        verify(productService).findProductByIdOrThrow(PRODUCT_ID);
     }
 
     @Test
@@ -639,7 +639,7 @@ public class CartServiceImplTest {
 
         Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
 
-        when(productService.findProductOrThrow(product.getId())).thenReturn(product);
+        when(productService.findProductByIdOrThrow(product.getId())).thenReturn(product);
 
         when(cartRepository.findByUserAndProduct(user, product)).thenReturn(Optional.empty());
 
@@ -649,7 +649,7 @@ public class CartServiceImplTest {
         );
 
         verify(userService).findUserOrThrow(user.getPhone());
-        verify(productService).findProductOrThrow(product.getId());
+        verify(productService).findProductByIdOrThrow(product.getId());
         verify(cartRepository).findByUserAndProduct(user, product);
     }
 
