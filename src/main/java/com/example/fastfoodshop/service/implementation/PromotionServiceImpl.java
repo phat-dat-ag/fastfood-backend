@@ -83,7 +83,7 @@ public class PromotionServiceImpl implements PromotionService {
         log.info("[Promotion Service] Increased usage count for promotion id={}", promotionId);
     }
 
-    public Promotion checkPromotionCode(String promotionCode, int orderPrice) {
+    public Promotion getValidPromotionByCode(String promotionCode, int orderPrice) {
         Promotion promotion = findPromotionByCodeOrThrow(promotionCode);
 
         promotionValidator.validatePromotion(promotion, orderPrice, LocalDateTime.now());
@@ -189,7 +189,7 @@ public class PromotionServiceImpl implements PromotionService {
         return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
     }
 
-    public ItemPromotionResponse getItemPromotionItems() {
+    public ItemPromotionResponse getItemPromotion() {
         LocalDateTime now = LocalDateTime.now();
 
         List<ItemPromotionProjection> categoryProjections = promotionRepository

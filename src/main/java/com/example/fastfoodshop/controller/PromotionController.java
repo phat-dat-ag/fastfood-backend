@@ -17,6 +17,6 @@ public class PromotionController extends BaseController {
 
     @GetMapping("/items")
     public ResponseEntity<ResponseWrapper<ItemPromotionResponse>> getItemPromotionItems() {
-        return okResponse(promotionService.getItemPromotionItems());
+        return okResponse(promotionService.getItemPromotion());
     }
 }

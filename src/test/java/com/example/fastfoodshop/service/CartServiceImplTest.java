@@ -240,7 +240,7 @@ public class CartServiceImplTest {
         when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
                 .thenReturn(promotionResult);
 
-        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+        when(promotionService.getValidPromotionByCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
 
         DeliveryDTO deliveryInformation = DeliveryDTOFactory.createAcceptedDelivery();
 
@@ -261,7 +261,7 @@ public class CartServiceImplTest {
         verify(userService).findUserOrThrow(user.getPhone());
         verify(cartRepository).findByUser(user);
         verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
-        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(promotionService).getValidPromotionByCode(eq(PROMOTION_CODE), anyInt());
         verify(deliveryService).calculateDelivery(any(Long.class));
     }
 
@@ -386,7 +386,7 @@ public class CartServiceImplTest {
         when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
                 .thenReturn(promotionResult);
 
-        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+        when(promotionService.getValidPromotionByCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
 
         DeliveryDTO rejectedDelivery = DeliveryDTOFactory.createRejectedDelivery();
 
@@ -407,7 +407,7 @@ public class CartServiceImplTest {
         verify(userService).findUserOrThrow(user.getPhone());
         verify(cartRepository).findByUser(user);
         verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
-        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(promotionService).getValidPromotionByCode(eq(PROMOTION_CODE), anyInt());
         verify(deliveryService).calculateDelivery(NULL_ADDRESS_ID);
     }
 
@@ -443,7 +443,7 @@ public class CartServiceImplTest {
         when(categoryService.applyPromotion(any(Product.class), any(Category.class)))
                 .thenReturn(promotionResult);
 
-        when(promotionService.checkPromotionCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
+        when(promotionService.getValidPromotionByCode(eq(PROMOTION_CODE), anyInt())).thenReturn(promotion);
 
         when(deliveryService.calculateDelivery(any(Long.class))).thenThrow(new AddressNotFoundException());
 
@@ -457,7 +457,7 @@ public class CartServiceImplTest {
         verify(userService).findUserOrThrow(user.getPhone());
         verify(cartRepository).findByUser(user);
         verify(categoryService, times(carts.size())).applyPromotion(any(Product.class), any(Category.class));
-        verify(promotionService).checkPromotionCode(eq(PROMOTION_CODE), anyInt());
+        verify(promotionService).getValidPromotionByCode(eq(PROMOTION_CODE), anyInt());
         verify(deliveryService).calculateDelivery(any(Long.class));
     }
 

@@ -16,7 +16,7 @@ public interface PromotionService {
 
     void increasePromotionUsageCount(Long promotionId);
 
-    Promotion checkPromotionCode(String promotionCode, int orderPrice);
+    Promotion getValidPromotionByCode(String promotionCode, int orderPrice);
 
     PromotionResponse createPromotion(PromotionCreateRequest promotionCreateRequest);
 
@@ -28,7 +28,7 @@ public interface PromotionService {
 
     PromotionUpdateResponse deletePromotion(Long promotionId);
 
-    ItemPromotionResponse getItemPromotionItems();
+    ItemPromotionResponse getItemPromotion();
 
     Promotion grantPromotion(User user, Quiz quiz);
 }

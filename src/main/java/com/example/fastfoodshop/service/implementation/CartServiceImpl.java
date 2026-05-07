@@ -132,7 +132,7 @@ public class CartServiceImpl implements CartService {
 
         if (promotionCode.isBlank()) return null;
 
-        return promotionService.checkPromotionCode(promotionCode, subtotalPrice);
+        return promotionService.getValidPromotionByCode(promotionCode, subtotalPrice);
     }
 
     private int calculateTotalPrice(
