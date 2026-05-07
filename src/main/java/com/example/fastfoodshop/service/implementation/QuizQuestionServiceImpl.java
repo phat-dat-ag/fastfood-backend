@@ -6,10 +6,12 @@ import com.example.fastfoodshop.entity.QuizQuestion;
 import com.example.fastfoodshop.repository.QuizQuestionRepository;
 import com.example.fastfoodshop.service.QuizQuestionService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuizQuestionServiceImpl implements QuizQuestionService {
@@ -23,5 +25,10 @@ public class QuizQuestionServiceImpl implements QuizQuestionService {
             quizQuestion.setQuestion(question);
             questionRepository.save(quizQuestion);
         }
+
+        log.info(
+                "[Quiz Question Service] Successfully created {} questions for quiz id={}",
+                questions.size(), quiz.getId()
+        );
     }
 }
