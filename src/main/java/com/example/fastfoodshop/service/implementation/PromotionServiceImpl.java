@@ -34,6 +34,7 @@ import com.example.fastfoodshop.service.UserService;
 import com.example.fastfoodshop.util.NumberUtils;
 import com.example.fastfoodshop.validator.PromotionValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -44,6 +45,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PromotionServiceImpl implements PromotionService {
@@ -77,12 +79,19 @@ public class PromotionServiceImpl implements PromotionService {
 
         promotion.setUsedQuantity(promotion.getUsedQuantity() + 1);
         promotionRepository.save(promotion);
+
+        log.info("[Promotion Service] Increased usage count for promotion id={}", promotionId);
     }
 
     public Promotion checkPromotionCode(String promotionCode, int orderPrice) {
         Promotion promotion = findPromotionOrThrow(promotionCode);
 
         promotionValidator.validatePromotion(promotion, orderPrice, LocalDateTime.now());
+
+        log.info(
+                "[Promotion Service] Got valid promotion by code successfully id={}",
+                promotion.getId()
+        );
 
         return promotion;
     }
@@ -107,6 +116,9 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = promotionFactory.buildPromotionFromRequest(promotionCreateRequest, category, product);
 
         Promotion savedPromotion = promotionRepository.save(promotion);
+
+        log.info("[Promotion Service] Successfully created promotion id={}", savedPromotion.getId());
+
         return new PromotionResponse(PromotionDTO.from(savedPromotion));
     }
 
@@ -121,6 +133,8 @@ public class PromotionServiceImpl implements PromotionService {
             case GLOBAL -> promotionRepository.findGlobalOrderPromotions(pageable);
         };
 
+        log.info("[Promotion Service] Successfully got promotion page");
+
         return PromotionPageResponse.from(promotionPage);
     }
 
@@ -130,6 +144,8 @@ public class PromotionServiceImpl implements PromotionService {
         List<PromotionDTO> validOrderPromotions = promotionRepository
                 .findGlobalOrderPromotionsByUser(user.getId(), LocalDateTime.now())
                 .stream().map(PromotionDTO::from).toList();
+
+        log.info("[Promotion Service] Successfully got valid promotions for user phone={}", phone);
 
         return new PromotionOrdersResponse(validOrderPromotions);
     }
@@ -151,6 +167,11 @@ public class PromotionServiceImpl implements PromotionService {
         String message = activated ? "Đã kích hoạt mã khuyến mãi: " + promotionId
                 : "Đã hủy kích hoạt mã khuyến mãi: " + promotionId;
 
+        log.info(
+                "[Promotion Service] Successfully updated activation for promotion id={}, new status: {}",
+                promotionId, activated
+        );
+
         return new PromotionUpdateResponse(message);
     }
 
@@ -162,6 +183,9 @@ public class PromotionServiceImpl implements PromotionService {
 
         promotion.setDeleted(true);
         promotionRepository.save(promotion);
+
+        log.info("[Promotion Service] Successfully deleted promotion id={}", promotionId);
+
         return new PromotionUpdateResponse("Đã xóa mã khuyến mãi: " + promotionId);
     }
 
@@ -174,16 +198,20 @@ public class PromotionServiceImpl implements PromotionService {
         List<ItemPromotionProjection> productProjections = promotionRepository
                 .getDisplayableProductPromotionsLimited4(now);
 
+        log.info("[Promotion Service] Successfully got item promotion");
+
         return ItemPromotionResponse.from(categoryProjections, productProjections);
     }
 
     private void validateQuizCompleted(Quiz quiz) {
         if (quiz.getCompletedAt() == null) {
+            log.debug("[Promotion Service] Quiz id={} has not been completed", quiz.getId());
             throw new UncompletedQuizException();
         }
     }
 
     private Award getRandomAward(Quiz quiz) {
+        log.debug("[Promotion Service] Successfully got random award for quiz id={}", quiz.getId());
         return awardService.getRandomAwardByTopicDifficulty(quiz.getTopicDifficulty());
     }
 
@@ -195,15 +223,23 @@ public class PromotionServiceImpl implements PromotionService {
 
         String timePart = Long.toString(uniqueNumber, 36).toUpperCase();
 
-        return "PM-" + userId + "Q" + quizId + "-" + timePart;
+        String promotionCode = "PM-" + userId + "Q" + quizId + "-" + timePart;
+
+        log.debug("[Promotion Service] Successfully generated promotion code: {}", promotionCode);
+
+        return promotionCode;
     }
 
     private int calculatePromotionValue(Award award) {
         int value = NumberUtils.randomNumber(award.getMinValue(), award.getMaxValue());
 
-        return award.getType() == PromotionType.PERCENTAGE
+        int promotionValue = award.getType() == PromotionType.PERCENTAGE
                 ? value
                 : NumberUtils.roundToThousand(value);
+
+        log.debug("[Promotion Service] Calculated promotion value: {}", promotionValue);
+
+        return promotionValue;
     }
 
     private LocalDateTime calculateEndTime(LocalDateTime startAt) {
@@ -218,11 +254,16 @@ public class PromotionServiceImpl implements PromotionService {
         LocalDateTime startAt = LocalDateTime.now();
         LocalDateTime endAt = calculateEndTime(startAt);
 
+        log.info("[Promotion Service] Successfully created promotion with code={}", code);
+
         return promotionFactory.buildPromotionFromAward(user, award, code, value, startAt, endAt);
     }
 
     private void updateAwardUsage(Award award) {
         award.setUsedQuantity(award.getUsedQuantity() + 1);
+
+        log.debug("[Promotion Service] Successfully updated award usage for award id={}", award.getId());
+
         awardRepository.save(award);
     }
 
@@ -235,6 +276,11 @@ public class PromotionServiceImpl implements PromotionService {
         Promotion promotion = createPromotion(user, quiz, award);
 
         updateAwardUsage(award);
+
+        log.info(
+                "[Promotion Service] Successfully granted promotion id={} for user phone={}",
+                promotion.getId(), award.getId()
+        );
 
         return promotionRepository.save(promotion);
     }
