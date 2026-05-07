@@ -2,10 +2,10 @@ package com.example.fastfoodshop.service.implementation;
 
 import com.example.fastfoodshop.entity.Review;
 import com.example.fastfoodshop.entity.ReviewImage;
-import com.example.fastfoodshop.repository.ReviewImageRepository;
 import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.ReviewImageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -13,11 +13,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewImageServiceImpl implements ReviewImageService {
     private final CloudinaryService cloudinaryService;
-    private final ReviewImageRepository reviewImageRepository;
 
     private void handleReviewImage(ReviewImage reviewImage, MultipartFile imageFile) {
         Map<?, ?> result = cloudinaryService.uploadImage(imageFile, "review");
@@ -37,6 +37,8 @@ public class ReviewImageServiceImpl implements ReviewImageService {
             handleReviewImage(reviewImage, imageFile);
             reviewImages.add(reviewImage);
         }
+
+        log.info("[Review Image Service] Successfully created review images");
 
         return reviewImages;
     }
