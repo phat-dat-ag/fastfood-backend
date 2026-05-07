@@ -26,8 +26,7 @@ import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.OTPCodeService;
 import com.example.fastfoodshop.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +39,7 @@ import java.time.LocalDate;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -47,8 +47,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final CloudinaryService cloudinaryService;
     private final OTPCodeService otpCodeService;
-
-    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     public User findUserOrThrow(String phone) {
         return userRepository.findByPhone(phone).orElseThrow(() -> new UserNotFoundException(phone));
@@ -73,6 +71,8 @@ public class UserServiceImpl implements UserService {
         user.setAvatarUrl(null);
         user.setRole(UserRole.USER);
 
+        log.debug("[UserService] Successfully built user entity");
+
         return user;
     }
 
@@ -94,10 +94,14 @@ public class UserServiceImpl implements UserService {
         user.setEmail(signUpRequest.email());
         user.setPasswordHash(passwordEncoder.encode(signUpRequest.password()));
         user.setBirthday(birthday);
+
+        log.debug("[UserService] Successfully applied sign up data for user phone={}", user.getPhone());
     }
 
     private User completeRegistration(User user, SignUpRequest signUpRequest) {
         applySignupData(user, signUpRequest);
+
+        log.debug("[UserService] Successfully completed registration for user phone={}", user.getPhone());
 
         return userRepository.save(user);
     }
@@ -106,6 +110,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> optionalUser = getUserByPhone(request.phone());
 
         if (optionalUser.isEmpty()) {
+            log.debug("[UserService] Successfully created new user");
             return createUser(request);
         }
 
@@ -114,6 +119,8 @@ public class UserServiceImpl implements UserService {
         if (user.isActivated()) {
             throw new PhoneAlreadyExistsException(request.phone());
         }
+
+        log.debug("[UserService] Successfully updated existing user");
 
         return completeRegistration(user, request);
     }
@@ -140,11 +147,17 @@ public class UserServiceImpl implements UserService {
         }
 
         OTPCode newOtp = sendSignupOTP(user);
+
+        log.info("[UserService] Successfully signed up for new user");
+
         return buildOTPResponse(user, newOtp);
     }
 
     private void activateAccount(User user) {
         user.setActivated(true);
+
+        log.debug("[UserService] Successfully activated user id={}", user.getId());
+
         userRepository.save(user);
     }
 
@@ -156,15 +169,20 @@ public class UserServiceImpl implements UserService {
         activateAccount(user);
         otpCodeService.markOTPAsUsed(validOtp);
 
+        log.info("[UserService] Successfully verified sign up OTP");
+
         return new VerifyResponse("Xác thực OTP đăng ký thành công");
     }
 
     private void updateUserPassword(User user, String rawPassword) {
+        log.debug("[UserService] Successfully update password for user id={}", user.getId());
         user.setPasswordHash(passwordEncoder.encode((rawPassword)));
     }
 
     public void saveUserPassword(User user, String rawPassword) {
         updateUserPassword(user, rawPassword);
+
+        log.info("[UserService] Successfully saved new password for user id={}", user.getId());
 
         userRepository.save(user);
     }
@@ -183,6 +201,8 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(User.Field.id).ascending());
 
         Page<User> userPage = userRepository.findByRoleAndIsDeletedFalse(userRole, pageable);
+
+        log.info("[UserService] Successfully got user page");
 
         return UserPageResponse.from(userPage);
     }
@@ -206,6 +226,8 @@ public class UserServiceImpl implements UserService {
 
         User updatedUser = userRepository.save(user);
 
+        log.info("[UserService] Successfully updated user phone={}", phone);
+
         return toResponse(updatedUser);
     }
 
@@ -223,10 +245,13 @@ public class UserServiceImpl implements UserService {
         updateUserPassword(user, changePasswordRequest.newPassword());
 
         User updatedUser = userRepository.save(user);
+
+        log.info("[UserService] Successfully changed password for user phone={}", phone);
+
         return toResponse(updatedUser);
     }
 
-    public void handleAvatarImage(User user, MultipartFile file) {
+    private void handleAvatarImage(User user, MultipartFile file) {
         Map<?, ?> result = cloudinaryService.uploadImage(file, "avatar");
         String avatarUrl = (String) result.get("secure_url");
         String avatarPublicId = (String) result.get("public_id");
@@ -240,10 +265,16 @@ public class UserServiceImpl implements UserService {
             try {
                 boolean isSuccess = cloudinaryService.deleteImage(oldAvatarPublicId);
                 if (isSuccess) {
-                    log.info("Old avatar deleted successfully: {}", oldAvatarPublicId);
+                    log.info(
+                            "[UserService] Successfully deleted old avatar for user phone={}",
+                            user.getPhone()
+                    );
                 }
             } catch (Exception e) {
-                log.warn("Failed to delete old avatar: {}", oldAvatarPublicId, e);
+                log.warn(
+                        "[UserService] Failed to delete old avatar for user phone={}",
+                        user.getPhone(), e
+                );
             }
         }
     }
@@ -254,6 +285,9 @@ public class UserServiceImpl implements UserService {
         handleAvatarImage(user, file);
 
         User updatedUser = userRepository.save(user);
+
+        log.info("[UserService] Successfully updated avatar for user phone={}", phone);
+
         return toResponse(updatedUser);
     }
 
@@ -274,6 +308,11 @@ public class UserServiceImpl implements UserService {
                 ? "Kích hoạt tài khoản thành công: " + userId
                 : "Hủy kích hoạt tài khoản thành công: " + userId;
 
+        log.info(
+                "[UserService] Successfully updated activation for user id={}, new status: {}",
+                userId, activated
+        );
+
         return new UserUpdateResponse(message);
     }
 
@@ -285,6 +324,9 @@ public class UserServiceImpl implements UserService {
 
         user.setDeleted(true);
         userRepository.save(user);
+
+        log.info("[UserService] Successfully deleted user id={}", userId);
+
         return new UserUpdateResponse("Xóa tài khoản thành công: " + userId);
     }
 
@@ -299,6 +341,8 @@ public class UserServiceImpl implements UserService {
                 statsProjection.getTotalActivatedUser(),
                 statsProjection.getUserJoinedThisMonth()
         );
+
+        log.info("[UserService] Successfully got user stats");
 
         return new UserStatsResponse(userStatsDTO);
     }
