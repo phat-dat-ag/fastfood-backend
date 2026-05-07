@@ -14,8 +14,7 @@ import com.example.fastfoodshop.service.CloudinaryService;
 import com.example.fastfoodshop.service.QuestionService;
 import com.example.fastfoodshop.service.TopicDifficultyService;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuestionServiceImpl implements QuestionService {
@@ -33,8 +33,6 @@ public class QuestionServiceImpl implements QuestionService {
     private final TopicDifficultyService topicDifficultyService;
     private final QuestionRepository questionRepository;
     private final AnswerService answerService;
-
-    private static final Logger log = LoggerFactory.getLogger(QuestionServiceImpl.class);
 
     private Question findQuestionOrThrow(Long questionId) {
         return questionRepository.findById(questionId).orElseThrow(
@@ -54,10 +52,10 @@ public class QuestionServiceImpl implements QuestionService {
 
         if (oldPublicId != null && !oldPublicId.isEmpty()) {
             try {
-                boolean deleted = cloudinaryService.deleteImage(oldPublicId);
-                log.info("Old question image deleted successfully: {}", oldPublicId);
+                cloudinaryService.deleteImage(oldPublicId);
+                log.debug("[Question Service] Successfully deleted old question image {}", oldPublicId);
             } catch (Exception e) {
-                log.warn("Failed to delete old question image: {}", oldPublicId, e);
+                log.warn("[Question Service] Delete old question image failed: {}", oldPublicId, e);
             }
         }
     }
@@ -74,10 +72,10 @@ public class QuestionServiceImpl implements QuestionService {
 
         if (oldAudioPublicId != null && !oldAudioPublicId.isEmpty()) {
             try {
-                boolean deleted = cloudinaryService.deleteAudio(oldAudioPublicId);
-                log.info("Old question audio deleted successfully: {}", oldAudioPublicId);
+                cloudinaryService.deleteAudio(oldAudioPublicId);
+                log.debug("[Question Service] Successfully deleted old question audio {}", oldAudioPublicId);
             } catch (Exception e) {
-                log.warn("Failed to delete old question audio: {}", oldAudioPublicId, e);
+                log.warn("[Question Service] Delete old question audio failed: {}", oldAudioPublicId, e);
             }
         }
     }
@@ -91,6 +89,8 @@ public class QuestionServiceImpl implements QuestionService {
 
         handleQuestionImage(question, questionCreateRequest.imageUrl());
         handleQuestionAudio(question, questionCreateRequest.audioUrl());
+
+        log.debug("[Question Service] Successfully built question entity");
 
         return question;
     }
@@ -110,6 +110,7 @@ public class QuestionServiceImpl implements QuestionService {
             answerService.createAnswers(questionCreateRequest.answers(), question);
         }
 
+        log.info("[Question Service] Successfully created questions");
 
         return new QuestionUpdateResponse("Đã lưu các câu hỏi");
     }
@@ -124,6 +125,11 @@ public class QuestionServiceImpl implements QuestionService {
 
         Page<Question> questionPage = questionRepository
                 .findByTopicDifficultyAndIsDeletedFalse(topicDifficulty, pageable);
+
+        log.info(
+                "[Question Service] Successfully got question page by topic difficulty: {}",
+                topicDifficultySlug
+        );
 
         return QuestionPageResponse.from(questionPage);
     }
@@ -141,6 +147,11 @@ public class QuestionServiceImpl implements QuestionService {
                 ? "Đã kích hoạt câu hỏi: " + questionId
                 : "Đã hủy kích hoạt câu hỏi: " + questionId;
 
+        log.info(
+                "[Question Service] Successfully update activation for question id={}, new status: {}",
+                questionId, activated
+        );
+
         return new QuestionUpdateResponse(message);
     }
 
@@ -152,6 +163,8 @@ public class QuestionServiceImpl implements QuestionService {
 
         question.setDeleted(true);
         questionRepository.save(question);
+
+        log.info("[Question Service] Successfully deleted question id={}", questionId);
 
         return new QuestionUpdateResponse("Xóa câu hỏi thành công: " + questionId);
     }
