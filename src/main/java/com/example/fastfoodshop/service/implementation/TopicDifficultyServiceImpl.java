@@ -20,6 +20,7 @@ import com.example.fastfoodshop.service.TopicDifficultyService;
 import com.example.fastfoodshop.service.TopicService;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TopicDifficultyServiceImpl implements TopicDifficultyService {
@@ -41,6 +43,9 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         while (topicDifficultyRepository.existsBySlug((uniqueSlug))) {
             uniqueSlug = baseSlug + "-" + counter++;
         }
+
+        log.debug("[TopicDifficultyService] Successfully generated slug: {}", uniqueSlug);
+
         return uniqueSlug;
     }
 
@@ -71,6 +76,12 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         TopicDifficulty topicDifficulty = buildTopicDifficulty(topic, request);
 
         TopicDifficulty savedTopicDifficulty = topicDifficultyRepository.save(topicDifficulty);
+
+        log.info(
+                "[TopicDifficultyService] Successfully created topic difficulty id={}",
+                topicDifficulty.getId()
+        );
+
         return new TopicDifficultyUpdateResponse("Đã thêm độ khó: " + savedTopicDifficulty.getId());
     }
 
@@ -81,6 +92,11 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         Pageable pageable = PageRequest.of(page, size);
         Page<TopicDifficulty> topicDifficultyPage =
                 topicDifficultyRepository.findByTopicAndIsDeletedFalse(topic, pageable);
+
+        log.info(
+                "[TopicDifficultyService] Successfully got all topic difficulties by topic slug={}",
+                topicSlug
+        );
 
         return TopicDifficultyPageResponse.from(topicDifficultyPage);
     }
@@ -107,11 +123,23 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         updateTopicDifficultyFields(topicDifficulty, request);
 
         topicDifficultyRepository.save(topicDifficulty);
+
+        log.info(
+                "[TopicDifficultyService] Successfully updated topic difficulty id={}",
+                topicDifficultyId
+        );
+
         return new TopicDifficultyUpdateResponse("Đã cập nhật độ khó: " + topicDifficultyId);
     }
 
     public TopicDifficultyResponse getTopicDifficultyBySlug(String topicDifficultySlug) {
         TopicDifficulty topicDifficulty = findValidTopicDifficultyOrThrow(topicDifficultySlug);
+
+        log.info(
+                "[TopicDifficultyService] Successfully got topic difficulty by slug: {}",
+                topicDifficultySlug
+        );
+
         return new TopicDifficultyResponse(TopicDifficultyDTO.from(topicDifficulty));
     }
 
@@ -130,6 +158,11 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
                 ? "Đã kích hoạt độ khó: " + topicDifficultyId
                 : "Đã hủy kích hoạt độ khó: " + topicDifficultyId;
 
+        log.info(
+                "[TopicDifficultyService] Successfully updated activation for topic difficulty id={}",
+                topicDifficultyId
+        );
+
         return new TopicDifficultyUpdateResponse(message);
     }
 
@@ -142,6 +175,12 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
         topicDifficulty.setDeleted(true);
 
         topicDifficultyRepository.save(topicDifficulty);
+
+        log.info(
+                "[TopicDifficultyService] Successfully deleted topic difficulty id={}",
+                topicDifficultyId
+        );
+
         return new TopicDifficultyUpdateResponse("Đã xóa độ khó: " + topicDifficultyId);
     }
 
@@ -152,6 +191,8 @@ public class TopicDifficultyServiceImpl implements TopicDifficultyService {
                 .stream()
                 .map(TopicDifficultyStatsDTO::from)
                 .toList();
+
+        log.info("[TopicDifficultyService] Successfully got topic difficulty stats");
 
         return new TopicDifficultyStatsResponse(topicDifficultyStatsDTOs);
     }
