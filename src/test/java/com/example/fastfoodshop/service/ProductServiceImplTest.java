@@ -2,10 +2,12 @@ package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
+import com.example.fastfoodshop.exception.product.DeletedProductException;
 import com.example.fastfoodshop.exception.product.ProductNotFoundException;
 import com.example.fastfoodshop.exception.product.UnavailableProductException;
 import com.example.fastfoodshop.factory.product.ProductFactory;
 import com.example.fastfoodshop.repository.ProductRepository;
+import com.example.fastfoodshop.response.product.ProductUpdateResponse;
 import com.example.fastfoodshop.service.implementation.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -154,6 +157,48 @@ public class ProductServiceImplTest {
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
 
         productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID);
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void deleteProduct_shouldReturnProductUpdateResponse() {
+        Product activatedProduct = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(activatedProduct));
+
+        Product deletedProduct = ProductFactory.createDeletedProduct(PRODUCT_ID);
+
+        when(productRepository.save(any(Product.class))).thenReturn(deletedProduct);
+
+        ProductUpdateResponse response = productService.deleteProduct(PRODUCT_ID);
+
+        assertNotNull(response);
+        assertNotNull(response.message());
+
+        verify(productRepository).findById(PRODUCT_ID);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    void deleteProduct_notFoundProduct_shouldThrowProductNotFoundException() {
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ProductNotFoundException.class,
+                () -> productService.deleteProduct(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void deleteProduct_deletedProduct_shouldThrowDeletedProductException() {
+        Product deletedProduct = ProductFactory.createDeletedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(deletedProduct));
+
+        assertThrows(DeletedProductException.class, () -> productService.deleteProduct(PRODUCT_ID));
 
         verify(productRepository).findById(PRODUCT_ID);
     }
