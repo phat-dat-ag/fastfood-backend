@@ -12,7 +12,7 @@ import com.example.fastfoodshop.response.promotion.PromotionResponse;
 import com.example.fastfoodshop.response.promotion.PromotionUpdateResponse;
 
 public interface PromotionService {
-    Promotion findPromotionOrThrow(Long promotionId);
+    Promotion findPromotionByIdOrThrow(Long promotionId);
 
     void increasePromotionUsageCount(Long promotionId);
 

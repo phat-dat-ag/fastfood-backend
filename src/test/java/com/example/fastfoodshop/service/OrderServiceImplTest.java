@@ -347,7 +347,7 @@ public class OrderServiceImplTest {
 
         when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
 
-        when(promotionService.findPromotionOrThrow(anyLong())).thenReturn(promotion);
+        when(promotionService.findPromotionByIdOrThrow(anyLong())).thenReturn(promotion);
 
         doNothing().when(promotionService).increasePromotionUsageCount(promotion.getId());
 
@@ -370,7 +370,7 @@ public class OrderServiceImplTest {
                 .checkActivatedCategoryAndActivatedProduct(anyLong());
         verify(userService).findUserOrThrow(user.getPhone());
         verify(addressService).findAddressOrThrow(request.addressId());
-        verify(promotionService).findPromotionOrThrow(anyLong());
+        verify(promotionService).findPromotionByIdOrThrow(anyLong());
         verify(promotionService).increasePromotionUsageCount(promotion.getId());
         verify(orderRepository).save(any(Order.class));
         verify(orderDetailService, times(cartsDTOs.size()))
@@ -400,7 +400,7 @@ public class OrderServiceImplTest {
 
         when(addressService.findAddressOrThrow(request.addressId())).thenReturn(address);
 
-        when(promotionService.findPromotionOrThrow(anyLong()))
+        when(promotionService.findPromotionByIdOrThrow(anyLong()))
                 .thenThrow(new PromotionNotFoundException(deletedPromotion.getId()));
 
         assertThrows(
@@ -414,7 +414,7 @@ public class OrderServiceImplTest {
                 .checkActivatedCategoryAndActivatedProduct(anyLong());
         verify(userService).findUserOrThrow(user.getPhone());
         verify(addressService).findAddressOrThrow(request.addressId());
-        verify(promotionService).findPromotionOrThrow(anyLong());
+        verify(promotionService).findPromotionByIdOrThrow(anyLong());
     }
 
     @Test

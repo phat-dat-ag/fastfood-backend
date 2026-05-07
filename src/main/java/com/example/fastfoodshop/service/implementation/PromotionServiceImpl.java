@@ -58,13 +58,13 @@ public class PromotionServiceImpl implements PromotionService {
     private final PromotionFactory promotionFactory;
     private final PromotionValidator promotionValidator;
 
-    private Promotion findPromotionOrThrow(String promotionCode) {
+    private Promotion findPromotionByCodeOrThrow(String promotionCode) {
         return promotionRepository.findByCode(promotionCode).orElseThrow(
                 () -> new PromotionNotFoundException(promotionCode)
         );
     }
 
-    public Promotion findPromotionOrThrow(Long promotionId) {
+    public Promotion findPromotionByIdOrThrow(Long promotionId) {
         return promotionRepository.findById(promotionId).orElseThrow(
                 () -> new PromotionNotFoundException(promotionId)
         );
@@ -72,7 +72,7 @@ public class PromotionServiceImpl implements PromotionService {
 
     @Transactional
     public void increasePromotionUsageCount(Long promotionId) {
-        Promotion promotion = findPromotionOrThrow(promotionId);
+        Promotion promotion = findPromotionByIdOrThrow(promotionId);
         if (promotion.getUsedQuantity() >= promotion.getQuantity()) {
             throw new UnavailablePromotionException(promotionId);
         }
@@ -84,7 +84,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public Promotion checkPromotionCode(String promotionCode, int orderPrice) {
-        Promotion promotion = findPromotionOrThrow(promotionCode);
+        Promotion promotion = findPromotionByCodeOrThrow(promotionCode);
 
         promotionValidator.validatePromotion(promotion, orderPrice, LocalDateTime.now());
 
@@ -151,7 +151,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public PromotionUpdateResponse updatePromotionActivation(Long promotionId, boolean activated) {
-        Promotion promotion = findPromotionOrThrow(promotionId);
+        Promotion promotion = findPromotionByIdOrThrow(promotionId);
 
         if (promotion.isDeleted()) {
             throw new DeletedPromotionException();
@@ -176,7 +176,7 @@ public class PromotionServiceImpl implements PromotionService {
     }
 
     public PromotionUpdateResponse deletePromotion(Long promotionId) {
-        Promotion promotion = findPromotionOrThrow(promotionId);
+        Promotion promotion = findPromotionByIdOrThrow(promotionId);
         if (promotion.isDeleted()) {
             throw new DeletedPromotionException();
         }
