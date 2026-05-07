@@ -20,6 +20,7 @@ import com.example.fastfoodshop.response.topic.TopicUpdateResponse;
 import com.example.fastfoodshop.service.TopicService;
 import com.example.fastfoodshop.util.SlugUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TopicServiceImpl implements TopicService {
@@ -43,6 +45,9 @@ public class TopicServiceImpl implements TopicService {
         while (topicRepository.existsBySlug((uniqueSlug))) {
             uniqueSlug = baseSlug + "-" + counter++;
         }
+
+        log.debug("[TopicService] Generated topic slug: {}", uniqueSlug);
+
         return uniqueSlug;
     }
 
@@ -74,6 +79,9 @@ public class TopicServiceImpl implements TopicService {
         Topic topic = buildTopic(topicCreateRequest);
 
         Topic savedTopic = topicRepository.save(topic);
+
+        log.info("[TopicService] Successfully created topic with id={}", savedTopic.getId());
+
         return new TopicResponse(TopicDTO.from(savedTopic));
     }
 
@@ -89,17 +97,25 @@ public class TopicServiceImpl implements TopicService {
         updateTopicFields(topic, topicCreateRequest);
 
         Topic updatedTopic = topicRepository.save(topic);
+
+        log.info("[TopicService] Successfully updated topic id={}", topicId);
+
         return new TopicResponse(TopicDTO.from(updatedTopic));
     }
 
     public TopicResponse getTopicBySlug(String slug) {
         Topic topic = findValidTopicOrThrow(slug);
+
+        log.info("[TopicService] Successfully got topic by slug: {}", slug);
+
         return new TopicResponse(TopicDTO.from(topic));
     }
 
     public TopicPageResponse getTopics(int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<Topic> topicPage = topicRepository.findByIsDeletedFalse(pageable);
+
+        log.info("[TopicService] Successfully got topic page");
 
         return TopicPageResponse.from(topicPage);
     }
@@ -154,6 +170,8 @@ public class TopicServiceImpl implements TopicService {
 
         List<TopicDisplayDTO> topics = mapToTopicDisplay(grouped);
 
+        log.info("[TopicService] Successfully got displayable topics");
+
         return new TopicDisplayResponse(topics);
     }
 
@@ -168,6 +186,11 @@ public class TopicServiceImpl implements TopicService {
 
         String message = activated ? "Đã kích hoạt chủ đề: " + topicId : "Đã hủy kích hoạt chủ đề: " + topicId;
 
+        log.info(
+                "[TopicService] Successfully updated activation for topic id={}, new status: {}",
+                topicId, activated
+        );
+
         return new TopicUpdateResponse(message);
     }
 
@@ -180,6 +203,9 @@ public class TopicServiceImpl implements TopicService {
         topic.setDeleted(true);
 
         topicRepository.save(topic);
+
+        log.info("[TopicService] Successfully deleted topic id={}", topicId);
+
         return new TopicUpdateResponse("Đã xóa chủ đề: " + topicId);
     }
 
@@ -190,6 +216,8 @@ public class TopicServiceImpl implements TopicService {
                 .stream()
                 .map(TopicStatsDTO::from)
                 .toList();
+
+        log.info("[TopicService] Successfully got topic stats");
 
         return new TopicStatsResponse(topicStatsDTOs);
     }
