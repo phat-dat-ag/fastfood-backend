@@ -3,6 +3,7 @@ package com.example.fastfoodshop.service;
 import com.example.fastfoodshop.entity.Product;
 import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
 import com.example.fastfoodshop.exception.product.DeletedProductException;
+import com.example.fastfoodshop.exception.product.InvalidStatusProductException;
 import com.example.fastfoodshop.exception.product.ProductNotFoundException;
 import com.example.fastfoodshop.exception.product.UnavailableProductException;
 import com.example.fastfoodshop.factory.product.ProductFactory;
@@ -157,6 +158,70 @@ public class ProductServiceImplTest {
         when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
 
         productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID);
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void updateProductActivation_activate_shouldProductUpdateResponse() {
+        Product deactivatedProduct = ProductFactory.createDeactivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(deactivatedProduct));
+
+        Product activatedProduct = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productRepository.save(any(Product.class))).thenReturn(activatedProduct);
+
+        ProductUpdateResponse response = productService.updateProductActivation(PRODUCT_ID, true);
+
+        assertNotNull(response);
+        assertNotNull(response.message());
+
+        verify(productRepository).findById(PRODUCT_ID);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    void updateProductActivation_deactivate_shouldProductUpdateResponse() {
+        Product activatedProduct = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(activatedProduct));
+
+        Product deactivatedProduct = ProductFactory.createDeactivatedProduct(PRODUCT_ID);
+
+        when(productRepository.save(any(Product.class))).thenReturn(deactivatedProduct);
+
+        ProductUpdateResponse response = productService.updateProductActivation(PRODUCT_ID, false);
+
+        assertNotNull(response);
+        assertNotNull(response.message());
+
+        verify(productRepository).findById(PRODUCT_ID);
+        verify(productRepository).save(any(Product.class));
+    }
+
+    @Test
+    void updateProductActivation_notFoundProduct_shouldThrowProductNotFoundException() {
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ProductNotFoundException.class,
+                () -> productService.updateProductActivation(PRODUCT_ID, true)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void updateProductActivation_invalidNewStatus_shouldThrowInvalidStatusProductException() {
+        Product activatedProduct = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(activatedProduct));
+
+        assertThrows(
+                InvalidStatusProductException.class,
+                () -> productService.updateProductActivation(PRODUCT_ID, true)
+        );
 
         verify(productRepository).findById(PRODUCT_ID);
     }
