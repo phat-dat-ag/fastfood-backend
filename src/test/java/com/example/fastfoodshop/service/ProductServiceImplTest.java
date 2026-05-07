@@ -12,9 +12,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +29,7 @@ public class ProductServiceImplTest {
     ProductServiceImpl productService;
 
     private static final Long PRODUCT_ID = 123L;
+    private static final String PRODUCT_SLUG = "product";
 
     @Test
     void findAllByIds_shouldReturnProductList() {
@@ -58,5 +61,31 @@ public class ProductServiceImplTest {
         );
 
         verify(productRepository).findAllById(productIds);
+    }
+
+    @Test
+    void findProductByIdOrThrow_shouldReturnProduct() {
+        Product product = ProductFactory.createActivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+
+        Product productResponse = productService.findProductByIdOrThrow(PRODUCT_ID);
+
+        assertNotNull(productResponse);
+        assertEquals(product.getId(), productResponse.getId());
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void findProductByIdOrThrow_shouldThrowProductNotFoundException() {
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.empty());
+
+        assertThrows(
+                ProductNotFoundException.class,
+                () -> productService.findProductByIdOrThrow(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
     }
 }
