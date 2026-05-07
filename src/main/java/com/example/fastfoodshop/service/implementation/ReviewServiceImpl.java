@@ -24,6 +24,7 @@ import com.example.fastfoodshop.service.ProductService;
 import com.example.fastfoodshop.service.ReviewImageService;
 import com.example.fastfoodshop.service.ReviewService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +39,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReviewServiceImpl implements ReviewService {
@@ -50,18 +52,24 @@ public class ReviewServiceImpl implements ReviewService {
         if (order.getDeliveredAt() == null) {
             throw new OrderNotDeliveredException(order.getId());
         }
+
+        log.debug("[ReviewService] Order id={} is delivered", order.getId());
     }
 
     private void validateReviewNotExpired(Order order) {
         if (order.getDeliveredAt().plusDays(2).isBefore(LocalDateTime.now())) {
             throw new ReviewExpiredException(order.getId());
         }
+
+        log.debug("[ReviewService] Review for order id={} is not expired", order.getId());
     }
 
     private void validateOrderNotReviewed(Order order) {
         if (!order.getReviews().isEmpty()) {
             throw new OrderAlreadyReviewedException(order.getId());
         }
+
+        log.debug("[ReviewService] Review for order id={} is available", order.getId());
     }
 
     private Order getValidOrderForReview(Long orderId) {
@@ -93,6 +101,8 @@ public class ReviewServiceImpl implements ReviewService {
         if (!reviewedProductIds.add(reviewCreateRequest.productId())) {
             throw new DuplicateReviewProductException();
         }
+
+        log.debug("[ReviewService] Review for product id={} is valid", reviewCreateRequest.productId());
     }
 
     private Review mapToReview(ReviewCreateRequest reviewCreateRequest, Order order, Product product) {
@@ -111,6 +121,11 @@ public class ReviewServiceImpl implements ReviewService {
                 reviewImageService.createReviewImages(reviewCreateRequest.images(), review);
 
         review.setReviewImages(images);
+
+        log.debug(
+                "[ReviewService] Attached {} images for review id={}",
+                images.size(), review.getId()
+        );
     }
 
     private Map<Long, Product> getProductMap(List<ReviewCreateRequest> reviewCreateRequests) {
@@ -160,6 +175,11 @@ public class ReviewServiceImpl implements ReviewService {
 
         validateAllProductsReviewed(orderProductIds, reviewedProductIds);
 
+        log.info(
+                "[ReviewService] Successfully created {} reviews for order id={}",
+                reviewCreateRequests.size(), orderId
+        );
+
         return new ReviewUpdateResponse("Đánh giá đơn hàng thành công");
     }
 
@@ -172,6 +192,11 @@ public class ReviewServiceImpl implements ReviewService {
                 .map(ReviewDTO::from)
                 .toList();
 
+        log.info(
+                "[ReviewService] Successfully got {} reviews for product id={}",
+                reviewDTOs.size(), productId
+        );
+
         return new ReviewProductsResponse(reviewDTOs);
     }
 
@@ -182,6 +207,8 @@ public class ReviewServiceImpl implements ReviewService {
         );
 
         Page<Review> reviewPage = reviewRepository.findByIsDeletedFalse(pageable);
+
+        log.info("[ReviewService] Successfully got review page");
 
         return ReviewPageResponse.from(reviewPage);
     }
@@ -200,6 +227,9 @@ public class ReviewServiceImpl implements ReviewService {
 
         review.setDeleted(true);
         reviewRepository.save(review);
+
+        log.info("[ReviewService] Successfully deleted review id={}", reviewId);
+
         return new ReviewUpdateResponse("Đã xóa đánh giá: " + reviewId);
     }
 }
