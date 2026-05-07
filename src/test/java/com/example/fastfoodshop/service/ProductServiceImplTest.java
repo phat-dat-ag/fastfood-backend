@@ -1,7 +1,9 @@
 package com.example.fastfoodshop.service;
 
 import com.example.fastfoodshop.entity.Product;
+import com.example.fastfoodshop.exception.category.UnavailableCategoryException;
 import com.example.fastfoodshop.exception.product.ProductNotFoundException;
+import com.example.fastfoodshop.exception.product.UnavailableProductException;
 import com.example.fastfoodshop.factory.product.ProductFactory;
 import com.example.fastfoodshop.repository.ProductRepository;
 import com.example.fastfoodshop.service.implementation.ProductServiceImpl;
@@ -29,7 +31,7 @@ public class ProductServiceImplTest {
     ProductServiceImpl productService;
 
     private static final Long PRODUCT_ID = 123L;
-    private static final String PRODUCT_SLUG = "product";
+    private static final Long CATEGORY_ID = 234L;
 
     @Test
     void findAllByIds_shouldReturnProductList() {
@@ -85,6 +87,73 @@ public class ProductServiceImplTest {
                 ProductNotFoundException.class,
                 () -> productService.findProductByIdOrThrow(PRODUCT_ID)
         );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void checkActivatedCategoryAndActivatedProduct_deletedProduct_shouldThrowUnavailableProductException() {
+        Product deletedProduct = ProductFactory.createDeletedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(deletedProduct));
+
+        assertThrows(
+                UnavailableProductException.class,
+                () -> productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void checkActivatedCategoryAndActivatedProduct_deactivatedProduct_shouldThrowUnavailableProductException() {
+        Product deactivatedProduct = ProductFactory.createDeactivatedProduct(PRODUCT_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(deactivatedProduct));
+
+        assertThrows(
+                UnavailableProductException.class,
+                () -> productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void checkActivatedCategoryAndActivatedProduct_deletedCategory_shouldThrowUnavailableCategoryException() {
+        Product product = ProductFactory.createActivatedProductWithDeletedCategory(PRODUCT_ID, CATEGORY_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+
+        assertThrows(
+                UnavailableCategoryException.class,
+                () -> productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void checkActivatedCategoryAndActivatedProduct_deactivatedCategory_shouldThrowUnavailableCategoryException() {
+        Product product = ProductFactory.createActivatedProductWithDeactivatedCategory(PRODUCT_ID, CATEGORY_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+
+        assertThrows(
+                UnavailableCategoryException.class,
+                () -> productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID)
+        );
+
+        verify(productRepository).findById(PRODUCT_ID);
+    }
+
+    @Test
+    void checkActivatedCategoryAndActivatedProduct_shouldBeSuccessful() {
+        Product product = ProductFactory.createActivatedProductWithActivatedCategory(PRODUCT_ID, CATEGORY_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(product));
+
+        productService.checkActivatedCategoryAndActivatedProduct(PRODUCT_ID);
 
         verify(productRepository).findById(PRODUCT_ID);
     }

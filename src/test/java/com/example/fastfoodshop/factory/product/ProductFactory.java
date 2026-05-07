@@ -33,6 +33,28 @@ public class ProductFactory {
         return product;
     }
 
+    public static Product createDeletedProduct(Long productId) {
+        Product product = createProduct();
+
+        product.setId(productId);
+        product.setSlug("Trai-cay" + productId);
+        product.setActivated(true);
+        product.setDeleted(true);
+
+        return product;
+    }
+
+    public static Product createDeactivatedProduct(Long productId) {
+        Product product = createProduct();
+
+        product.setId(productId);
+        product.setSlug("Trai-cay" + productId);
+        product.setActivated(false);
+        product.setDeleted(false);
+
+        return product;
+    }
+
     public static Product createActivatedProductWithPromotions(
             Long productId, List<Promotion> promotions
     ) {
@@ -41,5 +63,35 @@ public class ProductFactory {
         product.setPromotions(promotions);
 
         return product;
+    }
+
+    public static Product createActivatedProductWithDeletedCategory(Long productId, Long categoryId) {
+        Category deletedCategory = CategoryFactory.createDeletedCategory(categoryId);
+
+        Product activatedProduct = createActivatedProduct(productId);
+
+        activatedProduct.setCategory(deletedCategory);
+
+        return activatedProduct;
+    }
+
+    public static Product createActivatedProductWithDeactivatedCategory(Long productId, Long categoryId) {
+        Category deactivatedCategory = CategoryFactory.createDeactivatedCategory(categoryId);
+
+        Product activatedProduct = createActivatedProduct(productId);
+
+        activatedProduct.setCategory(deactivatedCategory);
+
+        return activatedProduct;
+    }
+
+    public static Product createActivatedProductWithActivatedCategory(Long productId, Long categoryId) {
+        Category activatedCategory = CategoryFactory.createActivatedCategory(categoryId);
+
+        Product activatedProduct = createActivatedProduct(productId);
+
+        activatedProduct.setCategory(activatedCategory);
+
+        return activatedProduct;
     }
 }
