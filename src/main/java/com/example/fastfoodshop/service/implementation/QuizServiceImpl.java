@@ -32,6 +32,7 @@ import com.example.fastfoodshop.service.UserService;
 import com.example.fastfoodshop.service.PromotionService;
 import com.example.fastfoodshop.service.QuizService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,6 +50,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuizServiceImpl implements QuizService {
@@ -79,6 +81,7 @@ public class QuizServiceImpl implements QuizService {
             boolean isExpired = LocalDateTime.now().isAfter(expiredAt);
 
             if (!isExpired && quiz.getCompletedAt() == null) {
+                log.debug("[Quiz Service] Used available quiz");
                 return quiz;
             }
 
@@ -88,6 +91,8 @@ public class QuizServiceImpl implements QuizService {
         if (completedCount >= 3) {
             throw new NoAttemptsRemainingException();
         }
+
+        log.debug("[Quiz Service] Generated new quiz");
 
         return new Quiz();
     }
@@ -141,6 +146,11 @@ public class QuizServiceImpl implements QuizService {
 
         quizQuestionService.createQuizQuestions(createdQuiz, selectedQuestions);
 
+        log.info(
+                "[Quiz Service] Successfully got quiz for user phone={}, topic difficulty:{}",
+                phone, topicDifficultySlug
+        );
+
         return new QuizResponse(QuizDTO.createUserQuizResponse(createdQuiz, selectedQuestions));
     }
 
@@ -152,6 +162,8 @@ public class QuizServiceImpl implements QuizService {
         if (now.isAfter(expiredAt)) {
             throw new GameTimeExpiredException();
         }
+
+        log.debug("[Quiz Service] Quiz id={} is not expired", quiz.getId());
     }
 
     private Map<Long, Long> mapQuestionToSubmittedAnswerIds(
@@ -213,6 +225,8 @@ public class QuizServiceImpl implements QuizService {
             if (answer.isCorrect()) score++;
         }
 
+        log.debug("[Quiz Service] Total score: {}", score);
+
         return score;
     }
 
@@ -249,6 +263,8 @@ public class QuizServiceImpl implements QuizService {
 
         Quiz checkedQuiz = quizRepository.save(quiz);
 
+        log.info("[Quiz Service] Successfully submit quiz by user phone={}", phone);
+
         return new QuizResponse(QuizDTO.createUserQuizResponse(checkedQuiz));
     }
 
@@ -274,6 +290,8 @@ public class QuizServiceImpl implements QuizService {
         if (!isWithinAllowedDuration) {
             throw new NotAllowFeedbackException();
         }
+
+        log.debug("[Quiz Service] Quiz id={} can be feedback now", quiz.getId());
     }
 
     private void setFeedback(Quiz quiz, String feedbackContent) {
@@ -295,6 +313,11 @@ public class QuizServiceImpl implements QuizService {
 
         quizRepository.save(quiz);
 
+        log.info(
+                "[Quiz Service] Successfully added feedback to quiz id={} by user phone={}",
+                quizId, phone
+        );
+
         return new QuizUpdateResponse("Đã thêm đánh giá cho trò chơi");
     }
 
@@ -304,6 +327,8 @@ public class QuizServiceImpl implements QuizService {
         Pageable pageable = PageRequest.of(page, size);
         Page<Quiz> quizPage = quizRepository.findByUserAndCompletedAtIsNotNull(user, pageable);
 
+        log.info("[Quiz Service] Successfully got quiz history page for user phone={}", phone);
+
         return QuizHistoryPageResponse.from(quizPage);
     }
 
@@ -312,6 +337,11 @@ public class QuizServiceImpl implements QuizService {
 
         Quiz quiz = findQuizHistoryOrThrow(quizId, user);
 
+        log.info(
+                "[Quiz Service] Successfully got quiz history id={} for user phone={}",
+                quizId, phone
+        );
+
         return new QuizResponse(QuizDTO.createReviewQuizResponse(quiz));
     }
 
@@ -319,6 +349,8 @@ public class QuizServiceImpl implements QuizService {
         Pageable pageable = PageRequest.of(page, size);
 
         Page<Quiz> quizPage = quizRepository.findByFeedbackAtIsNotNull(pageable);
+
+        log.info("[Quiz Service] Successfully got quiz feedback page");
 
         return QuizFeedbackPageResponse.from(quizPage);
     }
